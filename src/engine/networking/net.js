@@ -1,4 +1,4 @@
-import {scriptManager, htmlHeader} from "../utils";
+import {scriptManager, htmlHeader, LOG_WARN} from "../utils";
 import {NativeWebRTC} from "./native-webrtc";
 import {BIGLOG, byId, closeSession, fetchInfo, joinSession, leaveSession, netConfig, REDLOG, removeUser} from "./matrix-stream";
 
@@ -137,7 +137,7 @@ export class MatrixStream {
       // console.log('connectionDestroyed from engine ', e.detail);
       const rc = byId('video-container');
       if(!rc) return;
-        rc.querySelectorAll('div:not(:has(*))').forEach(div => div.remove());
+      rc.querySelectorAll('div:not(:has(*))').forEach(div => div.remove());
     });
 
     this.joinSessionUI.addEventListener('click', () => {
@@ -213,7 +213,7 @@ export class MatrixStream {
 
 export let activateNet2 = (sessionOption) => {
 
-  console.info(`%cNetworking2 backend params: ${sessionOption}`, CS3);
+  console.info(`%cNetworking2 backend params: ${sessionOption}`, LOG_WARN);
   // -----------------------
   // Make run
   // -----------------------
@@ -228,8 +228,8 @@ export let activateNet2 = (sessionOption) => {
   const backend = sessionOption.backend || sessionOption.provider || 'kurento';
   if(backend === 'webrtc' || backend === 'native-webrtc') {
     net = new NativeWebRTC({
-      domain: sessionOption.domain || (t.networking2 && t.networking2.domain),
-      port: sessionOption.port || 8081,
+      domain: sessionOption.domain, // || t?.networking2?.domain,
+      port: sessionOption.port || 2020,
       signalingUrl: sessionOption.signalingUrl,
       sessionName: sessionOption.sessionName,
       customData: sessionOption.customData,
@@ -248,6 +248,9 @@ export let activateNet2 = (sessionOption) => {
   addEventListener(`setTitle`, (e) => {
     document.title = e.detail;
   })
+
+  return net;
+
 };
 
 const StreamSlotManager = {

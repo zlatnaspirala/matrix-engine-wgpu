@@ -4,146 +4,603 @@ var __export = (target, all) => {
     __defProp(target, name2, { get: all[name2], enumerable: true });
 };
 
-// src/engine/loader-obj.js
-var constructMesh = class {
-  constructor(objectData, inputArg) {
-    this.inputArg = inputArg;
-    this.objectData = objectData;
-    this.create(objectData, inputArg);
-    this.setScale = (s) => {
-      this.inputArg.scale = s;
-      this.create(this.objectData, this.inputArg);
-    };
-    this.updateBuffers = () => {
-      this.inputArg.scale = [0.1, 0.1, 0.1];
-      this.create(this.objectData, this.inputArg);
-    };
+// src/engine/utils.js
+var supportsTouch = "ontouchstart" in window || navigator.msMaxTouchPoints;
+var MeshType = Object.freeze({ MESH: 0, INSTANCED: 1, PROCEDURAL: 2, BVHANIM: 3 });
+var touchStartHandler = function(e) {
+  if (e.touches.length > 1) {
+    e.preventDefault();
   }
-  create = (objectData, inputArg, callback) => {
-    if (typeof callback === "undefined") callback = function() {
+};
+var touchMoveHandler = function(e) {
+  if (e.touches.length > 1) {
+    e.preventDefault();
+  }
+};
+var gestureStartHandler = function(e) {
+  e.preventDefault();
+};
+var preventZoomApplied = false;
+function preventZoom() {
+  if (preventZoomApplied) return;
+  preventZoomApplied = true;
+  document.addEventListener("touchstart", touchStartHandler, { passive: false });
+  document.addEventListener("touchmove", touchMoveHandler, { passive: false });
+  document.addEventListener("gesturestart", gestureStartHandler);
+}
+var screenOrientationSupported = null;
+function getOrientation() {
+  if (window.innerWidth > window.innerHeight) {
+    return "landscape";
+  } else {
+    return "portrait";
+  }
+}
+function getScreenOrientationSupport() {
+  if (screenOrientationSupported === null) {
+    screenOrientationSupported = !!(screen.orientation && screen.orientation.lock);
+  }
+  return screenOrientationSupported;
+}
+function checkLock() {
+  return getScreenOrientationSupport();
+}
+var cachedUserAgent = navigator.userAgent;
+var mobileRegexPatterns = [/Android/i, /webOS/i, /iPhone/i, /iPad/i, /iPod/i, /BlackBerry/i, /Windows Phone/i];
+var mobileCheckResult = null;
+function isMobile() {
+  if (mobileCheckResult !== null) return mobileCheckResult;
+  if (supportsTouch) {
+    mobileCheckResult = true;
+    return true;
+  }
+  mobileCheckResult = mobileRegexPatterns.some((pattern) => pattern.test(cachedUserAgent));
+  return mobileCheckResult;
+}
+function degToRad(degrees) {
+  return degrees * Math.PI / 180;
+}
+function radToDeg(r2) {
+  return r2 * (180 / Math.PI);
+}
+var scriptManager = {
+  SCRIPT_ID: 0,
+  LOAD: function addScript(src, id2, type2, parent, callback) {
+    var s = document.createElement("script");
+    s.onload = function() {
+      if (typeof callback != "undefined") callback();
     };
-    let initOrientation = [0, 1, 2];
-    var verts = [], vertNormals = [], textures = [], unpacked = {};
-    unpacked.verts = [];
-    unpacked.norms = [];
-    unpacked.textures = [];
-    unpacked.hashindices = {};
-    unpacked.indices = [];
-    unpacked.index = 0;
-    var lines = objectData.split("\n");
-    if (inputArg.swap[0] !== null) {
-      swap(inputArg.swap[0], inputArg.swap[1], initOrientation);
+    if (typeof type2 !== "undefined") {
+      s.setAttribute("type", type2);
+      s.innerHTML = src;
+    } else {
+      s.setAttribute("src", src);
     }
-    var VERTEX_RE = /^v\s/;
-    var NORMAL_RE = /^vn\s/;
-    var TEXTURE_RE = /^vt\s/;
-    var FACE_RE = /^f\s/;
-    var WHITESPACE_RE = /\s+/;
-    for (var i = 0; i < lines.length; i++) {
-      var line = lines[i].trim();
-      var elements = line.split(WHITESPACE_RE);
-      elements.shift();
-      if (VERTEX_RE.test(line)) {
-        verts.push.apply(verts, elements);
-      } else if (NORMAL_RE.test(line)) {
-        vertNormals.push.apply(vertNormals, elements);
-      } else if (TEXTURE_RE.test(line)) {
-        textures.push.apply(textures, elements);
-      } else if (FACE_RE.test(line)) {
-        var quad = false;
-        for (var j = 0, eleLen = elements.length; j < eleLen; j++) {
-          if (j === 3 && !quad) {
-            j = 2;
-            quad = true;
+    if (typeof id2 !== "undefined") {
+      s.setAttribute("id", id2);
+    }
+    if (typeof parent !== "undefined") {
+      document.getElementById(parent).appendChild(s);
+      if (typeof callback != "undefined") callback();
+    } else {
+      document.body.appendChild(s);
+    }
+  },
+  loadModule: function addScript2(src, id2, type2, parent) {
+    var s = document.createElement("script");
+    s.onload = function() {
+      scriptManager.SCRIPT_ID++;
+    };
+    if (typeof type2 === "undefined") {
+      s.setAttribute("type", "module");
+      s.setAttribute("src", src);
+    } else {
+      s.setAttribute("type", type2);
+      s.innerHTML = src;
+    }
+    s.setAttribute("src", src);
+    if (typeof id2 !== "undefined") {
+      s.setAttribute("id", id2);
+    }
+    if (typeof parent !== "undefined") {
+      document.getElementById(parent).appendChild(s);
+    } else {
+      document.body.appendChild(s);
+    }
+  },
+  loadGLSL: function(src) {
+    return new Promise((resolve) => {
+      fetch(src).then((data) => {
+        resolve(data.text());
+      });
+    });
+  }
+};
+function OSCILLATOR(min2, max2, step, options2) {
+  if (min2 == null || max2 == null || step == null) {
+    console.log("OSCILLATOR ERROR");
+    return;
+  }
+  var ROOT = this;
+  this.min0 = parseFloat(min2);
+  this.max0 = parseFloat(max2);
+  this.min = this.min0;
+  this.max = this.max0;
+  this.step = parseFloat(step);
+  this.value_ = this.min;
+  this.status = 0;
+  options2 = options2 || {};
+  this.regime = options2.regime || "pingpong";
+  this.resist = parseFloat(options2.resist) || 0;
+  this.resistMode = options2.resistMode || "linear";
+  this.stopEpsilon = options2.stopEpsilon || 0;
+  this.useDelta = options2.useDelta || false;
+  this.on_maximum_value = function() {
+  };
+  this.on_minimum_value = function() {
+  };
+  this.on_stop = function() {
+  };
+  this._applyResist = function() {
+    if (this.resist <= 0) return;
+    var range = this.max - this.min;
+    if (range <= 0) return;
+    var shrink;
+    if (this.resistMode === "exp") {
+      shrink = range * this.resist;
+    } else {
+      shrink = (this.max0 - this.min0) * this.resist;
+    }
+    this.min += shrink;
+    this.max -= shrink;
+    if (this.min > this.max) {
+      var c = (this.min + this.max) * 0.5;
+      this.min = this.max = c;
+    }
+  };
+  this.UPDATE = function(delta) {
+    var s = this.step;
+    if (this.useDelta && delta !== void 0) {
+      s = s * delta;
+    }
+    switch (this.regime) {
+      // ===== PING-PONG =====
+      case "pingpong":
+        if (this.status === 0) {
+          this.value_ += s;
+          if (this.value_ >= this.max) {
+            this.value_ = this.max;
+            this.status = 1;
+            ROOT.on_maximum_value();
           }
-          if (elements[j] in unpacked.hashindices) {
-            unpacked.indices.push(unpacked.hashindices[elements[j]]);
-          } else {
-            var vertex = elements[j].split("/");
-            unpacked.verts.push(+verts[(vertex[0] - 1) * 3 + initOrientation[0]] * inputArg.scale[0]);
-            unpacked.verts.push(+verts[(vertex[0] - 1) * 3 + initOrientation[1]] * inputArg.scale[1]);
-            unpacked.verts.push(+verts[(vertex[0] - 1) * 3 + initOrientation[2]] * inputArg.scale[2]);
-            if (textures.length) {
-              unpacked.textures.push(+textures[(vertex[1] - 1) * 2 + 0]);
-              unpacked.textures.push(+textures[(vertex[1] - 1) * 2 + 1]);
-            }
-            unpacked.norms.push(+vertNormals[(vertex[2] - 1) * 3 + 0]);
-            unpacked.norms.push(+vertNormals[(vertex[2] - 1) * 3 + 1]);
-            unpacked.norms.push(+vertNormals[(vertex[2] - 1) * 3 + 2]);
-            unpacked.hashindices[elements[j]] = unpacked.index;
-            unpacked.indices.push(unpacked.index);
-            unpacked.index += 1;
-          }
-          if (j === 3 && quad) {
-            unpacked.indices.push(unpacked.hashindices[elements[0]]);
+        } else {
+          this.value_ -= s;
+          if (this.value_ <= this.min) {
+            this.value_ = this.min;
+            this.status = 0;
+            this._applyResist();
+            ROOT.on_minimum_value();
           }
         }
+        break;
+      // ===== ONLY MIN → MAX =====
+      case "onlyFromMinToMax":
+        this.value_ += s;
+        if (this.value_ >= this.max) {
+          this.value_ = this.min;
+          this._applyResist();
+          ROOT.on_maximum_value();
+        }
+        break;
+      // ===== MAX → MIN =====
+      case "fromMaxToMin":
+        this.value_ -= s;
+        if (this.value_ <= this.min) {
+          this.value_ = this.max;
+          this._applyResist();
+          ROOT.on_minimum_value();
+        }
+        break;
+      // ===== ONE SHOT =====
+      case "oneShot":
+        this.value_ += s;
+        if (this.value_ >= this.max) {
+          this.value_ = this.max;
+          ROOT.on_stop();
+        }
+        break;
+      // ===== SPRING TO CENTER =====
+      case "springCenter":
+        var center = (this.min + this.max) * 0.5;
+        var force = (center - this.value_) * this.resist;
+        this.value_ += force + s;
+        if (Math.abs(center - this.value_) < this.stopEpsilon) {
+          this.value_ = center;
+          ROOT.on_stop();
+        }
+        break;
+    }
+    if (this.stopEpsilon > 0) {
+      if (this.max - this.min < this.stopEpsilon) {
+        ROOT.on_stop();
       }
     }
-    this.vertices = unpacked.verts;
-    this.vertexNormals = unpacked.norms;
-    this.textures = unpacked.textures;
-    this.indices = unpacked.indices;
-    callback();
-    return this;
+    return this.value_;
   };
-};
-var Ajax = function() {
-  var _this = this;
-  this.xmlhttp = new XMLHttpRequest();
-  this.get = function(url, callback) {
-    _this.xmlhttp.onreadystatechange = function() {
-      if (_this.xmlhttp.readyState === 4) {
-        callback(_this.xmlhttp.responseText, _this.xmlhttp.status);
-      }
-    };
-    _this.xmlhttp.open("GET", url, true);
-    _this.xmlhttp.send();
-  };
-};
-var downloadMeshes = function(nameAndURLs, completionCallback, inputArg) {
-  var semaphore = Object.keys(nameAndURLs).length;
-  var error = false;
-  if (typeof inputArg === "undefined") {
-    var inputArg = {
-      scale: [1, 1, 1],
-      swap: [null]
-    };
-  }
-  if (typeof inputArg.scale === "undefined") inputArg.scale = [1, 1, 1];
-  if (typeof inputArg.swap === "undefined") inputArg.swap = [null];
-  var meshes = {};
-  for (var mesh_name in nameAndURLs) {
-    if (nameAndURLs.hasOwnProperty(mesh_name)) {
-      new Ajax().get(
-        nameAndURLs[mesh_name],
-        /* @__PURE__ */ (function(name2) {
-          return function(data, status) {
-            if (status === 200) {
-              meshes[name2] = new constructMesh(data, inputArg);
-            } else {
-              error = true;
-              console.error('An error has occurred and the mesh "' + name2 + '" could not be downloaded.');
-            }
-            semaphore--;
-            if (semaphore === 0) {
-              if (error) {
-                console.error("An error has occurred and one or meshes has not been downloaded. The execution of the script has terminated.");
-                throw "";
-              }
-              completionCallback(meshes, inputArg.scale);
-            }
-          };
-        })(mesh_name)
-      );
-    }
-  }
-};
-function play(nameAni) {
-  this.animations.active = nameAni;
-  this.currentAni = this.animations[this.animations.active].from;
-  this.playing = true;
 }
+var byId = function(id2) {
+  return document.getElementById(id2);
+};
+function randomFloatFromTo(min2, max2) {
+  return Math.random() * (max2 - min2) + min2;
+}
+var urlQuery = (function() {
+  var query_string = {};
+  var query = window.location.search.substring(1);
+  var vars = query.split("&");
+  for (var i = 0; i < vars.length; i++) {
+    var pair = vars[i].split("=");
+    if (typeof query_string[pair[0]] === "undefined") {
+      query_string[pair[0]] = decodeURIComponent(pair[1]);
+    } else if (typeof query_string[pair[0]] === "string") {
+      var arr = [query_string[pair[0]], decodeURIComponent(pair[1])];
+      query_string[pair[0]] = arr;
+    } else {
+      query_string[pair[0]].push(decodeURIComponent(pair[1]));
+    }
+  }
+  return query_string;
+})();
+var LOG_WARN = "background: gray; color: yellow; font-size:10px";
+var LOG_FUNNY = "font-family: stormfaze;color: #f1f033; font-size:15px;text-shadow: 2px 2px 4px #f335f4, 4px 4px 4px #d64444, 2px 2px 4px #c160a6, 6px 2px 0px #123de3;background:linear-gradient(90deg,#111,#222);";
+var LOG_FUNNY_SMALL = "font-family: stormfaze;color: #f1f033; font-size:10px;text-shadow: 2px 2px 4px #f335f4, 4px 4px 4px #d64444, 1px 1px 2px #c160a6, 3px 1px 0px #123de3;background:linear-gradient(90deg,#111,#222); ";
+var LOG_FUNNY_ARCADE = "font-family: system-ui; font-size:16px; font-weight:400;color:#ffffff;text-shadow: 2px 2px 6px #000;background:linear-gradient(90deg,#111,#222); padding:12px 18px;";
+var LOG_FUNNY_BIG_NEON = "font-family: stormfaze; font-size:30px; font-weight:900;color:#00ffff;text-shadow: 0 0 5px #01d6d6ff, 0 0 10px #00ffff, 4px 4px 0 #ff00ff;background:black; padding:14px 18px;";
+var LOG_FUNNY_EXTRABIG = "font-family: stormfaze; font-size:230px; font-weight:900;color:#00ffff;text-shadow: 0 0 5px #01d6d6ff, 0 0 10px #00ffff, 4px 4px 0 #ff00ff;background:black; padding:14px 18px;";
+function genName(length2) {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let result2 = "";
+  for (let i = 0; i < length2; i++) {
+    result2 += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result2;
+}
+var meLoader = {
+  create: function(text = "RUN RETURN", callback) {
+    const loader = document.createElement("div");
+    loader.id = "loader";
+    Object.assign(loader.style, {
+      position: "fixed",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      top: "0",
+      left: "0",
+      width: "100vw",
+      height: "100vh",
+      zIndex: 9999,
+      background: "#000000ff",
+      fontFamily: "Orbitron, sans-serif",
+      cursor: "url(./res/icons/default.png) 0 0, auto"
+    });
+    loader.innerHTML = `
+  <div style="
+    font-size: 42px;
+    width: 50vw;
+    margin-top: -15%;
+    font-weight: 900;
+    color: #00ffff;
+    letter-spacing: 4px;
+    text-align: center;
+    text-shadow:
+      0 0 5px #00ffff,
+      0 0 10px #00ffff,
+      0 0 20px #00ffff,
+      0 0 40px #00ffff;
+    animation: glowPulse 1.5s infinite alternate;
+  ">
+    ${text}
+  </div>
+
+  <style>
+    @keyframes glowPulse {
+      from {
+        transform: scale(1);
+        text-shadow:
+          0 0 5px #00ffff,
+          0 0 10px #00ffff,
+          0 0 20px #00ffff;
+      }
+      to {
+        transform: scale(1.05);
+        text-shadow:
+          0 0 10px #00ffff,
+          0 0 20px #00ffff,
+          0 0 40px #00ffff,
+          0 0 80px #00ffff;
+      }
+    }
+  </style>
+`;
+    if (callback) loader.addEventListener("click", callback);
+    document.body.appendChild(loader);
+  },
+  destroy: function() {
+    if (byId("loader")) document.body.removeChild(byId("loader"));
+  }
+};
+var mb = {
+  root: () => byId("msgBox"),
+  pContent: () => byId("not-content"),
+  copy: function() {
+    navigator.clipboard.writeText(mb.root().children[0].innerText);
+  },
+  c: 0,
+  ic: 0,
+  t: {},
+  setContent: function(content, t2) {
+    var iMsg = document.createElement("div");
+    iMsg.textContent = String(content);
+    iMsg.id = `msgbox-loc-${mb.c}`;
+    mb.root().appendChild(iMsg);
+    iMsg.classList.add("animate1");
+    if (t2 == "ok") {
+      iMsg.style = "font-family: stormfaze;color:white;padding:7px;margin:2px";
+    } else if (t2 == "spacial-case-mob") {
+      iMsg.style = "font-family: stormfaze;color:white;padding:7px;margin-left:-2px";
+    } else {
+      iMsg.style = "font-family: stormfaze;color:white;padding:7px;margin:2px";
+    }
+  },
+  kill: function() {
+    mb.root().remove();
+  },
+  show: function(content, t2, delay2 = 1e3) {
+    mb.setContent(content, t2);
+    mb.root().style.display = "block";
+    var loc2 = mb.c;
+    setTimeout(() => {
+      byId(`msgbox-loc-${loc2}`).classList.remove("fadeInDown");
+      byId(`msgbox-loc-${loc2}`).classList.add("fadeOut");
+      setTimeout(function() {
+        byId(`msgbox-loc-${loc2}`).style.display = "none";
+        byId(`msgbox-loc-${loc2}`).classList.remove("fadeOut");
+        byId(`msgbox-loc-${loc2}`).remove();
+        mb.ic++;
+        if (mb.c == mb.ic) {
+          mb.root().style.display = "none";
+        }
+      }, delay2);
+    }, 3 * delay2);
+    mb.c++;
+  },
+  error: function(content) {
+    if (mb.root() == null) return;
+    mb.root().classList.remove("success");
+    mb.root().classList.add("error");
+    mb.root().classList.add("fadeInDown");
+    mb.show(content, "err");
+  },
+  success: function(content) {
+    if (mb.root() == null) return;
+    mb.root().classList.remove("error");
+    mb.root().classList.add("success");
+    mb.root().classList.add("fadeInDown");
+    mb.show(content, "ok");
+  }
+};
+var jsonHeaders = new Headers({
+  "Content-Type": "application/json",
+  "Accept": "application/json"
+});
+var htmlHeader = new Headers({
+  "Content-Type": "text/html",
+  "Accept": "text/plain"
+});
+var FullScreenManagerElement = class {
+  constructor(targetElement = document.documentElement) {
+    this.target = targetElement;
+  }
+  isFullscreen() {
+    return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+  }
+  request() {
+    const el2 = this.target;
+    return el2.requestFullscreen?.() || el2.webkitRequestFullscreen?.() || el2.mozRequestFullScreen?.() || el2.msRequestFullscreen?.();
+  }
+  exit() {
+    return document.exitFullscreen?.() || document.webkitExitFullscreen?.() || document.mozCancelFullScreen?.() || document.msExitFullscreen?.();
+  }
+  toggle() {
+    if (this.isFullscreen()) return this.exit();
+    return this.request();
+  }
+  onChange(callback) {
+    [
+      "fullscreenchange",
+      "webkitfullscreenchange",
+      "mozfullscreenchange",
+      "MSFullscreenChange"
+    ].forEach(
+      (evt) => document.addEventListener(evt, () => {
+        callback(this.isFullscreen(), this.target);
+      })
+    );
+  }
+};
+var FullscreenManager = class {
+  constructor() {
+    this.target = document.documentElement;
+  }
+  isFullscreen() {
+    return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+  }
+  request() {
+    const el2 = this.target;
+    return el2.requestFullscreen?.() || el2.webkitRequestFullscreen?.() || el2.mozRequestFullScreen?.() || el2.msRequestFullscreen?.();
+  }
+  exit() {
+    return document.exitFullscreen?.() || document.webkitExitFullscreen?.() || document.mozCancelFullScreen?.() || document.msExitFullscreen?.();
+  }
+  toggle() {
+    return this.isFullscreen() ? this.exit() : this.request();
+  }
+  onChange(callback) {
+    [
+      "fullscreenchange",
+      "webkitfullscreenchange",
+      "mozfullscreenchange",
+      "MSFullscreenChange"
+    ].forEach(
+      (evt) => document.addEventListener(evt, () => {
+        callback(this.isFullscreen());
+      })
+    );
+  }
+};
+
+// src/me-config.js
+window.urlQ = urlQuery;
+var gpuSettings = {
+  features: {
+    "shader-f16": true,
+    "float32-filterable": true,
+    "float32-blendable": false,
+    "texture-compression-astc": false,
+    "texture-compression-etc2": false,
+    "bgra8unorm-storage": false,
+    "subgroups": true,
+    "clip-distances": false,
+    "dual-source-blending": false
+  }
+};
+var GPU_FEATURES = {
+  // Automatically enabled by engine
+  GROUP_1: [
+    "indirect-first-instance",
+    "depth32float-stencil8"
+  ],
+  // User can enable these
+  GROUP_2: [
+    "texture-compression-bc",
+    "shader-f16",
+    "float32-filterable",
+    "float32-blendable",
+    "texture-compression-astc",
+    "texture-compression-etc2",
+    "bgra8unorm-storage",
+    "subgroups",
+    "clip-distances",
+    "dual-source-blending"
+  ],
+  // Experimental / future
+  GROUP_3: [
+    "pipeline-statistics-query",
+    "depth-clamping",
+    "multi-planar-formats",
+    "timestamp-query"
+  ]
+};
+var MEConfig = {
+  fsManager: new FullScreenManagerElement(),
+  SHADOW_RES: isMobile() == true ? 256 : 512,
+  MAX_BONES: isMobile() == true ? 70 : 100,
+  MAX_SPOTLIGHTS: isMobile() == true ? 4 : 10,
+  GPUCullingRad: 200,
+  PHYSICS_GROUND_Y: -1,
+  PHYSICS_GROUND_BYX: 100,
+  PHYSICS_GROUND_BYZ: 100,
+  GRAVITY_Y_AXIS: -10,
+  MOUSE_SENS: 0.01,
+  TOUCH_SENS: 0.03,
+  CAM_SPEED: isMobile() == true ? 0.1 : 0.2,
+  LOAD_AFTER_CLICK_MOBILE: false,
+  FORCE_FULL_SCREEN: false,
+  SINGLE_CAMERA: true,
+  CACHE: true,
+  logLoopError: true,
+  construct: function(options2 = {}) {
+    if (urlQ["GRAVITY_Y_AXIS"]) {
+      this.GRAVITY_Y_AXIS = parseInt(urlQ["GRAVITY_Y_AXIS"]);
+    }
+    if (urlQ["PHYSICS_GROUND_BYX"]) {
+      this.PHYSICS_GROUND_BYX = parseInt(urlQ["PHYSICS_GROUND_BYX"]);
+    }
+    if (urlQ["PHYSICS_GROUND_BYZ"]) {
+      this.PHYSICS_GROUND_BYZ = parseInt(urlQ["PHYSICS_GROUND_BYZ"]);
+    }
+    if (urlQ["SHADOW_RES"]) {
+      this.SHADOW_RES = parseInt(urlQ["SHADOW_RES"]);
+    }
+    if (urlQ["MAX_SPOTLIGHTS"]) {
+      this.MAX_SPOTLIGHTS = parseInt(urlQ["MAX_SPOTLIGHTS"]);
+    }
+    if (options2.MAX_SPOTLIGHTS) {
+      this.MAX_SPOTLIGHTS = options2.MAX_SPOTLIGHTS;
+    }
+    if (urlQ["MAX_BONES"]) {
+      this.MAX_BONES = parseInt(urlQ["MAX_BONES"]);
+    }
+    if (options2.MAX_BONES) {
+      this.MAX_BONES = options2.MAX_BONES;
+    }
+    if (urlQ["GPUCullingRad"]) {
+      this.GPUCullingRad = parseInt(urlQ["GPUCullingRad"]);
+    }
+    if (options2.GPUCullingRad) {
+      this.GPUCullingRad = options2.GPUCullingRad;
+    }
+    if (urlQ["TOUCH_SENS"]) {
+      this.TOUCH_SENS = parseInt(urlQ["TOUCH_SENS"]);
+    }
+    if (options2.TOUCH_SENS) {
+      this.TOUCH_SENS = options2.TOUCH_SENS;
+    }
+    if (urlQ["MOUSE_SENS"]) {
+      this.MOUSE_SENS = parseInt(urlQ["MOUSE_SENS"]);
+    }
+    if (options2.MOUSE_SENS) {
+      this.MOUSE_SENS = options2.MOUSE_SENS;
+    }
+    if (urlQ["CAM_SPEED"]) {
+      this.CAM_SPEED = parseInt(urlQ["CAM_SPEED"]);
+    }
+    if (options2.CAM_SPEED) {
+      this.CAM_SPEED = options2.CAM_SPEED;
+    }
+    if (urlQ["LOAD_AFTER_CLICK_MOBILE"]) {
+      this.LOAD_AFTER_CLICK_MOBILE = urlQ["LOAD_AFTER_CLICK_MOBILE"];
+    }
+    if (options2.LOAD_AFTER_CLICK_MOBILE) {
+      this.LOAD_AFTER_CLICK_MOBILE = options2.LOAD_AFTER_CLICK_MOBILE;
+    }
+    if (urlQ["fs"]) {
+      this.FORCE_FULL_SCREEN = Boolean(urlQ["fs"]);
+      console.log(`%cForce fullScreen : ${this.FORCE_FULL_SCREEN}`, LOG_FUNNY_ARCADE);
+      this.fsManager.request();
+      this._fs = () => {
+        this.fsManager.request();
+        setTimeout(() => {
+          dispatchEvent(new CustomEvent("run_mobile_fs", {}));
+        }, 36);
+        window.removeEventListener("click", this._fs);
+      };
+      window.addEventListener("click", this._fs);
+    }
+    if (urlQ["PHYSICS_GROUND_Y"] != null) {
+      this.PHYSICS_GROUND_Y = parseFloat(urlQ["PHYSICS_GROUND_Y"]);
+    }
+  },
+  checkOffScreen: function() {
+    if ("OffscreenCanvas" in window) {
+      console.log(`$cOffscreenCanvas is supported`, LOG_FUNNY_ARCADE);
+      return true;
+    } else {
+      console.log(`%cOffscreenCanvas is NOT supported.`, LOG_FUNNY_ARCADE);
+      return false;
+    }
+  }
+};
 
 // node_modules/wgpu-matrix/dist/2.x/wgpu-matrix.module.js
 var EPSILON = 1e-6;
@@ -249,18 +706,18 @@ function equalsApproximately$3(a, b) {
 function equals$3(a, b) {
   return a[0] === b[0] && a[1] === b[1] && a[2] === b[2];
 }
-function lerp$2(a, b, t, dst) {
+function lerp$2(a, b, t2, dst) {
   dst = dst || new VecType$1(3);
-  dst[0] = a[0] + t * (b[0] - a[0]);
-  dst[1] = a[1] + t * (b[1] - a[1]);
-  dst[2] = a[2] + t * (b[2] - a[2]);
+  dst[0] = a[0] + t2 * (b[0] - a[0]);
+  dst[1] = a[1] + t2 * (b[1] - a[1]);
+  dst[2] = a[2] + t2 * (b[2] - a[2]);
   return dst;
 }
-function lerpV$1(a, b, t, dst) {
+function lerpV$1(a, b, t2, dst) {
   dst = dst || new VecType$1(3);
-  dst[0] = a[0] + t[0] * (b[0] - a[0]);
-  dst[1] = a[1] + t[1] * (b[1] - a[1]);
-  dst[2] = a[2] + t[2] * (b[2] - a[2]);
+  dst[0] = a[0] + t2[0] * (b[0] - a[0]);
+  dst[1] = a[1] + t2[1] * (b[1] - a[1]);
+  dst[2] = a[2] + t2[2] * (b[2] - a[2]);
   return dst;
 }
 function max$1(a, b, dst) {
@@ -742,25 +1199,25 @@ function identity$1(dst) {
 function transpose(m, dst) {
   dst = dst || new MatType(16);
   if (dst === m) {
-    let t;
-    t = m[1];
+    let t2;
+    t2 = m[1];
     m[1] = m[4];
-    m[4] = t;
-    t = m[2];
+    m[4] = t2;
+    t2 = m[2];
     m[2] = m[8];
-    m[8] = t;
-    t = m[3];
+    m[8] = t2;
+    t2 = m[3];
     m[3] = m[12];
-    m[12] = t;
-    t = m[6];
+    m[12] = t2;
+    t2 = m[6];
     m[6] = m[9];
-    m[9] = t;
-    t = m[7];
+    m[9] = t2;
+    t2 = m[7];
     m[7] = m[13];
-    m[13] = t;
-    t = m[11];
+    m[13] = t2;
+    t2 = m[11];
     m[11] = m[14];
-    m[14] = t;
+    m[14] = t2;
     return dst;
   }
   const m00 = m[0 * 4 + 0];
@@ -1707,20 +2164,20 @@ function equalsApproximately(a, b) {
 function equals(a, b) {
   return a[0] === b[0] && a[1] === b[1] && a[2] === b[2] && a[3] === b[3];
 }
-function lerp(a, b, t, dst) {
+function lerp(a, b, t2, dst) {
   dst = dst || new VecType(4);
-  dst[0] = a[0] + t * (b[0] - a[0]);
-  dst[1] = a[1] + t * (b[1] - a[1]);
-  dst[2] = a[2] + t * (b[2] - a[2]);
-  dst[3] = a[3] + t * (b[3] - a[3]);
+  dst[0] = a[0] + t2 * (b[0] - a[0]);
+  dst[1] = a[1] + t2 * (b[1] - a[1]);
+  dst[2] = a[2] + t2 * (b[2] - a[2]);
+  dst[3] = a[3] + t2 * (b[3] - a[3]);
   return dst;
 }
-function lerpV(a, b, t, dst) {
+function lerpV(a, b, t2, dst) {
   dst = dst || new VecType(4);
-  dst[0] = a[0] + t[0] * (b[0] - a[0]);
-  dst[1] = a[1] + t[1] * (b[1] - a[1]);
-  dst[2] = a[2] + t[2] * (b[2] - a[2]);
-  dst[3] = a[3] + t[3] * (b[3] - a[3]);
+  dst[0] = a[0] + t2[0] * (b[0] - a[0]);
+  dst[1] = a[1] + t2[1] * (b[1] - a[1]);
+  dst[2] = a[2] + t2[2] * (b[2] - a[2]);
+  dst[3] = a[3] + t2[3] * (b[3] - a[3]);
   return dst;
 }
 function max(a, b, dst) {
@@ -1920,800 +2377,6 @@ var vec4Impl = /* @__PURE__ */ Object.freeze({
   zero,
   transformMat4
 });
-
-// src/engine/raycast.js
-var touchCoordinate = {
-  enabled: false,
-  x: 0,
-  y: 0,
-  stopOnFirstDetectedHit: false
-};
-var _invProj = mat4Impl.create();
-var _invView = mat4Impl.create();
-var _clip = new Float32Array([0, 0, 1, 1]);
-var _rayOrigin = new Float32Array(3);
-var rayHitClick = {
-  hitObject: null,
-  hitPoint: null,
-  hitNormal: null,
-  hitDistance: null,
-  rayOrigin: null,
-  rayDirection: null,
-  screenCoords: null,
-  camera: null,
-  timestamp: null,
-  button: null,
-  eventName: null
-};
-var rayHitMouseDown = {
-  hitObject: null,
-  hitPoint: null,
-  hitNormal: null,
-  hitDistance: null,
-  rayOrigin: null,
-  rayDirection: null,
-  screenCoords: null,
-  camera: null,
-  timestamp: null,
-  button: null,
-  eventName: null
-};
-var rayHitMouseMove = {
-  hitObject: null,
-  hitPoint: null,
-  hitNormal: null,
-  hitDistance: null,
-  rayOrigin: null,
-  rayDirection: null,
-  screenCoords: null,
-  camera: null,
-  timestamp: null,
-  button: null,
-  eventName: null
-};
-var rayHitEventClick = new CustomEvent("ray.hit.event", { detail: rayHitClick });
-var rayHitEventMouseDown = new CustomEvent("ray.hit.mousedown", { detail: rayHitMouseDown });
-var rayHitEventMouseMove = new CustomEvent("ray.hit.event.mm", { detail: rayHitMouseMove });
-function getRayFromMouse(event, canvas, camera) {
-  const rect = canvas.getBoundingClientRect();
-  let x2, y2;
-  if (document.pointerLockElement === canvas) {
-    x2 = 0;
-    y2 = 0;
-  } else {
-    x2 = (event.clientX - rect.left) / rect.width * 2 - 1;
-    y2 = -((event.clientY - rect.top) / rect.height * 2 - 1);
-  }
-  mat4Impl.inverse(camera.projectionMatrix, _invProj);
-  mat4Impl.inverse(camera.view, _invView);
-  _clip[0] = x2;
-  _clip[1] = y2;
-  let eye = vec4Impl.transformMat4(_clip, _invProj);
-  eye = [eye[0], eye[1], -1, 0];
-  const worldDir4 = vec4Impl.transformMat4(eye, _invView);
-  const rayDirection = vec3Impl.normalize([worldDir4[0], worldDir4[1], worldDir4[2]]);
-  _rayOrigin[0] = camera.position[0];
-  _rayOrigin[1] = camera.position[1];
-  _rayOrigin[2] = camera.position[2];
-  return { rayOrigin: _rayOrigin, rayDirection, screen: { x: x2, y: y2 } };
-}
-function rayIntersectsSphere(rayOrigin, rayDirection, sphereCenter, sphereRadius) {
-  const center = [sphereCenter.x, sphereCenter.y, sphereCenter.z];
-  const oc = vec3Impl.subtract(rayOrigin, center);
-  const a = vec3Impl.dot(rayDirection, rayDirection);
-  const b = 2 * vec3Impl.dot(oc, rayDirection);
-  const c = vec3Impl.dot(oc, oc) - sphereRadius * sphereRadius;
-  const discriminant = b * b - 4 * a * c;
-  if (discriminant < 0) return null;
-  const t = (-b - Math.sqrt(discriminant)) / (2 * a);
-  if (t < 0) return null;
-  const hitPoint = vec3Impl.add(rayOrigin, vec3Impl.mulScalar(rayDirection, t));
-  const hitNormal = vec3Impl.normalize(vec3Impl.subtract(hitPoint, center));
-  return { t, hitPoint, hitNormal };
-}
-function rayIntersectsAABB(rayOrigin, rayDirection, boxMin, boxMax) {
-  let tmin = (boxMin[0] - rayOrigin[0]) / rayDirection[0];
-  let tmax = (boxMax[0] - rayOrigin[0]) / rayDirection[0];
-  if (tmin > tmax) [tmin, tmax] = [tmax, tmin];
-  let tymin = (boxMin[1] - rayOrigin[1]) / rayDirection[1];
-  let tymax = (boxMax[1] - rayOrigin[1]) / rayDirection[1];
-  if (tymin > tymax) [tymin, tymax] = [tymax, tymin];
-  if (tmin > tymax || tymin > tmax) return null;
-  if (tymin > tmin) tmin = tymin;
-  if (tymax < tmax) tmax = tymax;
-  let tzmin = (boxMin[2] - rayOrigin[2]) / rayDirection[2];
-  let tzmax = (boxMax[2] - rayOrigin[2]) / rayDirection[2];
-  if (tzmin > tzmax) [tzmin, tzmax] = [tzmax, tzmin];
-  if (tmin > tzmax || tzmin > tmax) return null;
-  const t = Math.max(tmin, 0);
-  const hitPoint = vec3Impl.add(rayOrigin, vec3Impl.mulScalar(rayDirection, t));
-  return { t, hitPoint };
-}
-function computeWorldVertsAndAABB(object) {
-  if (object._aabbCache && object._aabbCache.x === object.position.x && object._aabbCache.y === object.position.y && object._aabbCache.z === object.position.z) {
-    return object._aabbCache;
-  }
-  const modelMatrix = object.getModelMatrix(object.position, true);
-  const min2 = [Infinity, Infinity, Infinity];
-  const max2 = [-Infinity, -Infinity, -Infinity];
-  const verts = object.meshA ? object.meshA.vertices : object.mesh.vertices;
-  for (let i = 0; i < verts.length; i += 3) {
-    const world = vec3Impl.transformMat4(
-      [verts[i], verts[i + 1], verts[i + 2]],
-      modelMatrix
-    );
-    min2[0] = Math.min(min2[0], world[0]);
-    min2[1] = Math.min(min2[1], world[1]);
-    min2[2] = Math.min(min2[2], world[2]);
-    max2[0] = Math.max(max2[0], world[0]);
-    max2[1] = Math.max(max2[1], world[1]);
-    max2[2] = Math.max(max2[2], world[2]);
-  }
-  object._aabbCache = {
-    modelMatrix,
-    boxMin: min2,
-    boxMax: max2,
-    x: object.position.x,
-    y: object.position.y,
-    z: object.position.z
-  };
-  return object._aabbCache;
-}
-function dispatchRayHitEvent(canvas, data) {
-  const e = data.eventName === "click" ? rayHitEventClick : data.eventName === "mousedown" ? rayHitEventMouseDown : rayHitEventMouseMove;
-  e.detail.hitObject = data.hitObject;
-  e.detail.hitPoint = data.hitPoint;
-  e.detail.hitNormal = data.hitNormal;
-  e.detail.hitDistance = data.hitDistance;
-  e.detail.rayOrigin = data.rayOrigin;
-  e.detail.rayDirection = data.rayDirection;
-  e.detail.screenCoords = data.screenCoords;
-  e.detail.camera = data.camera;
-  e.detail.timestamp = data.timestamp;
-  e.detail.button = data.button;
-  e.detail.eventName = data.eventName;
-  canvas.dispatchEvent(e);
-}
-function addRaycastsListener(canvasId = "canvas1", eventName = "click") {
-  const canvas = document.getElementById(canvasId);
-  if (!canvas) {
-    console.warn(`[Raycaster] Canvas with id '${canvasId}' not found.`);
-    return;
-  }
-  canvas.addEventListener(eventName, (event) => {
-    const camera = app.cameras[app.mainCameraParams.type];
-    const { rayOrigin, rayDirection, screen: screen2 } = getRayFromMouse(event, canvas, camera);
-    let closestHit = null;
-    for (const object of app.mainRenderBundle) {
-      if (!object.raycast?.enabled) continue;
-      const { boxMin, boxMax } = computeWorldVertsAndAABB(object);
-      const hitAABB = rayIntersectsAABB(rayOrigin, rayDirection, boxMin, boxMax);
-      if (!hitAABB) continue;
-      const sphereHit = rayIntersectsSphere(rayOrigin, rayDirection, object.position, object.raycast.radius);
-      const hit = sphereHit || hitAABB;
-      if (hit && (!closestHit || hit.t < closestHit.t)) {
-        closestHit = { ...hit, hitObject: object };
-        if (touchCoordinate.stopOnFirstDetectedHit) break;
-      }
-    }
-    if (closestHit) {
-      dispatchRayHitEvent(canvas, {
-        hitObject: closestHit.hitObject,
-        hitPoint: closestHit.hitPoint,
-        hitNormal: closestHit.hitNormal || null,
-        hitDistance: closestHit.t,
-        rayOrigin,
-        rayDirection,
-        screenCoords: screen2,
-        camera,
-        timestamp: performance.now(),
-        button: event.button,
-        eventName
-      });
-    }
-  });
-}
-function addRaycastsAABBListener(canvasId = "canvas1", eventName = "click") {
-  const canvas = document.getElementById(canvasId);
-  if (!canvas) {
-    console.warn(`[Raycaster] Canvas with id '${canvasId}' not found.`);
-    return;
-  }
-  canvas.addEventListener(eventName, (event) => {
-    const camera = app.cameras[app.mainCameraParams.type];
-    const { rayOrigin, rayDirection, screen: screen2 } = getRayFromMouse(event, canvas, camera);
-    let closestHit = null;
-    for (const object of app.mainRenderBundle) {
-      if (!object.raycast?.enabled || !object.getModelMatrix) continue;
-      const { boxMin, boxMax } = computeWorldVertsAndAABB(object);
-      const hitAABB = rayIntersectsAABB(rayOrigin, rayDirection, boxMin, boxMax);
-      if (!hitAABB) continue;
-      const hit = hitAABB;
-      if (hit && (!closestHit || hit.t < closestHit.t)) {
-        closestHit = { ...hit, hitObject: object };
-        if (touchCoordinate.stopOnFirstDetectedHit) break;
-      }
-    }
-    if (closestHit) {
-      dispatchRayHitEvent(canvas, {
-        hitObject: closestHit.hitObject,
-        hitPoint: closestHit.hitPoint,
-        hitNormal: closestHit.hitNormal || null,
-        hitDistance: closestHit.t,
-        rayOrigin,
-        rayDirection,
-        screenCoords: screen2,
-        camera,
-        timestamp: performance.now(),
-        button: event.button,
-        eventName
-      });
-    }
-  });
-}
-
-// src/engine/utils.js
-var supportsTouch = "ontouchstart" in window || navigator.msMaxTouchPoints;
-var MeshType = Object.freeze({ MESH: 0, INSTANCED: 1, PROCEDURAL: 2, BVHANIM: 3 });
-var touchStartHandler = function(e) {
-  if (e.touches.length > 1) {
-    e.preventDefault();
-  }
-};
-var touchMoveHandler = function(e) {
-  if (e.touches.length > 1) {
-    e.preventDefault();
-  }
-};
-var gestureStartHandler = function(e) {
-  e.preventDefault();
-};
-var preventZoomApplied = false;
-function preventZoom() {
-  if (preventZoomApplied) return;
-  preventZoomApplied = true;
-  document.addEventListener("touchstart", touchStartHandler, { passive: false });
-  document.addEventListener("touchmove", touchMoveHandler, { passive: false });
-  document.addEventListener("gesturestart", gestureStartHandler);
-}
-var screenOrientationSupported = null;
-function getOrientation() {
-  if (window.innerWidth > window.innerHeight) {
-    return "landscape";
-  } else {
-    return "portrait";
-  }
-}
-function getScreenOrientationSupport() {
-  if (screenOrientationSupported === null) {
-    screenOrientationSupported = !!(screen.orientation && screen.orientation.lock);
-  }
-  return screenOrientationSupported;
-}
-function checkLock() {
-  return getScreenOrientationSupport();
-}
-var cachedUserAgent = navigator.userAgent;
-var mobileRegexPatterns = [/Android/i, /webOS/i, /iPhone/i, /iPad/i, /iPod/i, /BlackBerry/i, /Windows Phone/i];
-var mobileCheckResult = null;
-function isMobile() {
-  if (mobileCheckResult !== null) return mobileCheckResult;
-  if (supportsTouch) {
-    mobileCheckResult = true;
-    return true;
-  }
-  mobileCheckResult = mobileRegexPatterns.some((pattern) => pattern.test(cachedUserAgent));
-  return mobileCheckResult;
-}
-function vecOf(p) {
-  if (p == null) return null;
-  if (p.x !== void 0) return p;
-  return { x: p[0], y: p[1], z: p[2] };
-}
-function degToRad(degrees) {
-  return degrees * Math.PI / 180;
-}
-function radToDeg(r2) {
-  return r2 * (180 / Math.PI);
-}
-function OSCILLATOR(min2, max2, step, options2) {
-  if (min2 == null || max2 == null || step == null) {
-    console.log("OSCILLATOR ERROR");
-    return;
-  }
-  var ROOT = this;
-  this.min0 = parseFloat(min2);
-  this.max0 = parseFloat(max2);
-  this.min = this.min0;
-  this.max = this.max0;
-  this.step = parseFloat(step);
-  this.value_ = this.min;
-  this.status = 0;
-  options2 = options2 || {};
-  this.regime = options2.regime || "pingpong";
-  this.resist = parseFloat(options2.resist) || 0;
-  this.resistMode = options2.resistMode || "linear";
-  this.stopEpsilon = options2.stopEpsilon || 0;
-  this.useDelta = options2.useDelta || false;
-  this.on_maximum_value = function() {
-  };
-  this.on_minimum_value = function() {
-  };
-  this.on_stop = function() {
-  };
-  this._applyResist = function() {
-    if (this.resist <= 0) return;
-    var range = this.max - this.min;
-    if (range <= 0) return;
-    var shrink;
-    if (this.resistMode === "exp") {
-      shrink = range * this.resist;
-    } else {
-      shrink = (this.max0 - this.min0) * this.resist;
-    }
-    this.min += shrink;
-    this.max -= shrink;
-    if (this.min > this.max) {
-      var c = (this.min + this.max) * 0.5;
-      this.min = this.max = c;
-    }
-  };
-  this.UPDATE = function(delta) {
-    var s = this.step;
-    if (this.useDelta && delta !== void 0) {
-      s = s * delta;
-    }
-    switch (this.regime) {
-      // ===== PING-PONG =====
-      case "pingpong":
-        if (this.status === 0) {
-          this.value_ += s;
-          if (this.value_ >= this.max) {
-            this.value_ = this.max;
-            this.status = 1;
-            ROOT.on_maximum_value();
-          }
-        } else {
-          this.value_ -= s;
-          if (this.value_ <= this.min) {
-            this.value_ = this.min;
-            this.status = 0;
-            this._applyResist();
-            ROOT.on_minimum_value();
-          }
-        }
-        break;
-      // ===== ONLY MIN → MAX =====
-      case "onlyFromMinToMax":
-        this.value_ += s;
-        if (this.value_ >= this.max) {
-          this.value_ = this.min;
-          this._applyResist();
-          ROOT.on_maximum_value();
-        }
-        break;
-      // ===== MAX → MIN =====
-      case "fromMaxToMin":
-        this.value_ -= s;
-        if (this.value_ <= this.min) {
-          this.value_ = this.max;
-          this._applyResist();
-          ROOT.on_minimum_value();
-        }
-        break;
-      // ===== ONE SHOT =====
-      case "oneShot":
-        this.value_ += s;
-        if (this.value_ >= this.max) {
-          this.value_ = this.max;
-          ROOT.on_stop();
-        }
-        break;
-      // ===== SPRING TO CENTER =====
-      case "springCenter":
-        var center = (this.min + this.max) * 0.5;
-        var force = (center - this.value_) * this.resist;
-        this.value_ += force + s;
-        if (Math.abs(center - this.value_) < this.stopEpsilon) {
-          this.value_ = center;
-          ROOT.on_stop();
-        }
-        break;
-    }
-    if (this.stopEpsilon > 0) {
-      if (this.max - this.min < this.stopEpsilon) {
-        ROOT.on_stop();
-      }
-    }
-    return this.value_;
-  };
-}
-var byId = function(id2) {
-  return document.getElementById(id2);
-};
-function randomFloatFromTo(min2, max2) {
-  return Math.random() * (max2 - min2) + min2;
-}
-function randomIntFromTo(min2, max2) {
-  if (typeof min2 === "object" || typeof max2 === "object") {
-    console.log(
-      "SYS : warning Desciption : Replace object with string , this >> " + typeof min2 + " and " + typeof min2 + " << must be string or number."
-    );
-  } else if (typeof min2 === "undefined" || typeof max2 === "undefined") {
-    console.log(
-      "SYS : warning Desciption : arguments (min, max) cant be undefined , this >> " + typeof min2 + " and " + typeof min2 + " << must be string or number."
-    );
-  } else {
-    return Math.floor(Math.random() * (max2 - min2 + 1) + min2);
-  }
-}
-var urlQuery = (function() {
-  var query_string = {};
-  var query = window.location.search.substring(1);
-  var vars = query.split("&");
-  for (var i = 0; i < vars.length; i++) {
-    var pair = vars[i].split("=");
-    if (typeof query_string[pair[0]] === "undefined") {
-      query_string[pair[0]] = decodeURIComponent(pair[1]);
-    } else if (typeof query_string[pair[0]] === "string") {
-      var arr = [query_string[pair[0]], decodeURIComponent(pair[1])];
-      query_string[pair[0]] = arr;
-    } else {
-      query_string[pair[0]].push(decodeURIComponent(pair[1]));
-    }
-  }
-  return query_string;
-})();
-var LOG_WARN = "background: gray; color: yellow; font-size:10px";
-var LOG_FUNNY = "font-family: stormfaze;color: #f1f033; font-size:15px;text-shadow: 2px 2px 4px #f335f4, 4px 4px 4px #d64444, 2px 2px 4px #c160a6, 6px 2px 0px #123de3;background:linear-gradient(90deg,#111,#222);";
-var LOG_FUNNY_SMALL = "font-family: stormfaze;color: #f1f033; font-size:10px;text-shadow: 2px 2px 4px #f335f4, 4px 4px 4px #d64444, 1px 1px 2px #c160a6, 3px 1px 0px #123de3;background:linear-gradient(90deg,#111,#222); ";
-var LOG_FUNNY_ARCADE = "font-family: system-ui; font-size:16px; font-weight:400;color:#ffffff;text-shadow: 2px 2px 6px #000;background:linear-gradient(90deg,#111,#222); padding:12px 18px;";
-var LOG_FUNNY_BIG_NEON = "font-family: stormfaze; font-size:30px; font-weight:900;color:#00ffff;text-shadow: 0 0 5px #01d6d6ff, 0 0 10px #00ffff, 4px 4px 0 #ff00ff;background:black; padding:14px 18px;";
-var LOG_FUNNY_EXTRABIG = "font-family: stormfaze; font-size:230px; font-weight:900;color:#00ffff;text-shadow: 0 0 5px #01d6d6ff, 0 0 10px #00ffff, 4px 4px 0 #ff00ff;background:black; padding:14px 18px;";
-function genName(length2) {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  let result2 = "";
-  for (let i = 0; i < length2; i++) {
-    result2 += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result2;
-}
-var meLoader = {
-  create: function(text = "RUN RETURN", callback) {
-    const loader = document.createElement("div");
-    loader.id = "loader";
-    Object.assign(loader.style, {
-      position: "fixed",
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-      top: "0",
-      left: "0",
-      width: "100vw",
-      height: "100vh",
-      zIndex: 9999,
-      background: "#000000ff",
-      fontFamily: "Orbitron, sans-serif",
-      cursor: "url(./res/icons/default.png) 0 0, auto"
-    });
-    loader.innerHTML = `
-  <div style="
-    font-size: 42px;
-    width: 50vw;
-    margin-top: -15%;
-    font-weight: 900;
-    color: #00ffff;
-    letter-spacing: 4px;
-    text-align: center;
-    text-shadow:
-      0 0 5px #00ffff,
-      0 0 10px #00ffff,
-      0 0 20px #00ffff,
-      0 0 40px #00ffff;
-    animation: glowPulse 1.5s infinite alternate;
-  ">
-    ${text}
-  </div>
-
-  <style>
-    @keyframes glowPulse {
-      from {
-        transform: scale(1);
-        text-shadow:
-          0 0 5px #00ffff,
-          0 0 10px #00ffff,
-          0 0 20px #00ffff;
-      }
-      to {
-        transform: scale(1.05);
-        text-shadow:
-          0 0 10px #00ffff,
-          0 0 20px #00ffff,
-          0 0 40px #00ffff,
-          0 0 80px #00ffff;
-      }
-    }
-  </style>
-`;
-    if (callback) loader.addEventListener("click", callback);
-    document.body.appendChild(loader);
-  },
-  destroy: function() {
-    if (byId("loader")) document.body.removeChild(byId("loader"));
-  }
-};
-var mb = {
-  root: () => byId("msgBox"),
-  pContent: () => byId("not-content"),
-  copy: function() {
-    navigator.clipboard.writeText(mb.root().children[0].innerText);
-  },
-  c: 0,
-  ic: 0,
-  t: {},
-  setContent: function(content, t) {
-    var iMsg = document.createElement("div");
-    iMsg.textContent = String(content);
-    iMsg.id = `msgbox-loc-${mb.c}`;
-    mb.root().appendChild(iMsg);
-    iMsg.classList.add("animate1");
-    if (t == "ok") {
-      iMsg.style = "font-family: stormfaze;color:white;padding:7px;margin:2px";
-    } else if (t == "spacial-case-mob") {
-      iMsg.style = "font-family: stormfaze;color:white;padding:7px;margin-left:-2px";
-    } else {
-      iMsg.style = "font-family: stormfaze;color:white;padding:7px;margin:2px";
-    }
-  },
-  kill: function() {
-    mb.root().remove();
-  },
-  show: function(content, t, delay2 = 1e3) {
-    mb.setContent(content, t);
-    mb.root().style.display = "block";
-    var loc2 = mb.c;
-    setTimeout(() => {
-      byId(`msgbox-loc-${loc2}`).classList.remove("fadeInDown");
-      byId(`msgbox-loc-${loc2}`).classList.add("fadeOut");
-      setTimeout(function() {
-        byId(`msgbox-loc-${loc2}`).style.display = "none";
-        byId(`msgbox-loc-${loc2}`).classList.remove("fadeOut");
-        byId(`msgbox-loc-${loc2}`).remove();
-        mb.ic++;
-        if (mb.c == mb.ic) {
-          mb.root().style.display = "none";
-        }
-      }, delay2);
-    }, 3 * delay2);
-    mb.c++;
-  },
-  error: function(content) {
-    if (mb.root() == null) return;
-    mb.root().classList.remove("success");
-    mb.root().classList.add("error");
-    mb.root().classList.add("fadeInDown");
-    mb.show(content, "err");
-  },
-  success: function(content) {
-    if (mb.root() == null) return;
-    mb.root().classList.remove("error");
-    mb.root().classList.add("success");
-    mb.root().classList.add("fadeInDown");
-    mb.show(content, "ok");
-  }
-};
-var jsonHeaders = new Headers({
-  "Content-Type": "application/json",
-  "Accept": "application/json"
-});
-var htmlHeader = new Headers({
-  "Content-Type": "text/html",
-  "Accept": "text/plain"
-});
-var FullScreenManagerElement = class {
-  constructor(targetElement = document.documentElement) {
-    this.target = targetElement;
-  }
-  isFullscreen() {
-    return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
-  }
-  request() {
-    const el2 = this.target;
-    return el2.requestFullscreen?.() || el2.webkitRequestFullscreen?.() || el2.mozRequestFullScreen?.() || el2.msRequestFullscreen?.();
-  }
-  exit() {
-    return document.exitFullscreen?.() || document.webkitExitFullscreen?.() || document.mozCancelFullScreen?.() || document.msExitFullscreen?.();
-  }
-  toggle() {
-    if (this.isFullscreen()) return this.exit();
-    return this.request();
-  }
-  onChange(callback) {
-    [
-      "fullscreenchange",
-      "webkitfullscreenchange",
-      "mozfullscreenchange",
-      "MSFullscreenChange"
-    ].forEach(
-      (evt) => document.addEventListener(evt, () => {
-        callback(this.isFullscreen(), this.target);
-      })
-    );
-  }
-};
-var FullscreenManager = class {
-  constructor() {
-    this.target = document.documentElement;
-  }
-  isFullscreen() {
-    return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
-  }
-  request() {
-    const el2 = this.target;
-    return el2.requestFullscreen?.() || el2.webkitRequestFullscreen?.() || el2.mozRequestFullScreen?.() || el2.msRequestFullscreen?.();
-  }
-  exit() {
-    return document.exitFullscreen?.() || document.webkitExitFullscreen?.() || document.mozCancelFullScreen?.() || document.msExitFullscreen?.();
-  }
-  toggle() {
-    return this.isFullscreen() ? this.exit() : this.request();
-  }
-  onChange(callback) {
-    [
-      "fullscreenchange",
-      "webkitfullscreenchange",
-      "mozfullscreenchange",
-      "MSFullscreenChange"
-    ].forEach(
-      (evt) => document.addEventListener(evt, () => {
-        callback(this.isFullscreen());
-      })
-    );
-  }
-};
-
-// src/me-config.js
-window.urlQ = urlQuery;
-var gpuSettings = {
-  features: {
-    "shader-f16": true,
-    "float32-filterable": true,
-    "float32-blendable": false,
-    "texture-compression-astc": false,
-    "texture-compression-etc2": false,
-    "bgra8unorm-storage": false,
-    "subgroups": true,
-    "clip-distances": false,
-    "dual-source-blending": false
-  }
-};
-var GPU_FEATURES = {
-  // Automatically enabled by engine
-  GROUP_1: [
-    "indirect-first-instance",
-    "depth32float-stencil8"
-  ],
-  // User can enable these
-  GROUP_2: [
-    "texture-compression-bc",
-    "shader-f16",
-    "float32-filterable",
-    "float32-blendable",
-    "texture-compression-astc",
-    "texture-compression-etc2",
-    "bgra8unorm-storage",
-    "subgroups",
-    "clip-distances",
-    "dual-source-blending"
-  ],
-  // Experimental / future
-  GROUP_3: [
-    "pipeline-statistics-query",
-    "depth-clamping",
-    "multi-planar-formats",
-    "timestamp-query"
-  ]
-};
-var MEConfig = {
-  fsManager: new FullScreenManagerElement(),
-  SHADOW_RES: isMobile() == true ? 256 : 512,
-  MAX_BONES: isMobile() == true ? 70 : 100,
-  MAX_SPOTLIGHTS: isMobile() == true ? 4 : 10,
-  GPUCullingRad: 200,
-  PHYSICS_GROUND_Y: -1,
-  PHYSICS_GROUND_BYX: 100,
-  PHYSICS_GROUND_BYZ: 100,
-  GRAVITY_Y_AXIS: -10,
-  MOUSE_SENS: 0.01,
-  TOUCH_SENS: 0.03,
-  CAM_SPEED: isMobile() == true ? 0.1 : 0.2,
-  LOAD_AFTER_CLICK_MOBILE: false,
-  FORCE_FULL_SCREEN: false,
-  SINGLE_CAMERA: true,
-  CACHE: true,
-  logLoopError: true,
-  construct: function(options2 = {}) {
-    if (urlQ["GRAVITY_Y_AXIS"]) {
-      this.GRAVITY_Y_AXIS = parseInt(urlQ["GRAVITY_Y_AXIS"]);
-    }
-    if (urlQ["PHYSICS_GROUND_BYX"]) {
-      this.PHYSICS_GROUND_BYX = parseInt(urlQ["PHYSICS_GROUND_BYX"]);
-    }
-    if (urlQ["PHYSICS_GROUND_BYZ"]) {
-      this.PHYSICS_GROUND_BYZ = parseInt(urlQ["PHYSICS_GROUND_BYZ"]);
-    }
-    if (urlQ["SHADOW_RES"]) {
-      this.SHADOW_RES = parseInt(urlQ["SHADOW_RES"]);
-    }
-    if (urlQ["MAX_SPOTLIGHTS"]) {
-      this.MAX_SPOTLIGHTS = parseInt(urlQ["MAX_SPOTLIGHTS"]);
-    }
-    if (options2.MAX_SPOTLIGHTS) {
-      this.MAX_SPOTLIGHTS = options2.MAX_SPOTLIGHTS;
-    }
-    if (urlQ["MAX_BONES"]) {
-      this.MAX_BONES = parseInt(urlQ["MAX_BONES"]);
-    }
-    if (options2.MAX_BONES) {
-      this.MAX_BONES = options2.MAX_BONES;
-    }
-    if (urlQ["GPUCullingRad"]) {
-      this.GPUCullingRad = parseInt(urlQ["GPUCullingRad"]);
-    }
-    if (options2.GPUCullingRad) {
-      this.GPUCullingRad = options2.GPUCullingRad;
-    }
-    if (urlQ["TOUCH_SENS"]) {
-      this.TOUCH_SENS = parseInt(urlQ["TOUCH_SENS"]);
-    }
-    if (options2.TOUCH_SENS) {
-      this.TOUCH_SENS = options2.TOUCH_SENS;
-    }
-    if (urlQ["MOUSE_SENS"]) {
-      this.MOUSE_SENS = parseInt(urlQ["MOUSE_SENS"]);
-    }
-    if (options2.MOUSE_SENS) {
-      this.MOUSE_SENS = options2.MOUSE_SENS;
-    }
-    if (urlQ["CAM_SPEED"]) {
-      this.CAM_SPEED = parseInt(urlQ["CAM_SPEED"]);
-    }
-    if (options2.CAM_SPEED) {
-      this.CAM_SPEED = options2.CAM_SPEED;
-    }
-    if (urlQ["LOAD_AFTER_CLICK_MOBILE"]) {
-      this.LOAD_AFTER_CLICK_MOBILE = urlQ["LOAD_AFTER_CLICK_MOBILE"];
-    }
-    if (options2.LOAD_AFTER_CLICK_MOBILE) {
-      this.LOAD_AFTER_CLICK_MOBILE = options2.LOAD_AFTER_CLICK_MOBILE;
-    }
-    if (urlQ["fs"]) {
-      this.FORCE_FULL_SCREEN = Boolean(urlQ["fs"]);
-      console.log(`%cForce fullScreen : ${this.FORCE_FULL_SCREEN}`, LOG_FUNNY_ARCADE);
-      this.fsManager.request();
-      this._fs = () => {
-        this.fsManager.request();
-        setTimeout(() => {
-          dispatchEvent(new CustomEvent("run_mobile_fs", {}));
-        }, 36);
-        window.removeEventListener("click", this._fs);
-      };
-      window.addEventListener("click", this._fs);
-    }
-    if (urlQ["PHYSICS_GROUND_Y"] != null) {
-      this.PHYSICS_GROUND_Y = parseFloat(urlQ["PHYSICS_GROUND_Y"]);
-    }
-  },
-  checkOffScreen: function() {
-    if ("OffscreenCanvas" in window) {
-      console.log(`$cOffscreenCanvas is supported`, LOG_FUNNY_ARCADE);
-      return true;
-    } else {
-      console.log(`%cOffscreenCanvas is NOT supported.`, LOG_FUNNY_ARCADE);
-      return false;
-    }
-  }
-};
 
 // src/engine/cameras.js
 var WASDCamera = class _WASDCamera {
@@ -3574,11 +3237,11 @@ var FirstPersonCamera = class _FirstPersonCamera {
       if (lookTouchId !== null) return;
       const touches = e.changedTouches;
       for (let i = 0; i < touches.length; i++) {
-        const t = touches[i];
-        if (t.target === canvas) {
-          lookTouchId = t.identifier;
-          touchStartX = t.clientX;
-          touchStartY = t.clientY;
+        const t2 = touches[i];
+        if (t2.target === canvas) {
+          lookTouchId = t2.identifier;
+          touchStartX = t2.clientX;
+          touchStartY = t2.clientY;
           break;
         }
       }
@@ -3973,8 +3636,8 @@ var CinematicCamera = class _CinematicCamera {
     this._dirtyAngle = true;
     return this;
   };
-  seekT = (t) => {
-    this._t = t;
+  seekT = (t2) => {
+    this._t = t2;
     return this;
   };
   shake = (amplitude, duration, frequency = 15) => {
@@ -9192,10 +8855,10 @@ var Materials = class {
     });
     this.writeParamsMirror = (o2) => {
       const data = new Float32Array(16);
-      const t = o2.mirrorTint ?? cfg.mirrorTint;
-      data[0] = t[0];
-      data[1] = t[1];
-      data[2] = t[2];
+      const t2 = o2.mirrorTint ?? cfg.mirrorTint;
+      data[0] = t2[0];
+      data[1] = t2[1];
+      data[2] = t2[2];
       data[3] = o2.reflectivity ?? cfg.reflectivity;
       const ic = o2.illuminateColor ?? cfg.illuminateColor;
       data[4] = ic[0];
@@ -11581,12 +11244,12 @@ var GeometryFactory = class _GeometryFactory {
   static mobius(R = 1, width = 0.3, segments = 64, twists = 1) {
     const positions = [], uvs = [], indices = [];
     for (let i = 0; i <= segments; i++) {
-      const t = i / segments * Math.PI * 2;
+      const t2 = i / segments * Math.PI * 2;
       for (let j = -1; j <= 1; j += 2) {
         const s = j * width / 2;
-        const x2 = (R + s * Math.cos(t * twists / 2)) * Math.cos(t);
-        const y2 = (R + s * Math.cos(t * twists / 2)) * Math.sin(t);
-        const z = s * Math.sin(t * twists / 2);
+        const x2 = (R + s * Math.cos(t2 * twists / 2)) * Math.cos(t2);
+        const y2 = (R + s * Math.cos(t2 * twists / 2)) * Math.sin(t2);
+        const z = s * Math.sin(t2 * twists / 2);
         positions.push(x2, y2, z);
         uvs.push(i / segments, (j + 1) / 2);
       }
@@ -11905,42 +11568,42 @@ var GeometryFactory = class _GeometryFactory {
     return { positions: new Float32Array(positions), uvs: new Float32Array(uvs), indices: new Uint16Array(indices) };
   }
   static icosahedron(R = 1) {
-    const t = (1 + Math.sqrt(5)) / 2;
+    const t2 = (1 + Math.sqrt(5)) / 2;
     const verts = [
       -1,
-      t,
+      t2,
       0,
       1,
-      t,
+      t2,
       0,
       -1,
-      -t,
+      -t2,
       0,
       1,
-      -t,
+      -t2,
       0,
       0,
       -1,
-      t,
+      t2,
       0,
       1,
-      t,
+      t2,
       0,
       -1,
-      -t,
+      -t2,
       0,
       1,
-      -t,
-      t,
+      -t2,
+      t2,
       0,
       -1,
-      t,
+      t2,
       0,
       1,
-      -t,
+      -t2,
       0,
       -1,
-      -t,
+      -t2,
       0,
       1
     ];
@@ -12083,9 +11746,9 @@ var GeometryFactory = class _GeometryFactory {
     const uvs = [0.5, 0.5];
     const indices = [];
     for (let i = 0; i <= segments; i++) {
-      const t = i / segments * Math.PI * 2;
-      const x2 = 16 * Math.pow(Math.sin(t), 3) * S * 0.05;
-      const y2 = (13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)) * S * 0.05;
+      const t2 = i / segments * Math.PI * 2;
+      const x2 = 16 * Math.pow(Math.sin(t2), 3) * S * 0.05;
+      const y2 = (13 * Math.cos(t2) - 5 * Math.cos(2 * t2) - 2 * Math.cos(3 * t2) - Math.cos(4 * t2)) * S * 0.05;
       positions.push(x2, y2, 0);
       uvs.push((x2 / S + 1) / 2, (y2 / S + 1) / 2);
       if (i > 1) indices.push(0, i, i + 1);
@@ -13111,11 +12774,11 @@ var FlameEffect = class _FlameEffect {
     p[1] = this.turbulence;
     p[2] = this.stretch;
     p[3] = 0;
-    const t = this._tint;
-    t[0] = this.tint[0];
-    t[1] = this.tint[1];
-    t[2] = this.tint[2];
-    t[3] = this.tintStrength;
+    const t2 = this._tint;
+    t2[0] = this.tint[0];
+    t2[1] = this.tint[1];
+    t2[2] = this.tint[2];
+    t2[3] = this.tintStrength;
     this._uniformData.set(finalMat, 0);
     this._uniformData[16] = this.time;
     this._uniformData[17] = this.speed;
@@ -13507,31 +13170,31 @@ var FlameEmitter = class _FlameEmitter {
     const count = Math.min(this.instanceTargets.length, this.maxParticles);
     const floatsPerInstance = 28;
     for (let i = 0; i < count; i++) {
-      const t = this.instanceTargets[i];
+      const t2 = this.instanceTargets[i];
       for (let j = 0; j < 3; j++) {
-        t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * this.scaleCoeficient;
+        t2.currentPosition[j] += (t2.position[j] - t2.currentPosition[j]) * this.scaleCoeficient;
       }
       const local2 = this._localMatrix;
       mat4Impl.identity(local2);
-      mat4Impl.translate(local2, t.currentPosition, local2);
-      mat4Impl.rotateY(local2, t.rotation, local2);
-      mat4Impl.scale(local2, t.currentScale, local2);
+      mat4Impl.translate(local2, t2.currentPosition, local2);
+      mat4Impl.rotateY(local2, t2.rotation, local2);
+      mat4Impl.scale(local2, t2.currentScale, local2);
       mat4Impl.identity(this._finalMatrix);
       mat4Impl.multiply(baseModelMatrix, local2, this._finalMatrix);
       const offset = i * floatsPerInstance;
       this.instanceData.set(this._finalMatrix, offset);
-      this.instanceData[offset + 16] = t.time;
-      this.instanceData[offset + 17] = t.speed ?? 1;
+      this.instanceData[offset + 16] = t2.time;
+      this.instanceData[offset + 17] = t2.speed ?? 1;
       this.instanceData[offset + 18] = 0;
       this.instanceData[offset + 19] = 0;
-      this.instanceData[offset + 20] = (t.intensity ?? 1) * this.intensity;
-      this.instanceData[offset + 21] = t.turbulence ?? 0.5;
-      this.instanceData[offset + 22] = t.stretch ?? 1;
+      this.instanceData[offset + 20] = (t2.intensity ?? 1) * this.intensity;
+      this.instanceData[offset + 21] = t2.turbulence ?? 0.5;
+      this.instanceData[offset + 22] = t2.stretch ?? 1;
       this.instanceData[offset + 23] = 0;
-      this.instanceData[offset + 24] = t.color[0];
-      this.instanceData[offset + 25] = t.color[1];
-      this.instanceData[offset + 26] = t.color[2];
-      this.instanceData[offset + 27] = t.tintStrength ?? 0;
+      this.instanceData[offset + 24] = t2.color[0];
+      this.instanceData[offset + 25] = t2.color[1];
+      this.instanceData[offset + 26] = t2.color[2];
+      this.instanceData[offset + 27] = t2.tintStrength ?? 0;
     }
     this.device.queue.writeBuffer(this.modelBuffer, 0, this.instanceData.subarray(0, count * floatsPerInstance));
   };
@@ -14565,8 +14228,8 @@ var MEMeshObj = class extends Materials {
       o2.material.useTextureFromGlb = false;
     }
     this.texturesPaths = [];
-    o2.texturesPaths.forEach((t) => {
-      this.texturesPaths.push(t);
+    o2.texturesPaths.forEach((t2) => {
+      this.texturesPaths.push(t2);
     });
     this._translateVec = new Float32Array(3);
     this._rotAxisVec = new Float32Array(3);
@@ -14902,18 +14565,18 @@ var MEMeshObj = class extends Materials {
         });
       }
       this.topology = "triangle-list";
-      this.setTopology = (t, cullMode = "none", frontFace = "ccw") => {
-        const isStrip = t === "triangle-strip" || t === "line-strip";
+      this.setTopology = (t2, cullMode = "none", frontFace = "ccw") => {
+        const isStrip = t2 === "triangle-strip" || t2 === "line-strip";
         if (isStrip) {
           this.primitive = {
-            topology: t,
+            topology: t2,
             stripIndexFormat: "uint16",
             cullMode,
             frontFace
           };
         } else {
           this.primitive = {
-            topology: t,
+            topology: t2,
             cullMode,
             frontFace
           };
@@ -15760,6 +15423,147 @@ var MatrixSounds = class {
     }
   }
 };
+
+// src/engine/loader-obj.js
+var constructMesh = class {
+  constructor(objectData, inputArg) {
+    this.inputArg = inputArg;
+    this.objectData = objectData;
+    this.create(objectData, inputArg);
+    this.setScale = (s) => {
+      this.inputArg.scale = s;
+      this.create(this.objectData, this.inputArg);
+    };
+    this.updateBuffers = () => {
+      this.inputArg.scale = [0.1, 0.1, 0.1];
+      this.create(this.objectData, this.inputArg);
+    };
+  }
+  create = (objectData, inputArg, callback) => {
+    if (typeof callback === "undefined") callback = function() {
+    };
+    let initOrientation = [0, 1, 2];
+    var verts = [], vertNormals = [], textures = [], unpacked = {};
+    unpacked.verts = [];
+    unpacked.norms = [];
+    unpacked.textures = [];
+    unpacked.hashindices = {};
+    unpacked.indices = [];
+    unpacked.index = 0;
+    var lines = objectData.split("\n");
+    if (inputArg.swap[0] !== null) {
+      swap(inputArg.swap[0], inputArg.swap[1], initOrientation);
+    }
+    var VERTEX_RE = /^v\s/;
+    var NORMAL_RE = /^vn\s/;
+    var TEXTURE_RE = /^vt\s/;
+    var FACE_RE = /^f\s/;
+    var WHITESPACE_RE = /\s+/;
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i].trim();
+      var elements = line.split(WHITESPACE_RE);
+      elements.shift();
+      if (VERTEX_RE.test(line)) {
+        verts.push.apply(verts, elements);
+      } else if (NORMAL_RE.test(line)) {
+        vertNormals.push.apply(vertNormals, elements);
+      } else if (TEXTURE_RE.test(line)) {
+        textures.push.apply(textures, elements);
+      } else if (FACE_RE.test(line)) {
+        var quad = false;
+        for (var j = 0, eleLen = elements.length; j < eleLen; j++) {
+          if (j === 3 && !quad) {
+            j = 2;
+            quad = true;
+          }
+          if (elements[j] in unpacked.hashindices) {
+            unpacked.indices.push(unpacked.hashindices[elements[j]]);
+          } else {
+            var vertex = elements[j].split("/");
+            unpacked.verts.push(+verts[(vertex[0] - 1) * 3 + initOrientation[0]] * inputArg.scale[0]);
+            unpacked.verts.push(+verts[(vertex[0] - 1) * 3 + initOrientation[1]] * inputArg.scale[1]);
+            unpacked.verts.push(+verts[(vertex[0] - 1) * 3 + initOrientation[2]] * inputArg.scale[2]);
+            if (textures.length) {
+              unpacked.textures.push(+textures[(vertex[1] - 1) * 2 + 0]);
+              unpacked.textures.push(+textures[(vertex[1] - 1) * 2 + 1]);
+            }
+            unpacked.norms.push(+vertNormals[(vertex[2] - 1) * 3 + 0]);
+            unpacked.norms.push(+vertNormals[(vertex[2] - 1) * 3 + 1]);
+            unpacked.norms.push(+vertNormals[(vertex[2] - 1) * 3 + 2]);
+            unpacked.hashindices[elements[j]] = unpacked.index;
+            unpacked.indices.push(unpacked.index);
+            unpacked.index += 1;
+          }
+          if (j === 3 && quad) {
+            unpacked.indices.push(unpacked.hashindices[elements[0]]);
+          }
+        }
+      }
+    }
+    this.vertices = unpacked.verts;
+    this.vertexNormals = unpacked.norms;
+    this.textures = unpacked.textures;
+    this.indices = unpacked.indices;
+    callback();
+    return this;
+  };
+};
+var Ajax = function() {
+  var _this = this;
+  this.xmlhttp = new XMLHttpRequest();
+  this.get = function(url, callback) {
+    _this.xmlhttp.onreadystatechange = function() {
+      if (_this.xmlhttp.readyState === 4) {
+        callback(_this.xmlhttp.responseText, _this.xmlhttp.status);
+      }
+    };
+    _this.xmlhttp.open("GET", url, true);
+    _this.xmlhttp.send();
+  };
+};
+var downloadMeshes = function(nameAndURLs, completionCallback, inputArg) {
+  var semaphore = Object.keys(nameAndURLs).length;
+  var error = false;
+  if (typeof inputArg === "undefined") {
+    var inputArg = {
+      scale: [1, 1, 1],
+      swap: [null]
+    };
+  }
+  if (typeof inputArg.scale === "undefined") inputArg.scale = [1, 1, 1];
+  if (typeof inputArg.swap === "undefined") inputArg.swap = [null];
+  var meshes = {};
+  for (var mesh_name in nameAndURLs) {
+    if (nameAndURLs.hasOwnProperty(mesh_name)) {
+      new Ajax().get(
+        nameAndURLs[mesh_name],
+        /* @__PURE__ */ (function(name2) {
+          return function(data, status) {
+            if (status === 200) {
+              meshes[name2] = new constructMesh(data, inputArg);
+            } else {
+              error = true;
+              console.error('An error has occurred and the mesh "' + name2 + '" could not be downloaded.');
+            }
+            semaphore--;
+            if (semaphore === 0) {
+              if (error) {
+                console.error("An error has occurred and one or meshes has not been downloaded. The execution of the script has terminated.");
+                throw "";
+              }
+              completionCallback(meshes, inputArg.scale);
+            }
+          };
+        })(mesh_name)
+      );
+    }
+  }
+};
+function play(nameAni) {
+  this.animations.active = nameAni;
+  this.currentAni = this.animations[this.animations.active].from;
+  this.playing = true;
+}
 
 // src/shaders/vertexShadow.wgsl.js
 var vertexShadowWGSL = () => `
@@ -17235,25 +17039,25 @@ function identity(dst) {
 function transpose2(m, dst) {
   dst = dst || new MatType2(16);
   if (dst === m) {
-    let t;
-    t = m[1];
+    let t2;
+    t2 = m[1];
     m[1] = m[4];
-    m[4] = t;
-    t = m[2];
+    m[4] = t2;
+    t2 = m[2];
     m[2] = m[8];
-    m[8] = t;
-    t = m[3];
+    m[8] = t2;
+    t2 = m[3];
     m[3] = m[12];
-    m[12] = t;
-    t = m[6];
+    m[12] = t2;
+    t2 = m[6];
     m[6] = m[9];
-    m[9] = t;
-    t = m[7];
+    m[9] = t2;
+    t2 = m[7];
     m[7] = m[13];
-    m[13] = t;
-    t = m[11];
+    m[13] = t2;
+    t2 = m[11];
     m[11] = m[14];
-    m[14] = t;
+    m[14] = t2;
     return dst;
   }
   const m00 = m[0 * 4 + 0];
@@ -18221,20 +18025,20 @@ var MEBvhJoint = class {
   }
   matrixFromKeyframe(frameData) {
     const m = this.createIdentityMatrix();
-    let t = [0, 0, 0];
+    let t2 = [0, 0, 0];
     let r2 = [0, 0, 0];
     for (let i = 0; i < this.channels.length; i++) {
       const channel = this.channels[i];
       const value = frameData[this.channelOffset + i];
       switch (channel) {
         case "Xposition":
-          t[0] = value;
+          t2[0] = value;
           break;
         case "Yposition":
-          t[1] = value;
+          t2[1] = value;
           break;
         case "Zposition":
-          t[2] = value;
+          t2[2] = value;
           break;
         case "Xrotation":
           r2[0] = degToRad2(value);
@@ -18247,7 +18051,7 @@ var MEBvhJoint = class {
           break;
       }
     }
-    mat4Impl2.translate(m, t, m);
+    mat4Impl2.translate(m, t2, m);
     mat4Impl2.rotateX(m, r2[0], m);
     mat4Impl2.rotateY(m, r2[1], m);
     mat4Impl2.rotateZ(m, r2[2], m);
@@ -19004,7 +18808,7 @@ function scale3(out, a, v) {
 function rotate3(out, a, rad, axis) {
   var x2 = axis[0], y2 = axis[1], z = axis[2];
   var len2 = Math.sqrt(x2 * x2 + y2 * y2 + z * z);
-  var s, c, t;
+  var s, c, t2;
   var a00, a01, a02, a03;
   var a10, a11, a12, a13;
   var a20, a21, a22, a23;
@@ -19020,7 +18824,7 @@ function rotate3(out, a, rad, axis) {
   z *= len2;
   s = Math.sin(rad);
   c = Math.cos(rad);
-  t = 1 - c;
+  t2 = 1 - c;
   a00 = a[0];
   a01 = a[1];
   a02 = a[2];
@@ -19033,15 +18837,15 @@ function rotate3(out, a, rad, axis) {
   a21 = a[9];
   a22 = a[10];
   a23 = a[11];
-  b00 = x2 * x2 * t + c;
-  b01 = y2 * x2 * t + z * s;
-  b02 = z * x2 * t - y2 * s;
-  b10 = x2 * y2 * t - z * s;
-  b11 = y2 * y2 * t + c;
-  b12 = z * y2 * t + x2 * s;
-  b20 = x2 * z * t + y2 * s;
-  b21 = y2 * z * t - x2 * s;
-  b22 = z * z * t + c;
+  b00 = x2 * x2 * t2 + c;
+  b01 = y2 * x2 * t2 + z * s;
+  b02 = z * x2 * t2 - y2 * s;
+  b10 = x2 * y2 * t2 - z * s;
+  b11 = y2 * y2 * t2 + c;
+  b12 = z * y2 * t2 + x2 * s;
+  b20 = x2 * z * t2 + y2 * s;
+  b21 = y2 * z * t2 - x2 * s;
+  b22 = z * z * t2 + c;
   out[0] = a00 * b00 + a10 * b01 + a20 * b02;
   out[1] = a01 * b00 + a11 * b01 + a21 * b02;
   out[2] = a02 * b00 + a12 * b01 + a22 * b02;
@@ -19196,7 +19000,7 @@ function fromScaling(out, v) {
 function fromRotation(out, rad, axis) {
   var x2 = axis[0], y2 = axis[1], z = axis[2];
   var len2 = Math.sqrt(x2 * x2 + y2 * y2 + z * z);
-  var s, c, t;
+  var s, c, t2;
   if (len2 < EPSILON3) {
     return null;
   }
@@ -19206,18 +19010,18 @@ function fromRotation(out, rad, axis) {
   z *= len2;
   s = Math.sin(rad);
   c = Math.cos(rad);
-  t = 1 - c;
-  out[0] = x2 * x2 * t + c;
-  out[1] = y2 * x2 * t + z * s;
-  out[2] = z * x2 * t - y2 * s;
+  t2 = 1 - c;
+  out[0] = x2 * x2 * t2 + c;
+  out[1] = y2 * x2 * t2 + z * s;
+  out[2] = z * x2 * t2 - y2 * s;
   out[3] = 0;
-  out[4] = x2 * y2 * t - z * s;
-  out[5] = y2 * y2 * t + c;
-  out[6] = z * y2 * t + x2 * s;
+  out[4] = x2 * y2 * t2 - z * s;
+  out[5] = y2 * y2 * t2 + c;
+  out[6] = z * y2 * t2 + x2 * s;
   out[7] = 0;
-  out[8] = x2 * z * t + y2 * s;
-  out[9] = y2 * z * t - x2 * s;
-  out[10] = z * z * t + c;
+  out[8] = x2 * z * t2 + y2 * s;
+  out[9] = y2 * z * t2 - x2 * s;
+  out[10] = z * z * t2 + c;
   out[11] = 0;
   out[12] = 0;
   out[13] = 0;
@@ -20617,7 +20421,7 @@ var BVHPlayer = class extends MEMeshObj {
     const numFrames = inputAccessor.count;
     return numFrames;
   }
-  composeTRS(t, q, s, out) {
+  composeTRS(t2, q, s, out) {
     const x2 = q[0], y2 = q[1], z = q[2], w = q[3];
     const x22 = x2 + x2, y22 = y2 + y2, z2 = z + z;
     const xx = x2 * x22, xy = x2 * y22, xz = x2 * z2;
@@ -20635,9 +20439,9 @@ var BVHPlayer = class extends MEMeshObj {
     out[9] = (yz - wx) * s[2];
     out[10] = (1 - (xx + yy)) * s[2];
     out[11] = 0;
-    out[12] = t[0];
-    out[13] = t[1];
-    out[14] = t[2];
+    out[12] = t2[0];
+    out[13] = t2[1];
+    out[14] = t2[2];
     out[15] = 1;
   }
   update(now) {
@@ -20745,19 +20549,19 @@ var BVHPlayer = class extends MEMeshObj {
     throw new Error("No binary data found in GLB buffer[0]");
   }
   // --- helpers
-  lerpVec(a, b, t) {
-    return a.map((v, i) => v * (1 - t) + b[i] * t);
+  lerpVec(a, b, t2) {
+    return a.map((v, i) => v * (1 - t2) + b[i] * t2);
   }
   // Example quaternion slerp (a,b = [x,y,z,w])
-  quatSlerp(a, b, t) {
+  quatSlerp(a, b, t2) {
     let dot2 = a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3];
     if (dot2 < 0) {
       b = b.map((v) => -v);
       dot2 = -dot2;
     }
-    if (dot2 > 0.9995) return this.lerpVec(a, b, t);
+    if (dot2 > 0.9995) return this.lerpVec(a, b, t2);
     const theta0 = Math.acos(dot2);
-    const theta = theta0 * t;
+    const theta = theta0 * t2;
     const sinTheta = Math.sin(theta);
     const sinTheta0 = Math.sin(theta0);
     const s0 = Math.cos(theta) - dot2 * sinTheta / sinTheta0;
@@ -20798,7 +20602,7 @@ var BVHPlayer = class extends MEMeshObj {
     return m;
   }
   decomposeMatrix(m) {
-    const t = new Float32Array([m[12], m[13], m[14]]);
+    const t2 = new Float32Array([m[12], m[13], m[14]]);
     const cx = [m[0], m[1], m[2]];
     const cy = [m[4], m[5], m[6]];
     const cz = [m[8], m[9], m[10]];
@@ -20843,9 +20647,9 @@ var BVHPlayer = class extends MEMeshObj {
     }
     const rot2 = new Float32Array([qx, qy, qz, qw]);
     const scale4 = new Float32Array([sx, sy, sz]);
-    return { translation: t, rotation: rot2, scale: scale4 };
+    return { translation: t2, rotation: rot2, scale: scale4 };
   }
-  slerp(arr0, off0, arr1, off1, t, out) {
+  slerp(arr0, off0, arr1, off1, t2, out) {
     let ax = arr0[off0], ay = arr0[off0 + 1], az = arr0[off0 + 2], aw = arr0[off0 + 3];
     let bx = arr1[off1], by = arr1[off1 + 1], bz = arr1[off1 + 2], bw = arr1[off1 + 3];
     let dot2 = ax * bx + ay * by + az * bz + aw * bw;
@@ -20855,10 +20659,10 @@ var BVHPlayer = class extends MEMeshObj {
     bz *= flip;
     bw *= flip;
     if (dot2 > 0.9995) {
-      out[0] = ax + t * (bx - ax);
-      out[1] = ay + t * (by - ay);
-      out[2] = az + t * (bz - az);
-      out[3] = aw + t * (bw - aw);
+      out[0] = ax + t2 * (bx - ax);
+      out[1] = ay + t2 * (by - ay);
+      out[2] = az + t2 * (bz - az);
+      out[3] = aw + t2 * (bw - aw);
       const len2 = Math.sqrt(out[0] ** 2 + out[1] ** 2 + out[2] ** 2 + out[3] ** 2);
       out[0] /= len2;
       out[1] /= len2;
@@ -20868,8 +20672,8 @@ var BVHPlayer = class extends MEMeshObj {
     }
     const theta0 = Math.acos(dot2);
     const sinTheta0 = Math.sin(theta0);
-    const s0 = Math.cos(theta0 * t) - dot2 * Math.sin(theta0 * t) / sinTheta0;
-    const s1 = Math.sin(theta0 * t) / sinTheta0;
+    const s0 = Math.cos(theta0 * t2) - dot2 * Math.sin(theta0 * t2) / sinTheta0;
+    const s1 = Math.sin(theta0 * t2) / sinTheta0;
     out[0] = s0 * ax + s1 * bx;
     out[1] = s0 * ay + s1 * by;
     out[2] = s0 * az + s1 * bz;
@@ -21689,10 +21493,10 @@ var MaterialsInstanced = class {
     });
     this.writeParamsMirror = (o2) => {
       const data = new Float32Array(16);
-      const t = o2.mirrorTint ?? cfg.mirrorTint;
-      data[0] = t[0];
-      data[1] = t[1];
-      data[2] = t[2];
+      const t2 = o2.mirrorTint ?? cfg.mirrorTint;
+      data[0] = t2[0];
+      data[1] = t2[1];
+      data[2] = t2[2];
       data[3] = o2.reflectivity ?? cfg.reflectivity;
       const ic = o2.illuminateColor ?? cfg.illuminateColor;
       data[4] = ic[0];
@@ -22533,19 +22337,19 @@ var GenGeo = class _GenGeo {
   updateInstanceData = (baseModelMatrix) => {
     const count = Math.min(this.instanceCount, this.maxInstances);
     for (let i = 0; i < count; i++) {
-      const t = this.instanceTargets[i];
+      const t2 = this.instanceTargets[i];
       for (let j = 0; j < 3; j++) {
-        t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * this.lerpSpeed;
-        t.currentScale[j] += (t.scale[j] - t.currentScale[j]) * this.lerpSpeed;
+        t2.currentPosition[j] += (t2.position[j] - t2.currentPosition[j]) * this.lerpSpeed;
+        t2.currentScale[j] += (t2.scale[j] - t2.currentScale[j]) * this.lerpSpeed;
       }
       const local2 = mat4Impl.identity();
-      mat4Impl.translate(local2, t.currentPosition, local2);
-      mat4Impl.scale(local2, t.currentScale, local2);
+      mat4Impl.translate(local2, t2.currentPosition, local2);
+      mat4Impl.scale(local2, t2.currentScale, local2);
       const finalMat = mat4Impl.identity();
       mat4Impl.multiply(baseModelMatrix, local2, finalMat);
       const offset = i * this.floatsPerInstance;
       this.instanceData.set(finalMat, offset);
-      this.instanceData.set(t.color, offset + 16);
+      this.instanceData.set(t2.color, offset + 16);
     }
     const activeFloatCount = count * this.floatsPerInstance;
     const activeBytes = activeFloatCount * 4;
@@ -23191,25 +22995,25 @@ var GenGeoTexture = class _GenGeoTexture {
     }
     const count = Math.min(this.instanceCount, this.maxInstances);
     for (let i = 0; i < count; i++) {
-      const t = this.instanceTargets[i];
+      const t2 = this.instanceTargets[i];
       for (let j = 0; j < 3; j++) {
-        t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * this.lerpSpeed;
-        t.currentScale[j] += (t.scale[j] - t.currentScale[j]) * this.lerpSpeed;
+        t2.currentPosition[j] += (t2.position[j] - t2.currentPosition[j]) * this.lerpSpeed;
+        t2.currentScale[j] += (t2.scale[j] - t2.currentScale[j]) * this.lerpSpeed;
       }
       mat4Impl.identity(this._localMatrix);
       if (this.rotateEffect) {
         mat4Impl.rotateY(this._localMatrix, this.rotateAngle, this._localMatrix);
       }
-      mat4Impl.translate(this._localMatrix, t.currentPosition, this._localMatrix);
-      mat4Impl.scale(this._localMatrix, t.currentScale, this._localMatrix);
+      mat4Impl.translate(this._localMatrix, t2.currentPosition, this._localMatrix);
+      mat4Impl.scale(this._localMatrix, t2.currentScale, this._localMatrix);
       mat4Impl.identity(this._finalMatrix);
       mat4Impl.multiply(baseModelMatrix, this._localMatrix, this._finalMatrix);
       const offset = i * this.floatsPerInstance;
       this.instanceData.set(this._finalMatrix, offset);
-      this.instanceData[offset + 16] = t.color[0];
-      this.instanceData[offset + 17] = t.color[1];
-      this.instanceData[offset + 18] = t.color[2];
-      this.instanceData[offset + 19] = t.color[3];
+      this.instanceData[offset + 16] = t2.color[0];
+      this.instanceData[offset + 17] = t2.color[1];
+      this.instanceData[offset + 18] = t2.color[2];
+      this.instanceData[offset + 19] = t2.color[3];
     }
     const activeFloatCount = count * this.floatsPerInstance;
     this.device.queue.writeBuffer(this.modelBuffer, 0, this.instanceData.subarray(0, activeFloatCount));
@@ -23413,29 +23217,29 @@ var GenGeoTexture2 = class _GenGeoTexture2 {
     const count = Math.min(this.instanceCount, this.maxInstances);
     let anyInstanceDirty = this.isDirty;
     for (let i = 0; i < count; i++) {
-      const t = this.instanceTargets[i];
+      const t2 = this.instanceTargets[i];
       if (this.rotateEffect) {
-        t.rotation[1] += this.rotateEffectSpeed * Math.PI / 180 * deltaTime;
+        t2.rotation[1] += this.rotateEffectSpeed * Math.PI / 180 * deltaTime;
         anyInstanceDirty = true;
       }
       const frameAwareLerpSpeed = this.lerpSpeed * Math.min(deltaTime * 60, 1);
       for (let j = 0; j < 3; j++) {
-        const prevPos = t.currentPosition[j];
-        t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * frameAwareLerpSpeed;
-        t.currentScale[j] += (t.scale[j] - t.currentScale[j]) * frameAwareLerpSpeed;
-        if (Math.abs(t.currentPosition[j] - prevPos) > 1e-4) anyInstanceDirty = true;
+        const prevPos = t2.currentPosition[j];
+        t2.currentPosition[j] += (t2.position[j] - t2.currentPosition[j]) * frameAwareLerpSpeed;
+        t2.currentScale[j] += (t2.scale[j] - t2.currentScale[j]) * frameAwareLerpSpeed;
+        if (Math.abs(t2.currentPosition[j] - prevPos) > 1e-4) anyInstanceDirty = true;
       }
       if (anyInstanceDirty) {
         mat4Impl.identity(this.tempLocalMatrix);
-        mat4Impl.translate(this.tempLocalMatrix, t.currentPosition, this.tempLocalMatrix);
-        mat4Impl.rotateX(this.tempLocalMatrix, t.rotation[0], this.tempLocalMatrix);
-        mat4Impl.rotateY(this.tempLocalMatrix, t.rotation[1], this.tempLocalMatrix);
-        mat4Impl.rotateZ(this.tempLocalMatrix, t.rotation[2], this.tempLocalMatrix);
-        mat4Impl.scale(this.tempLocalMatrix, t.currentScale, this.tempLocalMatrix);
+        mat4Impl.translate(this.tempLocalMatrix, t2.currentPosition, this.tempLocalMatrix);
+        mat4Impl.rotateX(this.tempLocalMatrix, t2.rotation[0], this.tempLocalMatrix);
+        mat4Impl.rotateY(this.tempLocalMatrix, t2.rotation[1], this.tempLocalMatrix);
+        mat4Impl.rotateZ(this.tempLocalMatrix, t2.rotation[2], this.tempLocalMatrix);
+        mat4Impl.scale(this.tempLocalMatrix, t2.currentScale, this.tempLocalMatrix);
         mat4Impl.multiply(baseModelMatrix, this.tempLocalMatrix, this.finalMatrix);
         const offset = i * this.floatsPerInstance;
         this.instanceData.set(this.finalMatrix, offset);
-        this.instanceData.set(t.color, offset + 16);
+        this.instanceData.set(t2.color, offset + 16);
       }
     }
     if (anyInstanceDirty) {
@@ -23678,8 +23482,8 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
       responseCoef: o2.mainCameraParams.responseCoef
     };
     this.texturesPaths = [];
-    o2.texturesPaths.forEach((t) => {
-      this.texturesPaths.push(t);
+    o2.texturesPaths.forEach((t2) => {
+      this.texturesPaths.push(t2);
     });
     this.presentationFormat = navigator.gpu.getPreferredCanvasFormat();
     this.position = new Position(o2.position.x, o2.position.y, o2.position.z);
@@ -23823,18 +23627,18 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
           frontFace: o2.primitive.frontFace ? o2.primitive.frontFace : "ccw"
         };
       }
-      this.setTopology = (t, cullMode = "none", frontFace = "ccw") => {
-        const isStrip = t === "triangle-strip" || t === "line-strip";
+      this.setTopology = (t2, cullMode = "none", frontFace = "ccw") => {
+        const isStrip = t2 === "triangle-strip" || t2 === "line-strip";
         if (isStrip) {
           this.primitive = {
-            topology: t,
+            topology: t2,
             stripIndexFormat: "uint16",
             cullMode,
             frontFace
           };
         } else {
           this.primitive = {
-            topology: t,
+            topology: t2,
             cullMode,
             frontFace
           };
@@ -23877,20 +23681,20 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
         this.instanceData.set(modelMatrix, 0);
         this.instanceData.set(this._defaultColor, 16);
         for (let i = 1; i < this.instanceCount; i++) {
-          const t = this.instanceTargets[i];
+          const t2 = this.instanceTargets[i];
           this._ghostScratch.set(modelMatrix);
           const ghost = this._ghostScratch;
           for (let j = 0; j < 3; j++) {
-            t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * this.lerpSpeed;
-            t.currentScale[j] += (t.scale[j] - t.currentScale[j]) * this.lerpSpeed;
-            t.currentColor[j] += (t.color[j] - t.currentColor[j]) * this.lerpSpeed;
+            t2.currentPosition[j] += (t2.position[j] - t2.currentPosition[j]) * this.lerpSpeed;
+            t2.currentScale[j] += (t2.scale[j] - t2.currentScale[j]) * this.lerpSpeed;
+            t2.currentColor[j] += (t2.color[j] - t2.currentColor[j]) * this.lerpSpeed;
             if (j === 2) {
-              t.currentColor[j + 1] += (t.color[j + 1] - t.currentColor[j + 1]) * this.lerpSpeedAlpha;
+              t2.currentColor[j + 1] += (t2.color[j + 1] - t2.currentColor[j + 1]) * this.lerpSpeedAlpha;
             }
           }
-          const sx = t.currentScale[0];
-          const sy = t.currentScale[1];
-          const sz = t.currentScale[2];
+          const sx = t2.currentScale[0];
+          const sy = t2.currentScale[1];
+          const sz = t2.currentScale[2];
           ghost[0] *= sx;
           ghost[1] *= sx;
           ghost[2] *= sx;
@@ -23900,12 +23704,12 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
           ghost[8] *= sz;
           ghost[9] *= sz;
           ghost[10] *= sz;
-          ghost[12] += t.currentPosition[0];
-          ghost[13] += t.currentPosition[1];
-          ghost[14] += t.currentPosition[2];
+          ghost[12] += t2.currentPosition[0];
+          ghost[13] += t2.currentPosition[1];
+          ghost[14] += t2.currentPosition[2];
           const offset = 20 * i;
           this.instanceData.set(ghost, offset);
-          this.instanceData.set(t.currentColor, offset + 16);
+          this.instanceData.set(t2.currentColor, offset + 16);
         }
         device2.queue.writeBuffer(this.instanceBuffer, 0, this.instanceData);
       };
@@ -24821,7 +24625,7 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
     this.animationIndex = index;
     this.buildNodeChannelMap();
   };
-  composeTRS(t, q, s, out) {
+  composeTRS(t2, q, s, out) {
     const x2 = q[0], y2 = q[1], z = q[2], w = q[3];
     const x22 = x2 + x2, y22 = y2 + y2, z2 = z + z;
     const xx = x2 * x22, xy = x2 * y22, xz = x2 * z2;
@@ -24839,9 +24643,9 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
     out[9] = (yz - wx) * s[2];
     out[10] = (1 - (xx + yy)) * s[2];
     out[11] = 0;
-    out[12] = t[0];
-    out[13] = t[1];
-    out[14] = t[2];
+    out[12] = t2[0];
+    out[13] = t2[1];
+    out[14] = t2[2];
     out[15] = 1;
   }
   update(now) {
@@ -24980,19 +24784,19 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
     }
     throw new Error("No binary data found in GLB buffer[0]");
   }
-  lerpVec(a, b, t) {
-    return a.map((v, i) => v * (1 - t) + b[i] * t);
+  lerpVec(a, b, t2) {
+    return a.map((v, i) => v * (1 - t2) + b[i] * t2);
   }
   // Example quaternion slerp (a,b = [x,y,z,w])
-  quatSlerp(a, b, t) {
+  quatSlerp(a, b, t2) {
     let dot2 = a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3];
     if (dot2 < 0) {
       b = b.map((v) => -v);
       dot2 = -dot2;
     }
-    if (dot2 > 0.9995) return lerpVec(a, b, t);
+    if (dot2 > 0.9995) return lerpVec(a, b, t2);
     const theta0 = Math.acos(dot2);
-    const theta = theta0 * t;
+    const theta = theta0 * t2;
     const sinTheta = Math.sin(theta);
     const sinTheta0 = Math.sin(theta0);
     const s0 = Math.cos(theta) - dot2 * sinTheta / sinTheta0;
@@ -25033,7 +24837,7 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
     return m;
   }
   decomposeMatrix(m) {
-    const t = new Float32Array([m[12], m[13], m[14]]);
+    const t2 = new Float32Array([m[12], m[13], m[14]]);
     const cx = [m[0], m[1], m[2]];
     const cy = [m[4], m[5], m[6]];
     const cz = [m[8], m[9], m[10]];
@@ -25078,9 +24882,9 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
     }
     const rot2 = new Float32Array([qx, qy, qz, qw]);
     const scale4 = new Float32Array([sx, sy, sz]);
-    return { translation: t, rotation: rot2, scale: scale4 };
+    return { translation: t2, rotation: rot2, scale: scale4 };
   }
-  slerp(arr0, off0, arr1, off1, t, out) {
+  slerp(arr0, off0, arr1, off1, t2, out) {
     let ax = arr0[off0], ay = arr0[off0 + 1], az = arr0[off0 + 2], aw = arr0[off0 + 3];
     let bx = arr1[off1], by = arr1[off1 + 1], bz = arr1[off1 + 2], bw = arr1[off1 + 3];
     let dot2 = ax * bx + ay * by + az * bz + aw * bw;
@@ -25090,10 +24894,10 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
     bz *= flip;
     bw *= flip;
     if (dot2 > 0.9995) {
-      out[0] = ax + t * (bx - ax);
-      out[1] = ay + t * (by - ay);
-      out[2] = az + t * (bz - az);
-      out[3] = aw + t * (bw - aw);
+      out[0] = ax + t2 * (bx - ax);
+      out[1] = ay + t2 * (by - ay);
+      out[2] = az + t2 * (bz - az);
+      out[3] = aw + t2 * (bw - aw);
       const len2 = Math.sqrt(out[0] ** 2 + out[1] ** 2 + out[2] ** 2 + out[3] ** 2);
       out[0] /= len2;
       out[1] /= len2;
@@ -25103,8 +24907,8 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
     }
     const theta0 = Math.acos(dot2);
     const sinTheta0 = Math.sin(theta0);
-    const s0 = Math.cos(theta0 * t) - dot2 * Math.sin(theta0 * t) / sinTheta0;
-    const s1 = Math.sin(theta0 * t) / sinTheta0;
+    const s0 = Math.cos(theta0 * t2) - dot2 * Math.sin(theta0 * t2) / sinTheta0;
+    const s1 = Math.sin(theta0 * t2) / sinTheta0;
     out[0] = s0 * ax + s1 * bx;
     out[1] = s0 * ay + s1 * by;
     out[2] = s0 * az + s1 * bz;
@@ -25244,10 +25048,10 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
     const jointSet = new Set(this.skeleton);
     const found = {};
     for (const i of this.skeleton) {
-      const t = _poseTokens(jn[i].name);
-      const side = t.includes("left") || t.includes("l") ? "L" : t.includes("right") || t.includes("r") ? "R" : null;
+      const t2 = _poseTokens(jn[i].name);
+      const side = t2.includes("left") || t2.includes("l") ? "L" : t2.includes("right") || t2.includes("r") ? "R" : null;
       if (!side) continue;
-      const part = t.filter((x2) => x2 !== "left" && x2 !== "right" && x2 !== "l" && x2 !== "r").join("");
+      const part = t2.filter((x2) => x2 !== "left" && x2 !== "right" && x2 !== "l" && x2 !== "r").join("");
       for (const key in _POSE_SLOTS) {
         if (_POSE_SLOTS[key].names.includes(part) && !(key + side in found)) found[key + side] = i;
       }
@@ -25294,9 +25098,9 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
     const spine = [], neck = [];
     for (const i of this._sortedNodes) {
       if (!jointSet.has(i)) continue;
-      const t = _poseTokens(jn[i].name);
-      if (t.includes("left") || t.includes("right")) continue;
-      const k = t.join("");
+      const t2 = _poseTokens(jn[i].name);
+      if (t2.includes("left") || t2.includes("right")) continue;
+      const k = t2.join("");
       if (hips < 0 && (k === "hips" || k === "pelvis")) hips = i;
       else if (/^(spine|chest|upperchest)/.test(k)) spine.push(i);
       else if (/^neck/.test(k)) neck.push(i);
@@ -25399,9 +25203,9 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
       const i = sorted[s], p = nodes[i].parent, f = from[i], kind = kinds[i];
       let have = false;
       if (f >= 0) {
-        const t = to[i];
-        if (_vis(lm, f, minVis) && _vis(lm, t, minVis)) {
-          const a = wl[f], b = wl[t];
+        const t2 = to[i];
+        if (_vis(lm, f, minVis) && _vis(lm, t2, minVis)) {
+          const a = wl[f], b = wl[t2];
           let dx = mx * (b.x - a.x), dy = -(b.y - a.y), dz = zs * (b.z - a.z);
           const l = Math.hypot(dx, dy, dz);
           if (l > 1e-5) {
@@ -25519,7 +25323,7 @@ var _POSE_SLOTS = {
   shin: { L: [25, 27], R: [26, 28], names: ["leg", "lowerleg", "calf", "shin"], next: null }
 };
 function _poseTokens(name2) {
-  return (name2 || "").replace(/^.*[:|]/, "").replace(/([a-z])([A-Z])/g, "$1 $2").toLowerCase().split(/[^a-z0-9]+/).filter((t) => t && !_POSE_NOISE.has(t));
+  return (name2 || "").replace(/^.*[:|]/, "").replace(/([a-z])([A-Z])/g, "$1 $2").toLowerCase().split(/[^a-z0-9]+/).filter((t2) => t2 && !_POSE_NOISE.has(t2));
 }
 function _qmul(a, ao, b, bo, o2, oo) {
   const ax = a[ao], ay = a[ao + 1], az = a[ao + 2], aw = a[ao + 3];
@@ -25571,8 +25375,8 @@ function _qFromTo(ux, uy, uz, vx, vy, vz, o2, oo) {
   o2[oo + 2] = cz / l;
   o2[oo + 3] = w / l;
 }
-function _nlerp(c, co, t, to, k) {
-  let tx = t[to], ty = t[to + 1], tz = t[to + 2], tw = t[to + 3];
+function _nlerp(c, co, t2, to, k) {
+  let tx = t2[to], ty = t2[to + 1], tz = t2[to + 2], tw = t2[to + 3];
   if (c[co] * tx + c[co + 1] * ty + c[co + 2] * tz + c[co + 3] * tw < 0) {
     tx = -tx;
     ty = -ty;
@@ -26767,8 +26571,8 @@ var MultiplyColorNode = class extends ShaderNode {
     } else {
       b = this.inputs.b.default;
     }
-    const t = ctx.temp("vec4f", `${a} * ${b}`);
-    return { out: t, type: "vec4f" };
+    const t2 = ctx.temp("vec4f", `${a} * ${b}`);
+    return { out: t2, type: "vec4f" };
   }
 };
 var GrayscaleNode = class extends ShaderNode {
@@ -26984,9 +26788,9 @@ var LerpNode = class extends ShaderNode {
     const connT = ctx.shaderGraph.getInput(this, "t");
     const a = connA ? ctx.resolve(connA.fromNode, connA.fromPin) : this.inputs.a.default;
     const b = connB ? ctx.resolve(connB.fromNode, connB.fromPin) : this.inputs.b.default;
-    const t = connT ? ctx.resolve(connT.fromNode, connT.fromPin) : this.inputs.t.default;
+    const t2 = connT ? ctx.resolve(connT.fromNode, connT.fromPin) : this.inputs.t.default;
     return {
-      out: ctx.temp("f32", `mix(${a}, ${b}, ${t})`),
+      out: ctx.temp("f32", `mix(${a}, ${b}, ${t2})`),
       type: "f32"
     };
   }
@@ -27248,9 +27052,9 @@ var ConnectionLayer = class {
   }
   up(e) {
     if (!this.temp || !this.from) return;
-    const t = document.elementFromPoint(e.clientX, e.clientY);
-    if (t?.classList.contains("pinShader") && t.dataset.type === "input") {
-      this.finalize(this.from, t);
+    const t2 = document.elementFromPoint(e.clientX, e.clientY);
+    if (t2?.classList.contains("pinShader") && t2.dataset.type === "input") {
+      this.finalize(this.from, t2);
     }
     this.temp.remove();
     this.temp = this.from = null;
@@ -28067,14 +27871,14 @@ var CurveEditor = class {
     return Math.round((value - this.valueMin) / range * steps) / steps * range + this.valueMin;
   }
   // VALUE EVALUATION (HERMITE)
-  getValue(t) {
-    t = Math.max(0, Math.min(1, t));
+  getValue(t2) {
+    t2 = Math.max(0, Math.min(1, t2));
     for (let i = 0; i < this.keys.length - 1; i++) {
       const k0 = this.keys[i];
       const k1 = this.keys[i + 1];
-      if (t >= k0.time && t <= k1.time) {
+      if (t2 >= k0.time && t2 <= k1.time) {
         const dt = k1.time - k0.time;
-        const u = (t - k0.time) / dt;
+        const u = (t2 - k0.time) / dt;
         const u2 = u * u;
         const u3 = u2 * u;
         const m0 = k0.outTangent * dt;
@@ -28127,9 +27931,9 @@ var CurveEditor = class {
     ctx.strokeStyle = "#4fc3f7";
     ctx.beginPath();
     for (let i = 0; i <= 100; i++) {
-      const t = i / 100;
-      const x2 = t * w;
-      const y3 = this._valueToY(this.getValue(t));
+      const t2 = i / 100;
+      const x2 = t2 * w;
+      const y3 = this._valueToY(this.getValue(t2));
       i === 0 ? ctx.moveTo(x2, y3) : ctx.lineTo(x2, y3);
     }
     ctx.stroke();
@@ -28228,22 +28032,22 @@ var CurveEditor = class {
       const { x: mx, y: my } = this._getMouse(e);
       if (this.dragMode === "playhead" && this.activeKey === "playhead") {
         const w = this.width - this.padLeft;
-        let t = Math.max(0, Math.min(1, mx / w));
-        t = this._snap(t, this.snapSteps);
-        this.time = t;
+        let t2 = Math.max(0, Math.min(1, mx / w));
+        t2 = this._snap(t2, this.snapSteps);
+        this.time = t2;
         this.draw();
         return;
       }
       if (this.dragMode === "key") {
         const w = this.width - this.padLeft;
-        let t = (mx - this._grabDX) / w;
-        t = Math.max(0, Math.min(1 - 1e-6, t));
+        let t2 = (mx - this._grabDX) / w;
+        t2 = Math.max(0, Math.min(1 - 1e-6, t2));
         let v = this._yToValue(my - this._grabDY);
         v = Math.max(this.valueMin, Math.min(this.valueMax, v));
         v = this._snap(v, this.snapValueSteps);
-        t = this._snap(t, this.snapSteps);
+        t2 = this._snap(t2, this.snapSteps);
         v = this._snap(v, this.snapValueSteps);
-        this.activeKey.time = t;
+        this.activeKey.time = t2;
         this.activeKey.value = v;
         this.keys.sort((a, b) => a.time - b.time);
       }
@@ -28263,10 +28067,10 @@ var CurveEditor = class {
     this.canvas.addEventListener("dblclick", (e) => {
       const { x: x2, y: y2 } = this._getMouse(e);
       const w = this.width - this.padLeft;
-      const t = Math.max(0, Math.min(1, x2 / w));
+      const t2 = Math.max(0, Math.min(1, x2 / w));
       const v = this._yToValue(y2);
       this.keys.push({
-        time: t,
+        time: t2,
         value: v,
         inTangent: 0,
         outTangent: 0
@@ -28286,18 +28090,18 @@ var CurveEditor = class {
       }
     });
   }
-  _timeToX(t) {
+  _timeToX(t2) {
     const w = this.width - this.padLeft;
     const R = 4;
-    let x2 = t * w;
+    let x2 = t2 * w;
     return Math.min(Math.max(x2, R), w - R);
   }
   // BAKING
   bake(samples = this.samples) {
     const data = new Float32Array(samples);
     for (let i = 0; i < samples; i++) {
-      const t = i / (samples - 1);
-      data[i] = this.getValue(t);
+      const t2 = i / (samples - 1);
+      data[i] = this.getValue(t2);
     }
     return data;
   }
@@ -28589,14 +28393,14 @@ var CurveData = class {
     this.samples = 128;
     this.baked = null;
   }
-  getValue(t) {
-    t = Math.max(0, Math.min(1, t));
+  getValue(t2) {
+    t2 = Math.max(0, Math.min(1, t2));
     for (let i = 0; i < this.keys.length - 1; i++) {
       const k0 = this.keys[i];
       const k1 = this.keys[i + 1];
-      if (t >= k0.time && t <= k1.time) {
+      if (t2 >= k0.time && t2 <= k1.time) {
         const dt = k1.time - k0.time;
-        const u = (t - k0.time) / dt;
+        const u = (t2 - k0.time) / dt;
         const u2 = u * u;
         const u3 = u2 * u;
         const m0 = k0.outTangent * dt;
@@ -28610,8 +28414,8 @@ var CurveData = class {
   bake(samples = this.samples) {
     this.baked = new Float32Array(samples);
     for (let i = 0; i < samples; i++) {
-      const t = i / (samples - 1);
-      this.baked[i] = this.getValue(t);
+      const t2 = i / (samples - 1);
+      this.baked[i] = this.getValue(t2);
     }
   }
   evaluate(time01) {
@@ -28619,10 +28423,10 @@ var CurveData = class {
       console.warn("Curve not baked!");
       return 0;
     }
-    let t = time01;
-    if (this.loop) t = t % 1;
-    else t = Math.min(1, Math.max(0, t));
-    const idx = Math.floor(t * (this.baked.length - 1));
+    let t2 = time01;
+    if (this.loop) t2 = t2 % 1;
+    else t2 = Math.min(1, Math.max(0, t2));
+    const idx = Math.floor(t2 * (this.baked.length - 1));
     return this.baked[idx];
   }
 };
@@ -29194,10 +28998,10 @@ var FluxCodexVertex = class {
     placeholder2.disabled = true;
     placeholder2.selected = true;
     selectPrompt.appendChild(placeholder2);
-    tasks.forEach((t, i) => {
+    tasks.forEach((t2, i) => {
       const opt = document.createElement("option");
       opt.value = i;
-      opt.textContent = t;
+      opt.textContent = t2;
       selectPrompt.appendChild(opt);
     });
     popup.appendChild(selectPrompt);
@@ -32190,15 +31994,15 @@ LIST OF INTEREST OBJECT:
     }
     if (node2.title === "if" && pinName === "condition") {
       let testLink = this.links.find((l) => l.to.node === nodeId2 && l.to.pin === pinName);
-      let t;
+      let t2;
       try {
-        t = this.getValue(testLink.from.node, testLink.from.pin);
+        t2 = this.getValue(testLink.from.node, testLink.from.pin);
       } catch (err) {
         console.log(`IF NODE ${node2.id} have no conditional pin connected - default is false... fix this in FluxCodexVertex graph editor.`);
         return false;
       }
-      if (typeof t !== "undefined") {
-        return t;
+      if (typeof t2 !== "undefined") {
+        return t2;
       }
       if (this._execContext !== nodeId2) {
         console.warn("[IF] condition read outside exec ignored");
@@ -34605,14 +34409,14 @@ var EditorHud = class {
     document.body.appendChild(this.assetsBox);
     byId("folderBack").addEventListener("click", () => {
       let getCurrent = byId("res-folder").getAttribute("data-root-folder");
-      const t = getCurrent.substring(0, getCurrent.lastIndexOf("\\"));
-      const last = t.substring(t.lastIndexOf("\\") + 1);
+      const t2 = getCurrent.substring(0, getCurrent.lastIndexOf("\\"));
+      const last = t2.substring(t2.lastIndexOf("\\") + 1);
       if (last == "public") {
         return;
       }
       document.dispatchEvent(new CustomEvent("nav-folder", {
         detail: {
-          rootFolder: t || "",
+          rootFolder: t2 || "",
           name: ""
         }
       }));
@@ -36045,6 +35849,199 @@ function combinePassWGSL() {
 `;
 }
 
+// src/engine/raycast.js
+var touchCoordinate = {
+  enabled: false,
+  x: 0,
+  y: 0,
+  stopOnFirstDetectedHit: false
+};
+var _invProj = mat4Impl.create();
+var _invView = mat4Impl.create();
+var _clip = new Float32Array([0, 0, 1, 1]);
+var _rayOrigin = new Float32Array(3);
+var rayHitClick = {
+  hitObject: null,
+  hitPoint: null,
+  hitNormal: null,
+  hitDistance: null,
+  rayOrigin: null,
+  rayDirection: null,
+  screenCoords: null,
+  camera: null,
+  timestamp: null,
+  button: null,
+  eventName: null
+};
+var rayHitMouseDown = {
+  hitObject: null,
+  hitPoint: null,
+  hitNormal: null,
+  hitDistance: null,
+  rayOrigin: null,
+  rayDirection: null,
+  screenCoords: null,
+  camera: null,
+  timestamp: null,
+  button: null,
+  eventName: null
+};
+var rayHitMouseMove = {
+  hitObject: null,
+  hitPoint: null,
+  hitNormal: null,
+  hitDistance: null,
+  rayOrigin: null,
+  rayDirection: null,
+  screenCoords: null,
+  camera: null,
+  timestamp: null,
+  button: null,
+  eventName: null
+};
+var rayHitEventClick = new CustomEvent("ray.hit.event", { detail: rayHitClick });
+var rayHitEventMouseDown = new CustomEvent("ray.hit.mousedown", { detail: rayHitMouseDown });
+var rayHitEventMouseMove = new CustomEvent("ray.hit.event.mm", { detail: rayHitMouseMove });
+function getRayFromMouse(event, canvas, camera) {
+  const rect = canvas.getBoundingClientRect();
+  let x2, y2;
+  if (document.pointerLockElement === canvas) {
+    x2 = 0;
+    y2 = 0;
+  } else {
+    x2 = (event.clientX - rect.left) / rect.width * 2 - 1;
+    y2 = -((event.clientY - rect.top) / rect.height * 2 - 1);
+  }
+  mat4Impl.inverse(camera.projectionMatrix, _invProj);
+  mat4Impl.inverse(camera.view, _invView);
+  _clip[0] = x2;
+  _clip[1] = y2;
+  let eye = vec4Impl.transformMat4(_clip, _invProj);
+  eye = [eye[0], eye[1], -1, 0];
+  const worldDir4 = vec4Impl.transformMat4(eye, _invView);
+  const rayDirection = vec3Impl.normalize([worldDir4[0], worldDir4[1], worldDir4[2]]);
+  _rayOrigin[0] = camera.position[0];
+  _rayOrigin[1] = camera.position[1];
+  _rayOrigin[2] = camera.position[2];
+  return { rayOrigin: _rayOrigin, rayDirection, screen: { x: x2, y: y2 } };
+}
+function rayIntersectsSphere(rayOrigin, rayDirection, sphereCenter, sphereRadius) {
+  const center = [sphereCenter.x, sphereCenter.y, sphereCenter.z];
+  const oc = vec3Impl.subtract(rayOrigin, center);
+  const a = vec3Impl.dot(rayDirection, rayDirection);
+  const b = 2 * vec3Impl.dot(oc, rayDirection);
+  const c = vec3Impl.dot(oc, oc) - sphereRadius * sphereRadius;
+  const discriminant = b * b - 4 * a * c;
+  if (discriminant < 0) return null;
+  const t2 = (-b - Math.sqrt(discriminant)) / (2 * a);
+  if (t2 < 0) return null;
+  const hitPoint = vec3Impl.add(rayOrigin, vec3Impl.mulScalar(rayDirection, t2));
+  const hitNormal = vec3Impl.normalize(vec3Impl.subtract(hitPoint, center));
+  return { t: t2, hitPoint, hitNormal };
+}
+function rayIntersectsAABB(rayOrigin, rayDirection, boxMin, boxMax) {
+  let tmin = (boxMin[0] - rayOrigin[0]) / rayDirection[0];
+  let tmax = (boxMax[0] - rayOrigin[0]) / rayDirection[0];
+  if (tmin > tmax) [tmin, tmax] = [tmax, tmin];
+  let tymin = (boxMin[1] - rayOrigin[1]) / rayDirection[1];
+  let tymax = (boxMax[1] - rayOrigin[1]) / rayDirection[1];
+  if (tymin > tymax) [tymin, tymax] = [tymax, tymin];
+  if (tmin > tymax || tymin > tmax) return null;
+  if (tymin > tmin) tmin = tymin;
+  if (tymax < tmax) tmax = tymax;
+  let tzmin = (boxMin[2] - rayOrigin[2]) / rayDirection[2];
+  let tzmax = (boxMax[2] - rayOrigin[2]) / rayDirection[2];
+  if (tzmin > tzmax) [tzmin, tzmax] = [tzmax, tzmin];
+  if (tmin > tzmax || tzmin > tmax) return null;
+  const t2 = Math.max(tmin, 0);
+  const hitPoint = vec3Impl.add(rayOrigin, vec3Impl.mulScalar(rayDirection, t2));
+  return { t: t2, hitPoint };
+}
+function computeWorldVertsAndAABB(object) {
+  if (object._aabbCache && object._aabbCache.x === object.position.x && object._aabbCache.y === object.position.y && object._aabbCache.z === object.position.z) {
+    return object._aabbCache;
+  }
+  const modelMatrix = object.getModelMatrix(object.position, true);
+  const min2 = [Infinity, Infinity, Infinity];
+  const max2 = [-Infinity, -Infinity, -Infinity];
+  const verts = object.meshA ? object.meshA.vertices : object.mesh.vertices;
+  for (let i = 0; i < verts.length; i += 3) {
+    const world = vec3Impl.transformMat4(
+      [verts[i], verts[i + 1], verts[i + 2]],
+      modelMatrix
+    );
+    min2[0] = Math.min(min2[0], world[0]);
+    min2[1] = Math.min(min2[1], world[1]);
+    min2[2] = Math.min(min2[2], world[2]);
+    max2[0] = Math.max(max2[0], world[0]);
+    max2[1] = Math.max(max2[1], world[1]);
+    max2[2] = Math.max(max2[2], world[2]);
+  }
+  object._aabbCache = {
+    modelMatrix,
+    boxMin: min2,
+    boxMax: max2,
+    x: object.position.x,
+    y: object.position.y,
+    z: object.position.z
+  };
+  return object._aabbCache;
+}
+function dispatchRayHitEvent(canvas, data) {
+  const e = data.eventName === "click" ? rayHitEventClick : data.eventName === "mousedown" ? rayHitEventMouseDown : rayHitEventMouseMove;
+  e.detail.hitObject = data.hitObject;
+  e.detail.hitPoint = data.hitPoint;
+  e.detail.hitNormal = data.hitNormal;
+  e.detail.hitDistance = data.hitDistance;
+  e.detail.rayOrigin = data.rayOrigin;
+  e.detail.rayDirection = data.rayDirection;
+  e.detail.screenCoords = data.screenCoords;
+  e.detail.camera = data.camera;
+  e.detail.timestamp = data.timestamp;
+  e.detail.button = data.button;
+  e.detail.eventName = data.eventName;
+  canvas.dispatchEvent(e);
+}
+function addRaycastsListener(canvasId = "canvas1", eventName = "click") {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) {
+    console.warn(`[Raycaster] Canvas with id '${canvasId}' not found.`);
+    return;
+  }
+  canvas.addEventListener(eventName, (event) => {
+    const camera = app.cameras[app.mainCameraParams.type];
+    const { rayOrigin, rayDirection, screen: screen2 } = getRayFromMouse(event, canvas, camera);
+    let closestHit = null;
+    for (const object of app.mainRenderBundle) {
+      if (!object.raycast?.enabled) continue;
+      const { boxMin, boxMax } = computeWorldVertsAndAABB(object);
+      const hitAABB = rayIntersectsAABB(rayOrigin, rayDirection, boxMin, boxMax);
+      if (!hitAABB) continue;
+      const sphereHit = rayIntersectsSphere(rayOrigin, rayDirection, object.position, object.raycast.radius);
+      const hit = sphereHit || hitAABB;
+      if (hit && (!closestHit || hit.t < closestHit.t)) {
+        closestHit = { ...hit, hitObject: object };
+        if (touchCoordinate.stopOnFirstDetectedHit) break;
+      }
+    }
+    if (closestHit) {
+      dispatchRayHitEvent(canvas, {
+        hitObject: closestHit.hitObject,
+        hitPoint: closestHit.hitPoint,
+        hitNormal: closestHit.hitNormal || null,
+        hitDistance: closestHit.t,
+        rayOrigin,
+        rayDirection,
+        screenCoords: screen2,
+        camera,
+        timestamp: performance.now(),
+        button: event.button,
+        eventName
+      });
+    }
+  });
+}
+
 // src/engine/procedural-mesh.js
 var ProceduralMeshObj = class extends Materials {
   constructor(canvas, device2, context, o2, inputHandler, globalAmbient, cameraBuffer) {
@@ -36698,8 +36695,8 @@ var ProceduralMeshObj = class extends Materials {
     });
     dispatchEvent(this.buildPipelineBucketsEvent);
   }
-  setMorphBlend(t) {
-    this.morphBlend = Math.max(0, Math.min(1, t));
+  setMorphBlend(t2) {
+    this.morphBlend = Math.max(0, Math.min(1, t2));
     if (this.morphBlendBuffer) {
       this.device.queue.writeBuffer(this.morphBlendBuffer, 0, new Float32Array([this.morphBlend]));
     } else {
@@ -36772,11 +36769,11 @@ var ProceduralMeshObj = class extends Materials {
   updateMorphAnimation(deltaTime) {
     if (!this.morphAnimation.active) return;
     this.morphAnimation.elapsed += deltaTime;
-    const t = Math.min(1, this.morphAnimation.elapsed / this.morphAnimation.duration);
-    const eased = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+    const t2 = Math.min(1, this.morphAnimation.elapsed / this.morphAnimation.duration);
+    const eased = t2 < 0.5 ? 2 * t2 * t2 : 1 - Math.pow(-2 * t2 + 2, 2) / 2;
     const blend = this.morphAnimation.startBlend + (this.morphAnimation.targetBlend - this.morphAnimation.startBlend) * eased;
     this.setMorphBlend(blend);
-    if (t >= 1) {
+    if (t2 >= 1) {
       this.morphAnimation.active = false;
       if (this.morphAnimation.onComplete) {
         this.morphAnimation.onComplete(blend);
@@ -37211,12 +37208,12 @@ var MeshMorpher = class {
   static mobius(radius = 1, width = 0.5) {
     return (u, v) => {
       const theta = u * Math.PI * 2;
-      const t = (v - 0.5) * width;
+      const t2 = (v - 0.5) * width;
       const halfTheta = theta / 2;
       return [
-        (radius + t * Math.cos(halfTheta)) * Math.cos(theta),
-        t * Math.sin(halfTheta),
-        (radius + t * Math.cos(halfTheta)) * Math.sin(theta)
+        (radius + t2 * Math.cos(halfTheta)) * Math.cos(theta),
+        t2 * Math.sin(halfTheta),
+        (radius + t2 * Math.cos(halfTheta)) * Math.sin(theta)
       ];
     };
   }
@@ -41328,14 +41325,14 @@ var AdvancedVolumetricPass = class {
       this._createTexture(this.effectiveWidth, this.effectiveHeight),
       this._createTexture(this.effectiveWidth, this.effectiveHeight)
     ];
-    this._histViews = this._histTex.map((t) => t.createView());
+    this._histViews = this._histTex.map((t2) => t2.createView());
     this._hi = 0;
     this.compositeOutputTex = this._createTexture(this.width, this.height);
     this.compositeOutputTexView = this.compositeOutputTex.createView();
   }
   _freeTextures() {
     this.volumetricTex?.destroy();
-    this._histTex?.forEach((t) => t.destroy());
+    this._histTex?.forEach((t2) => t2.destroy());
     this.compositeOutputTex?.destroy();
   }
   /**
@@ -45503,2436 +45500,911 @@ var MatrixEngineWGPU = class {
   };
 };
 
-// src/engine/collision-sub-system.js
-function resolvePairRepulsion3D(Apos, Bpos, minDistance = 30, pushStrength = 0.5) {
-  const dx = Bpos.x - Apos.x;
-  const dy = Bpos.y - Apos.y;
-  const dz = Bpos.z - Apos.z;
-  const distSq2 = dx * dx + dy * dy + dz * dz;
-  const minDistSq = minDistance * minDistance;
-  if (distSq2 < minDistSq && distSq2 > 1e-8) {
-    const dist2 = Math.sqrt(distSq2);
-    const overlap = minDistance - dist2;
-    const push = overlap * pushStrength * 0.5;
-    const inv = push / dist2;
-    Apos.x -= dx * inv;
-    Apos.y -= dy * inv;
-    Apos.z -= dz * inv;
-    Bpos.x += dx * inv;
-    Bpos.y += dy * inv;
-    Bpos.z += dz * inv;
-    return true;
-  }
-  if (distSq2 <= 1e-8) {
-    const j = 0.01;
-    Apos.x += (Math.random() - 0.5) * j;
-    Apos.y += (Math.random() - 0.5) * j;
-    Apos.z += (Math.random() - 0.5) * j;
-    return true;
-  }
-  return false;
-}
-var CollisionSystem = class {
-  constructor() {
-    this.entries = [];
-    this.staticEntries = [];
-    this.cameraEntry = null;
-    this.cameraVsStaticDist = 1.5;
-    this.cellSize = 100;
-    this._grid = /* @__PURE__ */ new Map();
-    this._staticGrid = /* @__PURE__ */ new Map();
-    this._event1 = new CustomEvent("close-distance", { detail: { data: "" } });
-    this._eventDetail = {};
-    this._neighbors = [];
-    this._staticNeighbors = [];
-    this._activeHeroContacts = /* @__PURE__ */ new Set();
-    this.pickupEntries = [];
-    this._pickupGrid = /* @__PURE__ */ new Map();
-    this._pickupNeighbors = [];
-    this._gravityAcc = 0;
-    this._gravityForce = -0.015;
-    this._terminalVelocity = -0.5;
-    this._onGround = false;
-  }
-  applyGravity(camPos, camRadius) {
-    this._gravityAcc += this._gravityForce;
-    if (this._gravityAcc < this._terminalVelocity) {
-      this._gravityAcc = this._terminalVelocity;
-    }
-    camPos[1] += this._gravityAcc;
-    this._onGround = false;
-    const camX = camPos[0];
-    const camY = camPos[1];
-    const camZ = camPos[2];
-    this._getNeighborCells(camX, camY, camZ, this._staticGrid, this._staticNeighbors);
-    for (let i = 0; i < this._staticNeighbors.length; i++) {
-      const entry = this._staticNeighbors[i];
-      const fakePos = { x: camPos[0], y: camPos[1], z: camPos[2] };
-      const prevY = fakePos.y;
-      const hit = this.resolveVsStaticCube(fakePos, camRadius, entry);
-      if (hit) {
-        camPos[0] = fakePos.x;
-        camPos[1] = fakePos.y;
-        camPos[2] = fakePos.z;
-        if (fakePos.y > prevY) {
-          this._gravityAcc = 0;
-          this._onGround = true;
-        }
+// src/engine/networking/native-webrtc.js
+var NativeWebRTC = class {
+  constructor(options2 = {}) {
+    this.options = options2;
+    this.sessionName = options2.sessionName || "matrix-engine-random";
+    this.connection = { connectionId: null, send: (data) => this.send(data) };
+    this.session = {
+      signal: (payload) => {
+        const message = JSON.parse(payload.data);
+        this.send(message, payload.to);
+        return Promise.resolve();
+      },
+      disconnect: () => this.leaveSession()
+    };
+    this.peers = /* @__PURE__ */ new Map();
+    this.channels = /* @__PURE__ */ new Map();
+    this.pendingIce = /* @__PURE__ */ new Map();
+    this.localStream = null;
+    this.socket = null;
+    this.id = null;
+    this.closed = false;
+    this.multiPlayer = {
+      root: this,
+      onFollowPath() {
+      },
+      update: (event) => this._handleGameMessage(event),
+      leaveGamePlay() {
       }
-    }
-    app.getCamera()?.forceViewUpdate();
-  }
-  register(id2, positionInstance, radius = 1, group = "default") {
-    this.entries.push({ id: id2, pos: positionInstance, radius, group });
-  }
-  registerStatic(id2, pos2, radius = 1, group = "default", half = null) {
-    const h = half ?? { x: radius, y: radius, z: radius };
-    const entry = { id: id2, pos: pos2, radius, group, half: h };
-    this.staticEntries.push(entry);
-    const cs = this.cellSize, y2 = pos2.y ?? 0;
-    for (let cx = Math.floor((pos2.x - h.x) / cs); cx <= Math.floor((pos2.x + h.x) / cs); cx++)
-      for (let cy = Math.floor((y2 - h.y) / cs); cy <= Math.floor((y2 + h.y) / cs); cy++)
-        for (let cz = Math.floor((pos2.z - h.z) / cs); cz <= Math.floor((pos2.z + h.z) / cs); cz++) {
-          const key = `${cx},${cy},${cz}`;
-          let cell = this._staticGrid.get(key);
-          if (!cell) this._staticGrid.set(key, cell = []);
-          cell.push(entry);
-        }
-    return entry;
-  }
-  unregister(id2) {
-    this.entries = this.entries.filter((e) => e.id !== id2);
-    if (this.cameraEntry && this.cameraEntry.id === id2) this.cameraEntry = null;
-  }
-  registerCamera(cameraInstance, radius = 1) {
-    this.cameraEntry = { id: "camera", pos: cameraInstance, radius, group: "camera" };
-  }
-  _cellKey(x2, y2, z) {
-    const cx = Math.floor(x2 / this.cellSize);
-    const cy = Math.floor(y2 / this.cellSize);
-    const cz = Math.floor(z / this.cellSize);
-    return `${cx},${cy},${cz}`;
-  }
-  _buildGrid() {
-    const grid = this._grid;
-    grid.clear();
-    for (let i = 0; i < this.entries.length; i++) {
-      const e = this.entries[i];
-      const key = this._cellKey(e.pos.x, e.pos.y, e.pos.z);
-      let cell = grid.get(key);
-      if (!cell) {
-        cell = [];
-        grid.set(key, cell);
-      }
-      cell.push(e);
-    }
-  }
-  _getNeighborCells(x2, y2, z, grid, out) {
-    out.length = 0;
-    const cx = Math.floor(x2 / this.cellSize);
-    const cy = Math.floor(y2 / this.cellSize);
-    const cz = Math.floor(z / this.cellSize);
-    for (let dx = -1; dx <= 1; dx++)
-      for (let dy = -1; dy <= 1; dy++)
-        for (let dz = -1; dz <= 1; dz++) {
-          const key = `${cx + dx},${cy + dy},${cz + dz}`;
-          const cell = grid.get(key);
-          if (cell) for (let i = 0; i < cell.length; i++) out.push(cell[i]);
-        }
-  }
-  resolveVsStaticCube(entityPos, entityRadius, entry) {
-    const h = entry.half ?? { x: 1, y: 1, z: 1 };
-    const dx = entityPos.x - entry.pos.x;
-    const dy = entityPos.y - entry.pos.y;
-    const dz = entityPos.z - entry.pos.z;
-    const overlapX = entityRadius + h.x - Math.abs(dx);
-    const overlapZ = entityRadius + h.z - Math.abs(dz);
-    if (overlapX <= 0 || overlapZ <= 0) return false;
-    if (entry.group === "floor") {
-      const overlapY = entityRadius + h.y - Math.abs(dy);
-      if (overlapY <= 0) return false;
-      const cubeTop = entry.pos.y + h.y;
-      const entityFeet = entityPos.y - entityRadius;
-      if (entityFeet <= cubeTop) {
-        entityPos.y = cubeTop + entityRadius;
-        return true;
-      }
-      return false;
-    }
-    const camBottom = entityPos.y - entityRadius;
-    const camTop = entityPos.y + entityRadius;
-    const objBottom = entry.pos.y - h.y;
-    const objTop = entry.pos.y + h.y;
-    if (camBottom >= objTop || camTop <= objBottom) return false;
-    const stepHeight = 0.6;
-    if (camBottom >= objTop - stepHeight && camBottom < objTop) {
-      entityPos.y = objTop + entityRadius;
-      return true;
-    }
-    if (overlapX < overlapZ) {
-      entityPos.x += dx < 0 ? -overlapX : overlapX;
-    } else {
-      entityPos.z += dz < 0 ? -overlapZ : overlapZ;
-    }
-    return true;
-  }
-  registerPickup(id2, positionInstance, radius = 0.6, type2 = "energy", amount = 10) {
-    const entry = { id: id2, pos: positionInstance, radius, type: type2, amount, collected: false };
-    this.pickupEntries.push(entry);
-    const key = this._cellKey(positionInstance.x, positionInstance.y ?? 0, positionInstance.z);
-    let cell = this._pickupGrid.get(key);
-    if (!cell) {
-      cell = [];
-      this._pickupGrid.set(key, cell);
-    }
-    cell.push(entry);
-    return entry;
-  }
-  removePickup(entry) {
-    entry.collected = true;
-    const idx = this.pickupEntries.indexOf(entry);
-    if (idx !== -1) this.pickupEntries.splice(idx, 1);
-    const key = this._cellKey(entry.pos.x, entry.pos.y ?? 0, entry.pos.z);
-    const cell = this._pickupGrid.get(key);
-    if (cell) {
-      const ci = cell.indexOf(entry);
-      if (ci !== -1) cell.splice(ci, 1);
-    }
-    app.removeSceneObjectByName(entry.id);
-  }
-  // called from update(), right after applyGravity — cheap, grid-bounded, not O(n)
-  checkPickups(camPos, camRadius) {
-    this._getNeighborCells(camPos[0], camPos[1], camPos[2], this._pickupGrid, this._pickupNeighbors);
-    for (let i = 0; i < this._pickupNeighbors.length; i++) {
-      const entry = this._pickupNeighbors[i];
-      if (entry.collected) continue;
-      const dx = camPos[0] - entry.pos.x;
-      const dy = camPos[1] - entry.pos.y;
-      const dz = camPos[2] - entry.pos.z;
-      const rSum = camRadius + entry.radius;
-      if (dx * dx + dy * dy + dz * dz <= rSum * rSum) {
-        this.removePickup(entry);
-        dispatchEvent(new CustomEvent("pickup-collected", { detail: { entry } }));
-      }
-    }
-  }
-  update() {
-    if (this.cameraEntry) {
-      this.applyGravity(this.cameraEntry.pos, this.cameraEntry.radius);
-      const cam2 = this.cameraEntry;
-      this.checkPickups(cam2.pos, cam2.radius);
-      this._getNeighborCells(cam2.pos[0], cam2.pos[1], cam2.pos[2], this._staticGrid, this._staticNeighbors);
-      for (let i = 0; i < this._staticNeighbors.length; i++) {
-        const entry = this._staticNeighbors[i];
-        if (entry.group === "floor") continue;
-        const fakePos = { x: cam2.pos[0], y: cam2.pos[1], z: cam2.pos[2] };
-        const hit = this.resolveVsStaticCube(fakePos, cam2.radius, entry);
-        if (hit) {
-          cam2.pos[0] = fakePos.x;
-          cam2.pos[1] = fakePos.y;
-          cam2.pos[2] = fakePos.z;
-        }
-      }
-    }
-    this._buildGrid();
-    const n2 = this.entries.length;
-    const heroContacts = /* @__PURE__ */ new Set();
-    for (let i = 0; i < n2; i++) {
-      const A = this.entries[i];
-      this._getNeighborCells(A.pos.x, A.pos.y, A.pos.z, this._grid, this._neighbors);
-      for (let j = 0; j < this._neighbors.length; j++) {
-        const B = this._neighbors[j];
-        if (A === B) continue;
-        const minDist = A.radius + B.radius;
-        if (A.group === B.group) {
-          resolvePairRepulsion3D(A.pos, B.pos, minDist, 1);
-          continue;
-        }
-        if (A.id >= B.id) continue;
-        const dx = A.pos.x - B.pos.x;
-        const dz = A.pos.z - B.pos.z;
-        if (dx * dx + dz * dz > minDist * minDist) continue;
-        const isHeroPair = A.group === "local_hero" && B.group === "enemy" || A.group === "enemy" && B.group === "local_hero";
-        const pairKey = isHeroPair ? `${A.id}|${B.id}` : null;
-        const wasHeroContact = isHeroPair && this._activeHeroContacts.has(pairKey);
-        const testCollide = resolvePairRepulsion3D(A.pos, B.pos, minDist, isHeroPair ? 0.2 : 1);
-        if (testCollide) {
-          if (isHeroPair) heroContacts.add(pairKey);
-          if (!isHeroPair || !wasHeroContact) {
-            this._eventDetail.A = A;
-            this._eventDetail.B = B;
-            this._event1.detail.data = this._eventDetail;
-            dispatchEvent(this._event1);
-          }
-        }
-      }
-    }
-    this._activeHeroContacts = heroContacts;
-  }
-};
-
-// src/engine/buildin/map-creator/map-creator.js
-var MapCreator = class {
-  /**
-   * @param {object} engine   — MatrixEngineWGPU instance
-   * @param {object} m     — pre-loaded cube OBJ mesh (m.cube)
-   * @param {object} collision — CollisionSystem instance
-   * @param {object} [opts]
-   * @param {string} [opts.wallTexture]   — path to wall texture
-   * @param {string} [opts.floorTexture]  — path to floor texture
-   * @param {string} [opts.ceilTexture]   — path to ceiling texture
-   */
-  constructor(engine, m, collision, opts = {}, mapParams2 = {
-    zombie: {
-      startUpPositions: {
-        south: [-20, 0.2, 20],
-        p1: [-8.35, 0.2, 4.56],
-        p2: [8.35, 0.2, 4.56],
-        p3: [4.35, 0.2, 4.56],
-        north: [20, 0.2, -20]
-      }
-    },
-    collectItems: []
-  }) {
-    this.engine = engine;
-    this.meshes = m;
-    this.collision = collision;
-    this._wallTex = opts.wallTexture || "./res/textures/blankgray2.webp";
-    this._floorTex = opts.floorTexture || "./res/textures/blankgray2.webp";
-    this._ceilTex = opts.ceilTexture || "./res/textures/blankgray2.webp";
-    this._pillarDecorationTex = opts.pillarDecorationTex || "./res/meshes/obj/modelpack19/hang2/512/hang2.webp";
-    this._pDecorationEnabled = opts.pillarDecoration || false;
-    this.pillarsFlame = opts.pillarsFlame || false;
-    this.shadowsCast = opts.shadowsCast || true;
-    this._uid = 0;
-    this.mapParams = mapParams2;
-    this.addMapItems();
-  }
-  _id(prefix) {
-    return `${prefix}_${this._uid++}`;
-  }
-  _floor(name2, pos2, width, depth, uvShema = false) {
-    return this._block(name2, pos2, [width, 0.2, depth], this._floorTex, "standard", true, 0.1, "floor", uvShema);
-  }
-  _ceil(name2, pos2, width, depth) {
-    return this._block(name2, pos2, [width, 0.2, depth], this._ceilTex, "standard", false, 0, "floor");
-  }
-  _block(name2, pos2, scale4, tex, mat2 = "standard", registerCollision = true, collisionRadius = 1, group = "walls", uvShema = false, effects = false) {
-    const meshScale = 2;
-    const obj2 = this.engine.addMeshObj({
-      shadowsCast: this.shadowsCast,
-      material: { type: mat2, shared: true },
-      position: pos2,
-      scale: [scale4[0] / meshScale, scale4[1] / meshScale, scale4[2] / meshScale],
-      texturesPaths: [tex],
-      name: name2,
-      mesh: this.meshes.cube,
-      physics: { enabled: false, mass: 0, geometry: "Cube" },
-      raycast: { enabled: true, radius: 1 },
-      pointerEffect: {
-        enabled: effects
-      }
-    });
-    if (uvShema !== false) {
-      obj2.setUVScale(uvShema[0], uvShema[1]);
-    }
-    if (effects === true) {
-      setTimeout(() => {
-        if (!obj2.effects) obj2.effects = {};
-        obj2.effects.flameEmitter = new FlameEmitter(app.device, "rgba16float", 20, app.cameraBuffer);
-        obj2.effects.flameEmitter.recreateVertexDataFromData([
-          -2.5825,
-          0.2112,
-          0.4249,
-          0.4724,
-          2.38,
-          3.01,
-          -2.379,
-          -3.46
-        ]);
-      }, 250);
-    }
-    if (registerCollision) {
-      this.collision.registerStatic(name2, pos2, collisionRadius, group, {
-        x: scale4[0] / 2,
-        y: scale4[1] / 2,
-        z: scale4[2] / 2
+    };
+    this.domManipulation = { hideNetPanel() {
+    } };
+    this.sendOnlyData = (data) => this.send(data);
+    this.send = (data, targets) => {
+      const payload = JSON.stringify(data);
+      const requestedTargets = targets || (data && Array.isArray(data.toRemote) ? data.toRemote : null);
+      const wanted = Array.isArray(requestedTargets) && requestedTargets.length ? new Set(requestedTargets) : null;
+      this.channels.forEach((channel, peerId) => {
+        if ((!wanted || wanted.has(peerId)) && channel.readyState === "open") channel.send(payload);
       });
-    }
-    return obj2;
-  }
-  _pillarDecoration(name2, pos2, scale4, tex, mat2 = "standard", registerCollision = true, collisionRadius = 1, group = "walls", uvShema = false, effects = false) {
-    const meshScale = 2;
-    const obj2 = this.engine.addMeshObj({
-      shadowsCast: this.shadowsCast,
-      material: { type: mat2, shared: true },
-      position: pos2,
-      scale: [scale4[0] / meshScale, scale4[1] / meshScale, scale4[2] / meshScale],
-      texturesPaths: [this._pillarDecorationTex],
-      name: name2,
-      mesh: this.meshes.hang2,
-      physics: { enabled: false, mass: 0, geometry: "Cube" },
-      raycast: { enabled: false, radius: 1 },
-      pointerEffect: {
-        enabled: effects
-      }
-    });
-    if (uvShema !== false) {
-      obj2.setUVScale(uvShema[0], uvShema[1]);
-    }
-    if (effects === true) {
-      setTimeout(() => {
-        if (!obj2.effects) obj2.effects = {};
-        obj2.effects.flameEmitter = new FlameEmitter(app.device, "rgba16float", 20, app.cameraBuffer);
-        obj2.effects.flameEmitter.recreateVertexDataCrazzy(1);
-        obj2.effects.flameEmitter.rotSpeed = 0.1;
-        obj2.effects.flameEmitter.setIntensity(randomIntFromTo(5, 10));
-        obj2.effects.flameEmitter.instanceTargets.forEach((e) => {
-          e.currentScale = [0.5, 4, 0.5];
-        });
-        obj2.effects.flameEmitter.instanceTargets.forEach((p, i, array) => {
-          array[i].color = [randomIntFromTo(7, 20), randomIntFromTo(0, 2), randomIntFromTo(0, 2), 1];
-        });
-      }, 250);
-    }
-    return obj2;
-  }
-  /**
-   * Create a box room.
-   *
-   * @param {object} opts
-   * @param {{x,y,z}} opts.origin   — bottom-center of the room
-   * @param {number}  opts.width    — X extent
-   * @param {number}  opts.depth    — Z extent
-   * @param {number}  opts.height   — wall height
-   * @param {number}  [opts.wallThickness=0.4]
-   * @param {boolean} [opts.roof=true]
-   * @param {boolean} [opts.floor=true]
-   * @param {string[]} [opts.doors=[]]  — sides with door openings: '+x'|'-x'|'+z'|'-z'
-   * @param {number}  [opts.doorWidth=2]
-   * @param {string}  [opts.tag='room']
-   * @returns {{ walls: object[], floor: object|null, ceil: object|null }}
-   */
-  createRoom(opts) {
-    const {
-      origin,
-      width,
-      depth,
-      height,
-      wallThickness = 0.4,
-      roof = true,
-      floor: floor2 = true,
-      doors = [],
-      doorWidth = 2,
-      tag = "room"
-    } = opts;
-    let { uvShema = false } = opts;
-    const { x: x2, y: y2, z } = origin;
-    const hw = width / 2;
-    const hd = depth / 2;
-    const wy = y2 + height / 2;
-    const t = wallThickness;
-    const results = { walls: [], doors: [], floor: null, ceil: null };
-    const hasDoor = (side) => doors.includes(side);
-    const xWallDepth = depth - t * 2;
-    const zWallWidth = width - t * 2;
-    const corners = [
-      { x: x2 + hw - t / 2, z: z + hd - t / 2 },
-      { x: x2 + hw - t / 2, z: z - hd + t / 2 },
-      { x: x2 - hw + t / 2, z: z + hd - t / 2 },
-      { x: x2 - hw + t / 2, z: z - hd + t / 2 }
-    ];
-    for (const c of corners) {
-      results.walls.push(this._block(
-        this._id(`${tag}_corner`),
-        { x: c.x, y: wy, z: c.z },
-        [t, height, t],
-        this._wallTex,
-        "standard",
-        true,
-        t
-      ));
-    }
-    {
-      const wx = x2 + hw - t / 2;
-      if (hasDoor("+x")) {
-        this._dooredWall(tag, wx, wy, z, "x", xWallDepth, height, doorWidth, t, results.walls);
-      } else {
-        results.walls.push(this._block(this._id(`${tag}_wall+x`), { x: wx, y: wy, z }, [t, height, xWallDepth], this._wallTex, "standard", true, t));
-      }
-    }
-    {
-      const wx = x2 - hw + t / 2;
-      if (hasDoor("-x")) {
-        this._dooredWall(tag, wx, wy, z, "x", xWallDepth, height, doorWidth, t, results.walls);
-      } else {
-        results.walls.push(this._block(this._id(`${tag}_wall-x`), { x: wx, y: wy, z }, [t, height, xWallDepth], this._wallTex, "standard", true, t));
-      }
-    }
-    {
-      const wz = z + hd - t / 2;
-      if (hasDoor("+z")) {
-        this._dooredWall(tag, x2, wy, wz, "z", zWallWidth, height, doorWidth, t, results.walls);
-      } else {
-        results.walls.push(this._block(this._id(`${tag}_wall+z`), { x: x2, y: wy, z: wz }, [zWallWidth, height, t], this._wallTex, "standard", true, t));
-      }
-    }
-    {
-      const wz = z - hd + t / 2;
-      if (hasDoor("-z")) {
-        this._dooredWall(tag, x2, wy, wz, "z", zWallWidth, height, doorWidth, t, results.walls);
-      } else {
-        results.walls.push(this._block(this._id(`${tag}_wall-z`), { x: x2, y: wy, z: wz }, [zWallWidth, height, t], this._wallTex, "standard", true, t));
-      }
-    }
-    if (floor2) {
-      results.floor = this._floor(this._id(`${tag}_floor`), { x: x2, y: y2, z }, width, depth, uvShema);
-    }
-    if (roof) {
-      results.ceil = this._ceil(this._id(`${tag}_ceil`), { x: x2, y: y2 + height, z }, width, depth, uvShema = false);
-    }
-    return results;
-  }
-  /**
-   * Internal: build a wall face with a centred door opening.
-   *
-   * Produces:
-   *   - left wall segment   (static collision)
-   *   - right wall segment  (static collision)
-   *   - lintel above gap    (static collision)
-   *   - door panel          (static collision, named `<tag>_door_<uid>`)
-   *                          Translate/remove it from code to open/close.
-   *
-   * @returns {{ door: object, lintel: object }}  named refs for runtime control
-   */
-  _dooredWall(tag, cx, cy, cz, axis, wallLen, wallH, doorW, wallT, outArr) {
-    const doorH = Math.min(wallH * 0.75, wallH - 0.4);
-    const lintelH = wallH - doorH;
-    const halfLen = wallLen / 2;
-    const leftLen = halfLen - doorW / 2;
-    const rightLen = halfLen - doorW / 2;
-    const makePos = (along, perp) => axis === "x" ? { x: cx, y: perp, z: along } : { x: along, y: perp, z: cz };
-    const makeScale = (len2, h) => axis === "x" ? [wallT, h, len2] : [len2, h, wallT];
-    const doorMidH = cy - wallH / 2 + doorH / 2;
-    const lintelY = cy + wallH / 2 - lintelH / 2;
-    const leftCenter = (axis === "x" ? cz : cx) - halfLen + leftLen / 2;
-    const rightCenter = (axis === "x" ? cz : cx) + halfLen - rightLen / 2;
-    const doorCenter = axis === "x" ? cz : cx;
-    if (leftLen > 0.01) {
-      outArr.push(this._block(
-        this._id(`${tag}_wl`),
-        makePos(leftCenter, doorMidH),
-        makeScale(leftLen, doorH),
-        this._wallTex,
-        "standard",
-        true,
-        wallT
-      ));
-    }
-    if (rightLen > 0.01) {
-      outArr.push(this._block(
-        this._id(`${tag}_wr`),
-        makePos(rightCenter, doorMidH),
-        makeScale(rightLen, doorH),
-        this._wallTex,
-        "standard",
-        true,
-        wallT
-      ));
-    }
-    outArr.push(this._block(
-      this._id(`${tag}_lintel`),
-      makePos(doorCenter, lintelY),
-      makeScale(wallLen, lintelH),
-      this._wallTex,
-      "standard",
-      false,
-      wallT
-    ));
-    return {};
-  }
-  /**
-   * Create a straight tunnel between two points (axis-aligned only).
-   * For diagonal tunnels, chain two calls with a corner room.
-   *
-   * @param {object} opts
-   * @param {{x,y,z}} opts.from
-   * @param {{x,y,z}} opts.to
-   * @param {number}  opts.width   — tunnel inner width (the non-travel axis)
-   * @param {number}  opts.height  — tunnel inner height
-   * @param {boolean} [opts.roof=true]
-   * @param {string}  [opts.tag='tunnel']
-   * @returns {{ walls: object[] }}
-   */
-  createTunnel(opts) {
-    const { from, to, width, height, roof = true, tag = "tunnel" } = opts;
-    const dx = to.x - from.x;
-    const dz = to.z - from.z;
-    const dy = to.y - from.y;
-    const alongX = Math.abs(dx) >= Math.abs(dz);
-    const len2 = alongX ? Math.abs(dx) : Math.abs(dz);
-    const cx = (from.x + to.x) / 2;
-    const cy = (from.y + to.y) / 2;
-    const cz = (from.z + to.z) / 2;
-    const mh = height / 2;
-    const hw = width / 2;
-    const results = { walls: [] };
-    if (alongX) {
-      const wallY = cy + mh;
-      results.walls.push(this._block(this._id(`${tag}_s1`), { x: cx, y: wallY, z: cz - hw }, [len2, height, 0.3], this._wallTex));
-      results.walls.push(this._block(this._id(`${tag}_s2`), { x: cx, y: wallY, z: cz + hw }, [len2, height, 0.3], this._wallTex));
-      if (roof) {
-        results.walls.push(this._ceil(
-          this._id(`${tag}_roof`),
-          { x: cx, y: from.y + height, z: cz },
-          // ← from.y + height, not cy + height
-          len2,
-          width
-        ));
-      }
-      results.walls.push(this._floor(this._id(`${tag}_floor`), { x: cx, y: cy, z: cz }, len2, width));
-    } else {
-      const wallY = cy + mh;
-      results.walls.push(this._block(this._id(`${tag}_s1`), { x: cx - hw, y: wallY, z: cz }, [0.3, height, len2], this._wallTex));
-      results.walls.push(this._block(this._id(`${tag}_s2`), { x: cx + hw, y: wallY, z: cz }, [0.3, height, len2], this._wallTex));
-      if (roof) {
-        results.walls.push(this._ceil(
-          this._id(`${tag}_roof`),
-          { x: cx, y: from.y + height, z: cz },
-          // ← from.y + height, not cy + height
-          len2,
-          width
-        ));
-      }
-      results.walls.push(this._floor(this._id(`${tag}_floor`), { x: cx, y: cy, z: cz }, width, len2));
-    }
-    return results;
-  }
-  /**
-   * Create a stair run connecting two Y levels.
-   * Stairs travel along X or Z. Each step is one cube-block.
-   *
-   * @param {object} opts
-   * @param {{x,y,z}} opts.origin    — bottom-start corner
-   * @param {'x'|'z'} [opts.axis='x'] — travel direction
-   * @param {number}  opts.steps     — number of steps
-   * @param {number}  [opts.stepW=1.5] — step width (perpendicular)
-   * @param {number}  [opts.stepH=0.4] — riser height
-   * @param {number}  [opts.stepD=0.8] — tread depth
-   * @param {boolean} [opts.walls=true] — side walls
-   * @param {boolean} [opts.roof=false]
-   * @param {string}  [opts.tag='stair']
-   * @returns {{ steps: object[], walls: object[] }}
-   */
-  createStairs(opts) {
-    const {
-      origin,
-      steps,
-      axis = "x",
-      stepW = 1.5,
-      stepH = 0.4,
-      stepD = 0.8,
-      walls = true,
-      roof = false,
-      tag = "stair"
-    } = opts;
-    let { uvShema = false } = opts;
-    const results = { steps: [], walls: [] };
-    let { x: x2, y: y2, z } = origin;
-    for (let i = 0; i < steps; i++) {
-      const stepY = y2 + i * stepH + stepH / 2;
-      const stepCx = axis === "x" ? x2 + i * stepD + stepD / 2 : x2;
-      const stepCz = axis === "z" ? z + i * stepD + stepD / 2 : z;
-      const scaleX = axis === "x" ? stepD : stepW;
-      const scaleZ = axis === "z" ? stepD : stepW;
-      const s = this._block(
-        this._id(`${tag}_step`),
-        { x: stepCx, y: stepY, z: stepCz },
-        [scaleX, stepH, scaleZ],
-        this._wallTex,
-        "standard",
-        true,
-        0.5,
-        void 0,
-        uvShema
-      );
-      results.steps.push(s);
-    }
-    if (walls) {
-      const totalLen = steps * stepD;
-      const totalH = steps * stepH;
-      const wallY = y2 + totalH / 2;
-      const midAlong = (axis === "x" ? x2 : z) + totalLen / 2;
-      const hw = stepW / 2;
-      if (axis === "x") {
-        results.walls.push(this._block(
-          this._id(`${tag}_sw1`),
-          { x: midAlong, y: wallY, z: z - hw - 0.2 },
-          [totalLen, totalH + stepH, 0.3],
-          this._wallTex,
-          void 0,
-          void 0,
-          void 0,
-          void 0,
-          uvShema
-        ));
-        results.walls.push(this._block(this._id(`${tag}_sw2`), { x: midAlong, y: wallY, z: z + hw + 0.2 }, [totalLen, totalH + stepH, 0.3], this._wallTex, void 0, void 0, void 0, void 0, uvShema));
-      } else {
-        results.walls.push(this._block(this._id(`${tag}_sw1`), { x: x2 - hw - 0.2, y: wallY, z: midAlong }, [0.3, totalH + stepH, totalLen], this._wallTex, void 0, void 0, void 0, void 0, uvShema));
-        results.walls.push(this._block(this._id(`${tag}_sw2`), { x: x2 + hw + 0.2, y: wallY, z: midAlong }, [0.3, totalH + stepH, totalLen], this._wallTex, void 0, void 0, void 0, void 0, uvShema));
-      }
-    }
-    return results;
-  }
-  /**
-   * random pillar cover, and optional crates/blocks.
-   *
-   * @param {object} opts
-   * @param {{x,y,z}} opts.origin
-   * @param {number}  opts.width
-   * @param {number}  opts.depth
-   * @param {number}  [opts.wallHeight=2]
-   * @param {number}  [opts.pillars=6]     — number of interior pillars
-   * @param {number}  [opts.pillarH=3]     — pillar height
-   * @param {number}  [opts.covers=4]      — low cover blocks
-   * @param {boolean} [opts.roof=false]
-   * @param {string[]} [opts.doors=['+x','-x','+z','-z']]
-   * @param {string}  [opts.tag='arena']
-   */
-  createFightArena(opts) {
-    const {
-      origin,
-      width,
-      depth,
-      wallHeight = 2,
-      pillars = 6,
-      pillarH = 3,
-      pillarMargin = 4,
-      covers = 4,
-      roof = false,
-      doors = ["+x", "-z"],
-      tag = "arena"
-    } = opts;
-    let { uvShema = false } = opts;
-    const roomResult = this.createRoom({
-      origin,
-      width,
-      depth,
-      height: wallHeight,
-      roof,
-      doors,
-      doorWidth: 3.5,
-      uvShema,
-      tag
-    });
-    const { x: x2, y: y2, z } = origin;
-    const results = { ...roomResult, pillars: [], covers: [] };
-    const pillarsPerSide = Math.round(Math.sqrt(pillars));
-    const marginX = (width - 2 * pillarMargin) / (pillarsPerSide - 1);
-    const marginZ = (depth - 2 * pillarMargin) / (pillarsPerSide - 1);
-    let _MAX = isMobile() === true ? 1 : 5;
-    for (let row2 = 0; row2 < pillarsPerSide; row2++) {
-      for (let col = 0; col < pillarsPerSide; col++) {
-        const px = x2 - width / 2 + pillarMargin + col * marginX;
-        const pz = z - depth / 2 + pillarMargin + row2 * marginZ;
-        results.pillars.push(this._block(
-          this._id(`${tag}_pillar`),
-          { x: px, y: y2 + pillarH / 2, z: pz },
-          [0.6, pillarH, 0.6],
-          this._wallTex,
-          "standard",
-          true,
-          void 0,
-          void 0,
-          void 0,
-          this.pillarsFlame
-        ));
-        if (this._pDecorationEnabled === true && randomIntFromTo(0, 10) < _MAX) results.pillars.push(this._pillarDecoration(
-          this._id(`${tag}_pillarDec`),
-          { x: px, y: y2 + 2.6, z: pz + 0.4 },
-          [0.6, 0.6, 0.6],
-          this._wallTex,
-          "standard",
-          true,
-          void 0,
-          void 0,
-          void 0,
-          true
-        ));
-      }
-    }
-    for (let i = 0; i < covers; i++) {
-      const t = (i * 0.31 + 0.15) % 1;
-      const t2 = (i * 0.67 + 0.4) % 1;
-      const cx = x2 + (t - 0.5) * (width - 4);
-      const cz = z + (t2 - 0.5) * (depth - 4);
-      results.covers.push(this._block(
-        this._id(`${tag}_cover`),
-        { x: cx, y: y2 + 0.6, z: cz },
-        [1.5, 1.2, 1.5],
-        this._floorTex,
-        "standard",
-        true
-      ));
-    }
-    return results;
-  }
-  /**
-   * Create a 2-D maze on a horizontal plane at a given Y level.
-   * Uses recursive DFS — same algorithm as the original example.
-   *
-   * @param {object} opts
-   * @param {{x,y,z}} opts.origin    — bottom-left world position
-   * @param {number}  opts.mazeSize  — grid cells (forced odd)
-   * @param {number}  [opts.spacing=2]
-   * @param {number}  [opts.wallHeight=3]
-   * @param {boolean} [opts.roof=false]
-   * @param {string}  [opts.tag='maze']
-   * @returns {{ walls: object[], entrance: {x,z}, exit: {x,z} }}
-   */
-  createMazeLayer(opts) {
-    let {
-      origin,
-      mazeSize,
-      spacing: spacing2 = 2,
-      wallHeight = 3,
-      roof = false,
-      tag = "maze"
-    } = opts;
-    if (mazeSize % 2 === 0) mazeSize += 1;
-    const { x: ox, y: oy, z: oz } = origin;
-    const grid = Array(mazeSize).fill(null).map(() => Array(mazeSize).fill(0));
-    const walk = (x2, y2) => {
-      grid[y2][x2] = 1;
-      const dirs = [[0, 1], [0, -1], [1, 0], [-1, 0]].sort(() => Math.random() - 0.5);
-      for (const [dx, dy] of dirs) {
-        const nx = x2 + dx * 2, ny = y2 + dy * 2;
-        if (nx >= 0 && nx < mazeSize && ny >= 0 && ny < mazeSize && grid[ny][nx] === 0) {
-          grid[y2 + dy][x2 + dx] = 1;
-          walk(nx, ny);
-        }
-      }
     };
-    walk(1, 1);
-    for (let i = 0; i < mazeSize; i++) {
-      grid[0][i] = grid[mazeSize - 1][i] = grid[i][0] = grid[i][mazeSize - 1] = 0;
-    }
-    grid[1][0] = 1;
-    grid[mazeSize - 2][mazeSize - 1] = 1;
-    const results = { walls: [] };
-    const wallY = oy + wallHeight / 2;
-    for (let gy = 0; gy < mazeSize; gy++) {
-      for (let gx = 0; gx < mazeSize; gx++) {
-        if (grid[gy][gx] === 0) {
-          const wx = ox + gx * spacing2;
-          const wz = oz + gy * spacing2;
-          const w = this._block(
-            this._id(`${tag}_w`),
-            { x: wx, y: wallY, z: wz },
-            [1, wallHeight, 1],
-            this._wallTex,
-            "standard",
-            true,
-            1.1
-          );
-          results.walls.push(w);
-        }
-      }
-    }
-    const totalW = mazeSize * spacing2;
-    this._floor(
-      this._id(`${tag}_floor`),
-      { x: ox + totalW / 2 - spacing2 / 2, y: oy, z: oz + totalW / 2 - spacing2 / 2 },
-      totalW,
-      totalW
-    );
-    if (roof) {
-      this._ceil(
-        this._id(`${tag}_ceil`),
-        { x: ox + totalW / 2 - spacing2 / 2, y: oy + wallHeight, z: oz + totalW / 2 - spacing2 / 2 },
-        totalW,
-        totalW
-      );
-    }
-    results.entrance = {
-      x: ox,
-      z: oz + 1 * spacing2
-    };
-    results.exit = {
-      x: ox + (mazeSize - 1) * spacing2,
-      z: oz + (mazeSize - 2) * spacing2
-    };
-    return results;
+    this.fetchInfo = () => this.getPeers();
+    this.closeSession = () => this.leaveSession();
+    this.ready = this.joinSession();
   }
-  /**
-   * Create multiple stacked maze levels connected by stair runs.
-   * Each level is a full DFS maze. Stairs are placed at the exit
-   * of each layer connecting it to the entrance of the next.
-   *
-   * @param {object} opts
-   * @param {{x,y,z}} opts.origin
-   * @param {number}  opts.levels         — number of floors
-   * @param {number}  opts.mazeSize       — grid cells per layer
-   * @param {number}  [opts.spacing=2]    — cell world-space spacing
-   * @param {number}  [opts.wallHeight=3] — height of each layer's walls
-   * @param {number}  [opts.levelGap=1]   — extra gap between floor ceiling and next floor
-   * @param {number}  [opts.stairSteps=6] — steps per stairwell
-   * @param {boolean} [opts.roofLevels=false] — put a ceiling on each level except top
-   * @returns {{ layers: object[], stairs: object[] }}
-   */
-  createMultiLevelMaze(opts) {
-    const {
-      origin,
-      levels: levels2 = 3,
-      mazeSize = 15,
-      spacing: spacing2 = 1,
-      wallHeight = 3,
-      levelGap = 1,
-      stairSteps = 6,
-      roofLevels = false
-    } = opts;
-    const results = { layers: [], stairs: [] };
-    const stepH = 0.4;
-    const layerH = wallHeight + levelGap;
-    for (let lvl = 0; lvl < levels2; lvl++) {
-      const y2 = origin.y + lvl * layerH;
-      const layer = this.createMazeLayer({
-        origin: { x: origin.x, y: y2, z: origin.z },
-        mazeSize,
-        spacing: spacing2,
-        wallHeight,
-        roof: roofLevels && lvl < levels2 - 1,
-        tag: `lvl${lvl}_maze`
-      });
-      results.layers.push(layer);
-      if (lvl < levels2 - 1) {
-        const stairOrigin = {
-          x: layer.exit.x + spacing2 - 1,
-          y: y2,
-          z: layer.exit.z
-        };
-        const stair = this.createStairs({
-          origin: stairOrigin,
-          axis: "x",
-          steps: stairSteps,
-          stepW: 2.5,
-          stepH,
-          stepD: 0.8,
-          walls: true,
-          roof: false,
-          uvShema: [6, 3],
-          tag: `stair_lvl${lvl}`
-        });
-        results.stairs.push(stair);
-      }
-    }
-    return results;
-  }
-  /**
-   * Layout:
-   *   entrance tunnel → fight arena → maze layer → (optional) multi-level maze
-   *
-   * @param {object} opts
-   * @param {{x,y,z}} [opts.origin={x:0,y:0,z:0}]
-   * @param {boolean} [opts.multiLevel=true]
-   * @param {number}  [opts.mazeLevels=2]
-   * @param {number}  [opts.mazeSize=19]
-   * @returns {object}  all created geometry groups
-   */
-  createFPSMapCompound(opts = {}) {
-    const {
-      origin = { x: 0, y: 0, z: 0 },
-      multiLevel = true,
-      mazeLevels = 2,
-      mazeSize = 19
-    } = opts;
-    const all = {};
-    all.entranceTunnel = this.createTunnel({
-      from: { x: origin.x - 10, y: origin.y, z: origin.z },
-      to: { x: origin.x, y: origin.y, z: origin.z },
-      width: 2.5,
-      height: 3.5,
-      tag: "entry_tunnel"
+  async joinSession() {
+    const protocol = this.options.protocol || (location.protocol === "https:" ? "wss:" : "ws:");
+    const host = this.options.signalingUrl || this.options.url || protocol + "//" + (this.options.domain || location.hostname) + ":" + (this.options.port || 2020);
+    this.socket = new WebSocket(host);
+    await new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => reject(new Error("WebRTC signaling connection timed out")), 1e4);
+      this.socket.addEventListener("open", () => {
+        clearTimeout(timeout);
+        resolve();
+      }, { once: true });
+      this.socket.addEventListener("error", () => {
+        clearTimeout(timeout);
+        reject(new Error("Could not connect to WebRTC signaling server"));
+      }, { once: true });
     });
-    all.arena = this.createFightArena({
-      origin: { x: origin.x + 15, y: origin.y, z: origin.z },
-      width: 20,
-      depth: 20,
-      wallHeight: 2.5,
-      pillars: 8,
-      pillarH: 4,
-      covers: 5,
-      doors: ["-x", "+z"],
-      tag: "main_arena"
+    this.socket.addEventListener("message", (event) => this._onSignal(JSON.parse(event.data)));
+    this.socket.addEventListener("close", () => {
+      this.peers.forEach((_, id2) => this._dropPeer(id2));
+      dispatchEvent(new CustomEvent("net-disconnected"));
     });
-    all.linkTunnel = this.createTunnel({
-      from: { x: origin.x + 25, y: origin.y, z: origin.z + 10 },
-      to: { x: origin.x + 25, y: origin.y, z: origin.z + 20 },
-      width: 2,
-      height: 3,
-      tag: "link_tunnel"
-    });
-    if (multiLevel) {
-      all.mazeSection = this.createMultiLevelMaze({
-        origin: { x: origin.x + 10, y: origin.y, z: origin.z + 22 },
-        levels: mazeLevels,
-        mazeSize,
-        spacing: 2,
-        wallHeight: 3,
-        levelGap: 1,
-        stairSteps: 8,
-        roofLevels: true
-      });
-    } else {
-      all.mazeSection = this.createMazeLayer({
-        origin: { x: origin.x + 10, y: origin.y, z: origin.z + 22 },
-        mazeSize,
-        spacing: 2,
-        wallHeight: 3
-      });
-    }
-    return all;
-  }
-  addMapItems() {
-    this.mapParams.collectItems.forEach((item) => {
-      if (item.type === "energy") {
-        const meshScale = 2;
-        const nName = item.type + item.id;
-        const obj2 = app.addMeshObj({
-          shadowsCast: true,
-          material: { type: "standard", shared: false },
-          position: item.position,
-          rotationSpeed: { x: 0, y: 1, z: 0 },
-          scale: [item.scale[0] / meshScale, item.scale[1] / meshScale, item.scale[2] / meshScale],
-          texturesPaths: [item.tex],
-          name: nName,
-          mesh: this.meshes.energyItem,
-          physics: { enabled: false, mass: 0, geometry: "Cube" },
-          raycast: { enabled: true, radius: 1 },
-          pointerEffect: { enabled: true }
-        });
-        app.collisionSystem.registerPickup(nName, item.position, item.radius, item.type, item.amount);
-        setTimeout(() => {
-          obj2.setBlend(0.85);
-          obj2.setupMaterialPBR([12, 4, 1], 2, 0.1, 0.1);
-          if (!obj2.effects) obj2.effects = {};
-          obj2.effects.kaleBullet1 = new FlameEffect(app.device, "rgba16float", "rgba16float", FlamePresets.bonfire, app.cameraBuffer);
-          obj2.effects.kaleBullet1.setGeometry(geometryTypes.ring, 2);
-          obj2.effects.kaleBullet1.speed = 5;
-          obj2.effects.kaleBullet1.intensity = 40;
-        }, 350);
-      } else if (item.type === "ammo") {
-        const meshScale = 2 + 1;
-        const nName = item.type + item.id;
-        const obj_ = app.addMeshObj({
-          shadowsCast: true,
-          material: { type: "standard", shared: false },
-          position: item.position,
-          rotationSpeed: { x: 0, y: 1, z: 0 },
-          rotation: { x: 0, y: 0, z: 0 },
-          scale: [item.scale[0] / meshScale, item.scale[1] / meshScale, item.scale[2] / meshScale],
-          texturesPaths: [item.tex],
-          useBlend: true,
-          name: nName,
-          mesh: this.meshes.ammo,
-          physics: { enabled: false, mass: 0, geometry: "Cube" },
-          raycast: { enabled: true, radius: 1 },
-          pointerEffect: { enabled: true }
-        });
-        app.collisionSystem.registerPickup(nName, item.position, item.radius, item.type, item.amount);
-      } else if (item.type === "armor") {
-        const meshScale = 2;
-        const nName = item.type + item.id;
-        const obj_ = app.addMeshObj({
-          shadowsCast: true,
-          material: { type: "standard", shared: false },
-          position: item.position,
-          rotationSpeed: { x: 0, y: 2, z: 0 },
-          scale: [item.scale[0] / meshScale, item.scale[1] / meshScale, item.scale[2] / meshScale],
-          texturesPaths: [item.tex],
-          useBlend: true,
-          name: nName,
-          mesh: this.meshes.armor,
-          physics: { enabled: false, mass: 0, geometry: "Cube" },
-          raycast: { enabled: true, radius: 1 },
-          pointerEffect: { enabled: true }
-        });
-        app.collisionSystem.registerPickup(nName, item.position, item.radius, item.type, item.amount);
-        setTimeout(() => {
-          obj_.setBlend(0.5);
-          if (!obj_.effects) obj_.effects = {};
-          obj_.effects.kaleBullet1 = new FlameEffect(app.device, "rgba16float", "rgba16float", FlamePresets.torch, app.cameraBuffer);
-          obj_.effects.kaleBullet1.setScale(0.5);
-          obj_.effects.kaleBullet1.speed = 5;
-          obj_.effects.kaleBullet1.intensity = 40;
-        }, 350);
-      }
-    });
-  }
-  respawnMapItem(type2, id2) {
-    this.mapParams.collectItems.forEach((item) => {
-      if (item.type === "energy" && type2 === "energy") {
-        const nName = item.type + item.id;
-        if (id2 !== nName) return;
-        const meshScale = 2;
-        const obj2 = app.addMeshObj({
-          shadowsCast: true,
-          material: { type: "standard", shared: false },
-          position: item.position,
-          rotationSpeed: { x: 0, y: 1, z: 0 },
-          scale: [item.scale[0] / meshScale, item.scale[1] / meshScale, item.scale[2] / meshScale],
-          texturesPaths: [item.tex],
-          name: nName,
-          mesh: this.meshes.energyItem,
-          physics: { enabled: false, mass: 0, geometry: "Cube" },
-          raycast: { enabled: true, radius: 1 },
-          pointerEffect: { enabled: true }
-        });
-        app.collisionSystem.registerPickup(nName, item.position, item.radius, item.type, item.amount);
-        setTimeout(() => {
-          obj2.setBlend(0.85);
-          obj2.setupMaterialPBR([12, 4, 1], 2, 0.1, 0.1);
-          if (!obj2.effects) obj2.effects = {};
-          obj2.effects.kaleBullet1 = new FlameEffect(app.device, "rgba16float", "rgba16float", FlamePresets.bonfire, app.cameraBuffer);
-          obj2.effects.kaleBullet1.setGeometry(geometryTypes.ring, 2);
-          obj2.effects.kaleBullet1.speed = 5;
-          obj2.effects.kaleBullet1.intensity = 40;
-        }, 350);
-      } else if (item.type === "ammo" && type2 === "ammo") {
-        const nName = item.type + item.id;
-        if (id2 !== nName) return;
-        const meshScale = 2 + 1;
-        const obj_ = app.addMeshObj({
-          shadowsCast: true,
-          material: { type: "standard", shared: false },
-          position: item.position,
-          rotationSpeed: { x: 0, y: 1, z: 0 },
-          rotation: { x: 0, y: 0, z: 0 },
-          scale: [item.scale[0] / meshScale, item.scale[1] / meshScale, item.scale[2] / meshScale],
-          texturesPaths: [item.tex],
-          useBlend: true,
-          name: nName,
-          mesh: this.meshes.ammo,
-          physics: { enabled: false, mass: 0, geometry: "Cube" },
-          raycast: { enabled: true, radius: 1 },
-          pointerEffect: { enabled: true }
-        });
-        app.collisionSystem.registerPickup(nName, item.position, item.radius, item.type, item.amount);
-      } else if (item.type === "armor" && type2 === "armor") {
-        const nName = item.type + item.id;
-        if (id2 !== nName) return;
-        const meshScale = 2;
-        const obj_ = app.addMeshObj({
-          shadowsCast: true,
-          material: { type: "standard", shared: false },
-          position: item.position,
-          rotationSpeed: { x: 0, y: 2, z: 0 },
-          scale: [item.scale[0] / meshScale, item.scale[1] / meshScale, item.scale[2] / meshScale],
-          texturesPaths: [item.tex],
-          useBlend: true,
-          name: nName,
-          mesh: this.meshes.armor,
-          physics: { enabled: false, mass: 0, geometry: "Cube" },
-          raycast: { enabled: true, radius: 1 },
-          pointerEffect: { enabled: true }
-        });
-        app.collisionSystem.registerPickup(nName, item.position, item.radius, item.type, item.amount);
-        setTimeout(() => {
-          obj_.setBlend(0.5);
-          if (!obj_.effects) obj_.effects = {};
-          obj_.effects.kaleBullet1 = new FlameEffect(app.device, "rgba16float", "rgba16float", FlamePresets.torch, app.cameraBuffer);
-          obj_.effects.kaleBullet1.setScale(0.5);
-          obj_.effects.kaleBullet1.speed = 5;
-          obj_.effects.kaleBullet1.intensity = 40;
-        }, 350);
-      }
-    });
-  }
-};
-
-// src/engine/procedures/fps-projectile.js
-var ProjectileSystem = class {
-  /**
-   * @param {object} engine       — MatrixEngineWGPU instance
-   * @param {object} mesh         — cube mesh for projectile/decal visuals
-   * @param {object} collision    — CollisionSystem instance
-   * @param {object} [opts]
-   * @param {number} [opts.projectileSpeed=0.8]
-   * @param {number} [opts.projectileLifetime=3000]  — ms before auto-despawn
-   * @param {number} [opts.projectileScale=0.15]
-   * @param {string} [opts.projectileTex]
-   * @param {string} [opts.decalTex]
-   * @param {number} [opts.decalSize=0.4]
-   * @param {number} [opts.decalLifetime=2000]
-   * @param {Function} [opts.onHitscanHit]    — callback(hitPoint, normal, reflect, entry)
-   * @param {Function} [opts.onProjectileHit] — callback(hitPoint, normal, entry)
-   */
-  constructor(engine, mesh, collision, opts = {}) {
-    this.engine = engine;
-    this.mesh = mesh;
-    this.collision = collision;
-    this.cam = this.engine.getCamera();
-    this._speed = opts.projectileSpeed ?? 1;
-    this._lifetime = opts.projectileLifetime ?? 4e3;
-    this._scale = opts.projectileScale ?? 0.25;
-    this._tex = opts.projectileTex ?? "https://unpkg.com/matrix-engine-wgpu@latest/public/res/textures/shooter/decal.webp";
-    this._decalTex = opts.decalTex ?? "https://unpkg.com/matrix-engine-wgpu@latest/public/res/textures/shooter/decal.webp";
-    this._decalSize = opts.decalSize ?? 0.2;
-    this._decalLifetime = opts.decalLifetime ?? 2e3;
-    this.onHitscanHit = opts.onHitscanHit ?? null;
-    this.onProjectileHit = opts.onProjectileHit ?? null;
-    this._projectiles = [];
-    this._uid = 0;
-    this._maxDecals = opts.maxDecals ?? 40;
-    this._decals = [];
-    this.pArg = { name: null, obj: null, dir: null };
-    this.test = new FlameEmitter(this.engine.device, "rgba16float", 20, this.engine.cameraBuffer);
-  }
-  _getCameraState() {
-    const ox = this.cam.position[0];
-    const oy = this.cam.position[1];
-    const oz = this.cam.position[2];
-    const dx = -this.cam.back[0];
-    const dy = -this.cam.back[1];
-    const dz = -this.cam.back[2];
-    const len2 = Math.sqrt(dx * dx + dy * dy + dz * dz);
-    return {
-      origin: { x: ox, y: oy, z: oz },
-      dir: { x: dx / len2, y: dy / len2, z: dz / len2 },
-      cam: this.cam
-    };
-  }
-  _rayVsAABB(ro, rd, entry) {
-    const h = entry.half ?? { x: 1, y: 1, z: 1 };
-    const mn = { x: entry.pos.x - h.x, y: entry.pos.y - h.y, z: entry.pos.z - h.z };
-    const mx = { x: entry.pos.x + h.x, y: entry.pos.y + h.y, z: entry.pos.z + h.z };
-    let tmin = -Infinity, tmax = Infinity;
-    let hitAxis = "x", hitSign = 1;
-    for (const axis of ["x", "y", "z"]) {
-      if (Math.abs(rd[axis]) < 1e-8) {
-        if (ro[axis] < mn[axis] || ro[axis] > mx[axis]) return null;
-      } else {
-        const t1 = (mn[axis] - ro[axis]) / rd[axis];
-        const t2 = (mx[axis] - ro[axis]) / rd[axis];
-        const tN = Math.min(t1, t2);
-        const tF = Math.max(t1, t2);
-        if (tN > tmin) {
-          tmin = tN;
-          hitAxis = axis;
-          hitSign = t1 < t2 ? -1 : 1;
-        }
-        tmax = Math.min(tmax, tF);
-      }
-    }
-    if (tmax < 0 || tmin > tmax) return null;
-    const t = tmin < 0 ? tmax : tmin;
-    const normal = { x: 0, y: 0, z: 0 };
-    normal[hitAxis] = hitSign;
-    return { t, normal };
-  }
-  _reflect(dir, normal) {
-    const dot2 = dir.x * normal.x + dir.y * normal.y + dir.z * normal.z;
-    return {
-      x: dir.x - 2 * dot2 * normal.x,
-      y: dir.y - 2 * dot2 * normal.y,
-      z: dir.z - 2 * dot2 * normal.z
-    };
-  }
-  _despawn(name2) {
-    const idx = this._projectiles.findIndex((p) => p.name === name2);
-    if (idx !== -1) this._projectiles.splice(idx, 1);
-    let getObj = this.engine.getSceneObjectByName(name2);
-    if (getObj) {
-      if (getObj.effects.kaleBullet) getObj.effects.kaleBullet.destroy();
-      getObj.destroy();
-    } else {
-      const obj2 = this.engine.mainRenderBundle?.find((o2) => o2.name === name2);
-      if (obj2) {
-        obj2.position.x = 99999;
-        obj2.position.y = 99999;
-        obj2.position.z = 99999;
-      }
-    }
-  }
-  spawnDecal(hitPoint, normal, groupHit) {
-    const group = groupHit;
-    const name2 = `decal_${this._uid++}`;
-    const offset = 0.02;
-    const s = this._decalSize;
-    const pos2 = {
-      x: hitPoint.x + normal.x * offset,
-      y: hitPoint.y + normal.y * offset,
-      z: hitPoint.z + normal.z * offset
-    };
-    const scale4 = [
-      normal.x !== 0 ? 0.02 : s,
-      normal.y !== 0 ? 0.02 : s,
-      normal.z !== 0 ? 0.02 : s
-    ];
-    const isEnemy = group === "enemy" || group === "zombi_head";
-    const obj2 = this.engine.addMeshObj({
-      shadowsCast: false,
-      material: { type: "standard", shared: false, useBlend: true },
-      position: pos2,
-      scale: scale4,
-      texturesPaths: [this._decalTex],
-      name: name2,
-      mesh: this.mesh,
-      physics: { enabled: false, mass: 0, geometry: "Cube" },
-      pointerEffect: {
-        enabled: true,
-        bloodBurst: isEnemy ? true : false
-      }
-    });
-    if (isEnemy) obj2.setBlend(1e-3);
-    setTimeout(() => {
-      if (isEnemy) obj2.effects.bloodBurst.spawn([0, 0, 0], null, 30, 3);
-    }, 20);
-    setTimeout(() => this._despawn(name2), this._decalLifetime);
-    return obj2;
-  }
-  /**
-   * Instant raycast from camera forward.
-   * Tests all static collision entries, spawns decal on hit.
-   * @param {number} [maxDist=200]
-   */
-  fireHitscan(maxDist = 200) {
-    const { origin, dir } = this._getCameraState();
-    let closest = null;
-    let closestT = maxDist;
-    let closestN = null;
-    for (const entry of this.collision.staticEntries) {
-      const result2 = this._rayVsAABB(origin, dir, entry);
-      if (result2 && result2.t > 0.5 && result2.t < closestT) {
-        closestT = result2.t;
-        closest = entry;
-        closestN = result2.normal;
-      }
-    }
-    if (!closest) return null;
-    const hitPoint = {
-      x: origin.x + dir.x * closestT,
-      y: origin.y + dir.y * closestT,
-      z: origin.z + dir.z * closestT
-    };
-    const reflect = this._reflect(dir, closestN);
-    this.spawnDecal(hitPoint, closestN);
-    if (this.onHitscanHit) {
-      this.onHitscanHit(hitPoint, closestN, reflect, closest);
-    }
-    return { hitPoint, normal: closestN, reflect, entry: closest, distance: closestT };
-  }
-  fireProjectile() {
-    const { origin, dir } = this._getCameraState();
-    const name2 = `proj_${this._uid++}`;
-    const maxDist = 200;
-    const rotation3 = this._dirToEuler(dir);
-    let closest = null;
-    let closestT = maxDist;
-    let closestN = null;
-    let groupHit = null;
-    for (const entry of this.collision.staticEntries) {
-      const result2 = this._rayVsAABB(origin, dir, entry);
-      if (result2 && result2.t > 1e-3 && result2.t < closestT) {
-        closestT = result2.t;
-        closest = entry;
-        closestN = result2.normal;
-        groupHit = entry.group;
-      }
-    }
-    const travelDist = closest ? closestT : maxDist;
-    const targetX = origin.x + dir.x * travelDist;
-    const targetY = origin.y + dir.y * travelDist;
-    const targetZ = origin.z + dir.z * travelDist;
-    const obj2 = this.engine.addMeshObj({
-      shadowsCast: false,
-      material: { type: "standard", shared: false, useBlend: true },
-      position: { x: origin.x, y: origin.y, z: origin.z },
-      scale: [this._scale, this._scale, this._scale],
-      rotation: { x: 90, y: rotation3.y, z: 0 },
-      texturesPaths: [this._tex],
-      name: name2,
-      mesh: this.mesh,
-      physics: { enabled: false, mass: 0, geometry: "Cube" },
-      pointerEffect: {
-        enabled: true
-      }
-    });
-    obj2.effects = {};
-    obj2.setBlend(0.7);
-    setTimeout(() => {
-      obj2.effects.kaleBullet = new FlameEmitter(this.engine.device, "rgba16float", 20, this.engine.cameraBuffer);
-      obj2.effects.kaleBullet.setIntensity(200);
-    }, 10);
-    obj2.position.setSpeed(this._speed);
-    obj2.position.translateByXYZ(targetX, targetY, targetZ);
-    obj2.position.onTargetPositionReach = () => {
-      if (closest) {
-        const hitPoint = { x: targetX, y: targetY, z: targetZ };
-        const reflect = this._reflect(dir, closestN);
-        setTimeout(() => this.spawnDecal(hitPoint, closestN, groupHit), 60);
-        if (this.onHitscanHit) {
-          this.onHitscanHit(hitPoint, closestN, reflect, closest);
-        }
-      }
-      setTimeout(() => this._despawn(name2), 100);
-    };
-    this.pArg.name = name2;
-    this.pArg.obj = obj2;
-    this.pArg.dir = dir;
-    this._projectiles.push(this.pArg);
-    return { name: name2, obj: obj2, dir };
-  }
-  _dirToEuler(dir, worldUp = { x: 0, y: 1, z: 0 }) {
-    const dlen = Math.hypot(dir.x, dir.y, dir.z) || 1;
-    const fx = dir.x / dlen, fz = dir.z / dlen;
-    let yawDeg = Math.atan2(-fx, fz) * 180 / Math.PI;
-    return { x: 0, y: yawDeg, z: 0 };
-  }
-};
-
-// examples/games/first-person-shooter/options.js
-function setupCanvasFilters(canvasId) {
-  let canvas = document.getElementById(canvasId);
-  if (canvas == null) {
-    canvas = document.getElementsByTagName("canvas")[0];
-  }
-  const filterState = {
-    blur: "0px",
-    grayscale: "0%",
-    brightness: "100%",
-    contrast: "100%",
-    saturate: "100%",
-    sepia: "0%",
-    invert: "0%",
-    hueRotate: "0deg"
-  };
-  function updateFilter() {
-    const filterString = `
-      blur(${filterState.blur}) 
-      grayscale(${filterState.grayscale}) 
-      brightness(${filterState.brightness}) 
-      contrast(${filterState.contrast}) 
-      saturate(${filterState.saturate}) 
-      sepia(${filterState.sepia}) 
-      invert(${filterState.invert}) 
-      hue-rotate(${filterState.hueRotate})
-    `.trim();
-    canvas.style.filter = filterString;
-  }
-  const bindings = {
-    blurControl: "blur",
-    grayscaleControl: "grayscale",
-    brightnessControl: "brightness",
-    contrastControl: "contrast",
-    saturateControl: "saturate",
-    sepiaControl: "sepia",
-    invertControl: "invert",
-    hueControl: "hueRotate"
-  };
-  Object.entries(bindings).forEach(([selectId, key]) => {
-    const el2 = document.getElementById(selectId);
-    el2.addEventListener("change", (e) => {
-      filterState[key] = e.target.value;
-      updateFilter();
-    });
-  });
-  updateFilter();
-}
-var settingsBox = `
-<div style="">
-  <span style="font-size:170%" data-label="settings"></span>
-  <div style="justify-items: flex-end;margin:20px;" >
-    <div>
-      <span data-label="sounds"></span>
-      <label class="switch">
-        <input id="settingsAudios" type="checkbox">
-        <span class="sliderSwitch round"></span>
-      </label>
-    </div>
-    <div>
-      <span data-label="lightMove"></span>
-      <label class="switch">
-        <input id="settingsLight" type="checkbox">
-        <span class="sliderSwitch round"></span>
-      </label>
-    </div>
- 
-
-      <div>
-        <label>Blur:</label>
-        <select id="blurControl">
-          <option value="0px">Blur: 0</option>
-          <option value="1px">Blur: 1</option>
-          <option value="2px">Blur: 2</option>
-          <option value="3px">Blur: 3</option>
-        </select>
-      </div>
-
-      <div>
-      <label>Grayscale:</label>
-      <select id="grayscaleControl">
-        <option value="0%">Grayscale: 0%</option>
-        <option value="25%">Grayscale: 25%</option>
-        <option value="50%">Grayscale: 50%</option>
-        <option value="75%">Grayscale: 75%</option>
-        <option value="100%">Grayscale: 100%</option>
-      </select>
-      </div>
-      
-      <div>
-       <label>Brightness:</label>
-      <select id="brightnessControl">
-        <option value="100%">100%</option>
-        <option value="150%">150%</option>
-        <option value="200%">200%</option>
-      </select>
-      </div>
-      
-      <div>
-      <label>Contrast:</label>
-      <select id="contrastControl">
-        <option value="100%">100%</option>
-        <option value="150%">150%</option>
-        <option value="200%">200%</option>
-      </select>
-      </div>
-      
-      <div>
-      <label>Saturate:</label>
-      <select id="saturateControl">
-        <option value="100%">100%</option>
-        <option value="150%">150%</option>
-        <option value="200%">200%</option>
-      </select>
-     </div>
-      
-      <div>
-      <label>Sepia:</label>
-      <select id="sepiaControl">
-        <option value="0%">0%</option>
-        <option value="50%">50%</option>
-        <option value="100%">100%</option>
-      </select>
-     </div>
-      
-      <div>
-      <label>Invert:</label>
-      <select id="invertControl">
-        <option value="0%">0%</option>
-        <option value="50%">50%</option>
-        <option value="100%">100%</option>
-      </select>
-     </div>
-      
-      <div>
-      <label>Hue Rotate:</label>
-      <select id="hueControl">
-        <option value="0deg">0\xB0</option>
-        <option value="90deg">90\xB0</option>
-        <option value="180deg">180\xB0</option>
-        <option value="270deg">270\xB0</option>
-      </select>
-      </div>
- 
-    <div style="margin-top:20px;">
-      <button class="btn" onclick="document.getElementById('messageBox').style.display = 'none'">
-        <span data-label="hide"></span>
-      </button>
-    </div>
-
-    <img src="res/icons/512.png" style="position:absolute;left:10px;top:5%;width:300px;z-index:-1;"/>
-  </div>
-</div>`;
-var hang3dUI = class {
-  constructor() {
-    var messageBox = document.createElement("div");
-    messageBox.id = "messageBox";
-    messageBox.classList.add("msg-box");
-    messageBox.style.display = "none";
-    messageBox.style.zIndex = 1e4;
-    messageBox.style.top = isMobile() ? "0" : "0";
-    messageBox.style.width = isMobile() ? "100%" : "82%";
-    messageBox.style.height = isMobile() ? "100%" : "100%";
-    messageBox.style.background = "black";
-    messageBox.innerHTML = settingsBox;
-    document.body.appendChild(messageBox);
-    var settings = document.createElement("div");
-    settings.id = "settings";
-    Object.assign(settings.style, {
-      position: "fixed",
-      top: `2%`,
-      right: `5%`,
-      // width: '140px',
-      fontSize: `11px`,
-      background: `rgba(0,0,0,1)`,
-      border: `2px solid rgba(255,255,255,1)`,
-      borderRadius: `10px`,
-      zIndex: "9999",
-      overflow: "hidden"
-    });
-    settings.classList.add("btn");
-    settings.innerHTML = `<span data-label="settings"></span>`;
-    document.body.appendChild(settings);
-    if (localStorage.getItem("settingsAudios") === "on") {
-      byId("settingsAudios").click();
-      byId("settingsAudios").value = "on";
-      byId("settingsAudios").checked = true;
-    } else if (localStorage.getItem("settingsAudios") === "off") {
-      byId("settingsAudios").value = "off";
-      byId("settingsAudios").checked = false;
-    } else {
-      byId("settingsAudios").click();
-      byId("settingsAudios").value = "on";
-      byId("settingsAudios").checked = true;
-      localStorage.setItem("settingsAudios", "on");
-    }
-    byId("settingsAudios").addEventListener("change", (e) => {
-      console.log("byId('settingsAudios')", byId("settingsAudios"));
-      if (e.target.checked == true) {
-        app.matrixSounds.unmuteAll();
-        localStorage.setItem("settingsAudios", "on");
-      } else {
-        app.matrixSounds.muteAll();
-        localStorage.setItem("settingsAudios", "off");
-      }
-    });
-    byId("settingsLight").addEventListener("change", (e) => {
-      if (e.target.checked == true) {
-        const light = app.lightContainer[0];
-        light.setIntensity(10);
-        light.setColor([100, 1, 100]);
-      } else {
-        const light = app.lightContainer[0];
-        light.setIntensity(10);
-        light.setColor([1, 2, 1]);
-      }
-    });
-    setupCanvasFilters();
-    settings.addEventListener("click", () => {
-      if (messageBox.style.display === "none") {
-        messageBox.style.display = "block";
-      } else {
-        messageBox.style.display = "none";
-      }
-      dispatchEvent(new CustomEvent("updateLang", {}));
-    });
-    dispatchEvent(new CustomEvent("updateLang", {}));
-  }
-};
-
-// examples/games/first-person-shooter/table-params.js
-var mapParams = {
-  zombie: {
-    startUpPositions: {
-      south: [-20, 0.2, 20],
-      p1: [-8.35, 0.2, 4.56],
-      p2: [8.35, 0.2, 4.56],
-      p3: [4.35, 0.2, 4.56],
-      north: [20, 0.2, -20]
-    }
-  },
-  collectItems: [
-    { id: "1", position: { x: 2.5, y: 0.4, z: 10 }, radius: 0.4, type: "ammo", amount: "100", scale: [0.2, 0.2, 0.2], tex: "./res/textures/metal/metal1.webp" },
-    { id: "2", position: { x: -4, y: 0.4, z: -10 }, radius: 0.4, type: "energy", amount: "50", scale: [0.8, 0.8, 0.8], tex: "./res/textures/blankgray2.webp" },
-    { id: "3", position: { x: -60.56, y: -1.799, z: -0.045 }, radius: 0.4, type: "energy", amount: "50", scale: [1, 1.5, 1], tex: "./res/textures/blankgray2.webp" },
-    { id: "4", position: { x: -44.79292678833008, y: 2.3, z: -0.29 }, radius: 1, type: "armor", amount: "50", scale: [1, 1, 1], tex: "./res/meshes/obj/armor.webp" }
-  ]
-};
-
-// examples/games/first-person-shooter/zombie.js
-var DEG2RAD = Math.PI / 180;
-var RAD2DEG = 180 / Math.PI;
-var startTime = performance.now();
-var Zombi = class {
-  zombieAnims = {
-    dead: null,
-    walk: null,
-    nono: null,
-    attack: null,
-    idle: null
-  };
-  creepHPReset = 20;
-  creepFocusAttackOn = null;
-  zombieSpeedWalk = 3e-3;
-  hp = this.creepHPReset;
-  isDead = false;
-  attackDamage = 32;
-  exposeDamage = false;
-  attackCooldownTicks = 100;
-  _attackCooldownLeft = 0;
-  aiConfig = {
-    detectRangeFront: 25,
-    detectRangeBack: 10,
-    attackRange: 1.6,
-    rotationStepDeg: 35,
-    stepDistance: 0.4
-  };
-  zombiDieEvent = new CustomEvent("zombie-die", { detail: null });
-  aiState = "attack";
-  // idle | chase | attack | dead
-  cam = app.getCamera();
-  constructor(o2, archetypes = ["zombie"], group = "enemy", team) {
-    this.name = o2.name;
-    this.core = o2.core;
-    this.group = group;
-    this.team = team;
-    this.archetype = archetypes[0];
-    this.loadCreep(o2);
+    this._signal({ type: "join", room: this.sessionName, metadata: this.options.customData || null });
+    dispatchEvent(new CustomEvent("setupSessionObject", { detail: this.session }));
     return this;
   }
-  loadCreep = async (o2) => {
-    this.o = o2;
+  _signal(message) {
+    if (this.socket && this.socket.readyState === WebSocket.OPEN) this.socket.send(JSON.stringify(message));
+  }
+  async _onSignal(message) {
+    if (message.type === "joined") {
+      this.id = message.id;
+      this.connection.connectionId = this.id;
+      dispatchEvent(new CustomEvent("net-ready", { detail: { id: this.id, room: message.room } }));
+      (message.peers || []).forEach((peer2) => this._createPeer(peer2.id, true));
+      return;
+    }
+    if (message.type === "peer-joined") {
+      this._createPeer(message.id, false);
+      dispatchEvent(new CustomEvent("onConnectionCreated", { detail: message }));
+      return;
+    }
+    if (message.type === "peer-left") {
+      this._dropPeer(message.id);
+      dispatchEvent(new CustomEvent("connectionDestroyed", { detail: { connectionId: message.id } }));
+      return;
+    }
+    if (message.type === "error") {
+      console.warn("[NativeWebRTC] signaling server:", message.error);
+      dispatchEvent(new CustomEvent("net-error", { detail: message }));
+      return;
+    }
+    const peer = this.peers.get(message.from);
+    if (!peer) return;
     try {
-      this.core.addGlbObjInctance({
-        material: { type: "standard", useTextureFromGlb: this.o.name.includes("zombi-cap") === true ? false : true, shared: true },
-        shadowsCast: false,
-        scale: [0.8, 0.8, 0.8],
-        position: o2.position,
-        name: o2.name,
-        texturesPaths: this.o.name.includes("zombi-cap") === true ? ["./res/meshes/glb/zombi-cap.webp"] : void 0,
-        raycast: { enabled: true, radius: 1.1 },
-        pointerEffect: {
-          enabled: true
-          // energyBar: true
+      if (message.type === "offer") {
+        await peer.setRemoteDescription(message.description);
+        const answer = await peer.createAnswer();
+        await peer.setLocalDescription(answer);
+        this._signal({ type: "answer", to: message.from, description: peer.localDescription });
+      } else if (message.type === "answer") {
+        await peer.setRemoteDescription(message.description);
+      } else if (message.type === "ice-candidate" && message.candidate) {
+        if (peer.remoteDescription) await peer.addIceCandidate(message.candidate);
+        else {
+          const pending = this.pendingIce.get(message.from) || [];
+          pending.push(message.candidate);
+          this.pendingIce.set(message.from, pending);
         }
-      }, null, o2.data);
-      this.asyncHelper(this.o).then(() => {
-      }).catch(() => {
-        setTimeout(() => {
-          this.asyncHelper(this.o);
-        }, 1e3);
-      });
-    } catch (err) {
-      throw err;
-    }
-  };
-  asyncHelper = async (o2) => {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        this.zombie_bodies = app.mainRenderBundle.filter((obj2) => obj2.name && obj2.name.includes(o2.name) === true);
-        if (this.zombie_bodies.length == 0) {
-          reject();
-          return;
-        }
-        let bPos;
-        const delta_ = randomIntFromTo(0, 150);
-        this.zombie_bodies.forEach((subMesh, idx) => {
-          subMesh.setAmbient(randomIntFromTo(0, 2), randomIntFromTo(0, 2), randomIntFromTo(0, 2));
-          subMesh.position.thrust = this.zombieSpeedWalk;
-          subMesh.animationSpeed = 450 + delta_;
-          subMesh.animationIndex = 0;
-          subMesh.glb.glbJsonData.animations.forEach((a, index) => {
-            if (a.name == "crawl") this.zombieAnims.crawl = index;
-            if (a.name == "dead") this.zombieAnims.dead = index;
-            if (a.name == "zombi-walking") this.zombieAnims.walk = index;
-            if (a.name == "no_no") this.zombieAnims.nono = index;
-            if (a.name == "attack") this.zombieAnims.attack = index;
-            if (a.name == "idle") this.zombieAnims.idle = index;
-          });
-          subMesh.setAmbient(1, 1, 1, 1);
-          if (idx == 0) {
-            subMesh.sharedState.emitAnimationEvent = true;
-            bPos = subMesh.position;
-            this.core.collisionSystem.registerStatic(
-              o2.name,
-              subMesh.position,
-              0.1,
-              this.group,
-              {
-                x: subMesh.scale[0] / 3.5,
-                y: subMesh.scale[1] * 1.5,
-                z: subMesh.scale[2] / 3.5
-              }
-            );
-          } else {
-            subMesh.position = bPos;
-            this.core.collisionSystem.registerStatic(
-              o2.name,
-              subMesh.position,
-              0.2,
-              "zombi_head",
-              {
-                x: subMesh.scale[0] / 4,
-                y: subMesh.scale[1] * 1.75,
-                z: subMesh.scale[2] / 4
-              }
-            );
-          }
-        });
-        this.attachEvents();
-        resolve();
-      }, 250);
-    });
-  };
-  setWalk() {
-    this.zombie_bodies.forEach((subMesh) => {
-      if (this.archetype === "zombie-crawl") {
-        subMesh.playAnimationByIndex(this.zombieAnims.crawl);
-      } else {
-        subMesh.playAnimationByIndex(this.zombieAnims.walk);
       }
-    });
-  }
-  setSalute() {
-    this.zombie_bodies.forEach((subMesh) => {
-      subMesh.playAnimationByIndex(this.zombieAnims.salute);
-    });
-  }
-  setDead() {
-    this.zombie_bodies.forEach((subMesh) => {
-      subMesh.playAnimationByIndex(this.zombieAnims.dead);
-    });
-  }
-  setIdle() {
-    this.zombie_bodies.forEach((subMesh) => {
-      subMesh.playAnimationByIndex(this.zombieAnims.idle);
-    });
-  }
-  setAttack() {
-    this.zombie_bodies.forEach((subMesh) => {
-      subMesh.playAnimationByIndex(this.zombieAnims.attack);
-    });
-  }
-  setAmbientColor(r2, b, g) {
-    this.core.getSceneObjectIfIncludes("zombi-cap").forEach((part) => {
-      part.setAmbient(r2, b, g, 1);
-    });
-  }
-  setStartUpPosCreep() {
-    this.zombie_bodies.forEach((subMesh, idx) => {
-      subMesh.position.setPosition(
-        mapParams.zombie.startUpPositions["north"][0],
-        mapParams.zombie.startUpPositions["north"][1],
-        mapParams.zombie.startUpPositions["north"][2]
-      );
-    });
-  }
-  spawnPosZombie(id2 = 1) {
-    this.zombie_bodies.forEach((subMesh, idx) => {
-      subMesh.position.setPosition(
-        mapParams.zombie.startUpPositions["p" + id2][0],
-        mapParams.zombie.startUpPositions["p" + id2][1],
-        mapParams.zombie.startUpPositions["p" + id2][2]
-      );
-    });
-    this.isDead = false;
-    this.hp = this.creepHPReset;
-  }
-  updateEnergyBar() {
-    const head = this.zombie_bodies[0];
-  }
-  takeDamage(amount = 0.2) {
-    if (this.isDead) return;
-    this.hp = Math.max(0, this.hp - amount);
-    this.updateEnergyBar();
-    app.matrixSounds.play("zombie" + randomIntFromTo(1, 3));
-    if (this.hp <= 0) {
-      this.die();
-      app.matrixSounds.play("zombiedead");
-    }
-  }
-  die() {
-    this.isDead = true;
-    this.aiState = "dead";
-    this.setDead();
-    this.core.collisionSystem.unregister?.(this.name);
-    dispatchEvent(this.zombiDieEvent);
-    setTimeout(() => {
-      this.spawnPosZombie(randomIntFromTo(1, 3));
-      this.setIdle();
-    }, 600);
-  }
-  getPlayerPosition() {
-    const cam2 = app.getCamera();
-    return cam2 ? vecOf(cam2.position) : null;
-  }
-  isPlayerInFront(zombiePos, rotYDeg, playerPos) {
-    const zp = vecOf(zombiePos);
-    const rad = (rotYDeg || 0) * DEG2RAD;
-    const fx = Math.sin(rad);
-    const fz = Math.cos(rad);
-    const dx = playerPos.x - zp.x;
-    const dz = playerPos.z - zp.z;
-    const len2 = Math.sqrt(dx * dx + dz * dz) || 1;
-    return dx / len2 * fx + dz / len2 * fz > 0;
-  }
-  rotateStep(current, target, maxStepDeg) {
-    let diff = (target - current + 540) % 360 - 180;
-    const clamped = Math.max(-maxStepDeg, Math.min(maxStepDeg, diff));
-    return (current + clamped + 360) % 360;
-  }
-  resolveStaticCollisionXZ(candidateX, candidateY, candidateZ, radius = 0.5) {
-    const cs = this.core.collisionSystem;
-    cs._getNeighborCells(candidateX, candidateY, candidateZ, cs._staticGrid, cs._staticNeighbors);
-    const fakePos = { x: candidateX, y: candidateY, z: candidateZ };
-    const neighbors = cs._staticNeighbors;
-    for (let i = 0; i < neighbors.length; i++) {
-      const entry = neighbors[i];
-      if (entry.group === "floor") continue;
-      if (entry.id === this.name) continue;
-      cs.resolveVsStaticCube(fakePos, radius, entry);
-    }
-    return fakePos;
-  }
-  moveTowardPlayer(zombiePos, rotYDeg, playerPos) {
-    const zp = vecOf(zombiePos);
-    const dx = playerPos.x - zp.x;
-    const dz = playerPos.z - zp.z;
-    const dist2 = Math.sqrt(dx * dx + dz * dz);
-    if (dist2 < 1e-4) return rotYDeg;
-    const nx = dx / dist2;
-    const nz = dz / dist2;
-    const targetAngleY = (Math.atan2(nx, nz) * RAD2DEG + 360) % 360;
-    const newRotY = this.rotateStep(rotYDeg || 0, targetAngleY, this.aiConfig.rotationStepDeg);
-    const step = Math.min(this.aiConfig.stepDistance, Math.max(0, dist2 - this.aiConfig.attackRange));
-    if (step > 0) {
-      const rawX = zp.x + nx * step;
-      const rawZ = zp.z + nz * step;
-      const resolved = this.resolveStaticCollisionXZ(rawX, zp.y, rawZ, 0.7);
-      zombiePos.translateByXYZ(resolved.x, zp.y, resolved.z);
-    }
-    return newRotY;
-  }
-  resolveAttack() {
-    if (this._attackCooldownLeft > 0) {
-      this._attackCooldownLeft--;
-      return;
-    }
-    this._attackCooldownLeft = this.attackCooldownTicks;
-    this.exposeDamage = true;
-    this.setAttack();
-  }
-  distanceXZ(a, b) {
-    const dx = a.x - b.x;
-    const dz = a.z - b.z;
-    return Math.sqrt(dx * dx + dz * dz);
-  }
-  navigateStep() {
-    if (this.isDead) return;
-    if (app.getCamera().position[1] < -10) {
-      app.player.die();
-    }
-    const head = this.zombie_bodies[0];
-    const playerPos = this.getPlayerPosition();
-    if (!playerPos) return;
-    const zp = vecOf(head.position);
-    const dist2 = this.distanceXZ(zp, playerPos);
-    const inFront = this.isPlayerInFront(head.position, head.rotation.y, playerPos);
-    const detectRange = inFront ? this.aiConfig.detectRangeFront : this.aiConfig.detectRangeBack;
-    if (dist2 > detectRange) {
-      if (this.aiState !== "idle") {
-        this.aiState = "idle";
-        this.setIdle();
+      if (peer.remoteDescription && this.pendingIce.has(message.from)) {
+        const pending = this.pendingIce.get(message.from);
+        this.pendingIce.delete(message.from);
+        for (const candidate of pending) await peer.addIceCandidate(candidate);
       }
-      this.exposeDamage = false;
-      return;
+    } catch (error) {
+      console.warn("[NativeWebRTC] signaling error:", error);
     }
-    if (dist2 <= this.aiConfig.attackRange) {
-      if (this.aiState !== "attack") {
-        this.aiState = "attack";
-        this.setAttack();
-      }
-      app.matrixSounds.play("zombie" + randomIntFromTo(1, 4));
-      this.resolveAttack();
-      return;
-    }
-    this.aiState = "chase";
-    const newRotY = this.moveTowardPlayer(head.position, head.rotation.y, playerPos);
-    this.zombie_bodies.forEach((subMesh) => {
-      subMesh.rotation.y = newRotY;
-    });
-    this.exposeDamage = false;
-    this.setWalk();
   }
-  _rotAnimHandle = null;
-  smoothRotateTo(subMesh, targetY, durationMs = 900) {
-    if (this._rotAnimHandle) cancelAnimationFrame(this._rotAnimHandle);
-    const startY = subMesh.rotation.y;
-    let diff = (targetY - startY + 540) % 360 - 180;
-    const startTime2 = performance.now();
-    const step = (now) => {
-      const t = Math.min(1, (now - startTime2) / durationMs);
-      subMesh.rotation.y = (startY + diff * t + 360) % 360;
-      if (t < 1) {
-        this._rotAnimHandle = requestAnimationFrame(step);
-      } else {
-        this._rotAnimHandle = null;
+  async _createPeer(peerId, initiator) {
+    if (this.peers.has(peerId)) return this.peers.get(peerId);
+    const config = this.options.rtcConfig || { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
+    const pc = new RTCPeerConnection(config);
+    this.peers.set(peerId, pc);
+    if (this.options.media) {
+      try {
+        if (!this.localStream) this.localStream = await navigator.mediaDevices.getUserMedia(this.options.media === true ? { audio: true, video: true } : this.options.media);
+        this.localStream.getTracks().forEach((track) => pc.addTrack(track, this.localStream));
+      } catch (error) {
+        console.warn("[NativeWebRTC] media permission/device error:", error);
       }
+    }
+    if (initiator) {
+      const channel = pc.createDataChannel("matrix-engine");
+      this._bindChannel(peerId, channel);
+    } else {
+      pc.ondatachannel = (event) => this._bindChannel(peerId, event.channel);
+    }
+    pc.onicecandidate = (event) => {
+      if (event.candidate) this._signal({ type: "ice-candidate", to: peerId, candidate: event.candidate });
     };
-    this._rotAnimHandle = requestAnimationFrame(step);
+    pc.ontrack = (event) => {
+      dispatchEvent(new CustomEvent("webrtc-track", { detail: { peerId, stream: event.streams[0], track: event.track } }));
+      dispatchEvent(new CustomEvent("streamPlaying", { detail: { peerId, stream: event.streams[0], track: event.track } }));
+    };
+    pc.onconnectionstatechange = () => {
+      if (["failed", "closed"].includes(pc.connectionState)) this._dropPeer(peerId);
+    };
+    if (initiator) {
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      this._signal({ type: "offer", to: peerId, description: pc.localDescription });
+    }
+    return pc;
   }
-  attachEvents() {
-    app.autoUpdate.push({ update: () => {
-      this.navigateStep();
-    } });
-    addEventListener(`animationEnd-${this.zombie_bodies[0].name}`, (e) => {
-      if (this.exposeDamage === true) {
-        app.matrixSounds.play("zombie2");
-        app.player.takeDamage(this.attackDamage);
-        app.energy.setValue(app.player.energy);
-        return;
+  _bindChannel(peerId, channel) {
+    this.channels.set(peerId, channel);
+    channel.onmessage = (event) => {
+      let data = event.data;
+      try {
+        data = JSON.parse(data);
+      } catch (_) {
       }
-      if (randomIntFromTo(0, 50) < 1) {
-        app.matrixSounds.play("zombie" + randomIntFromTo(1, 4));
+      const envelope = { data: typeof data === "string" ? data : JSON.stringify(data), from: { connectionId: peerId }, type: "data" };
+      if (data && typeof data === "object" && (data.netPos || data.netRotX !== void 0 || data.netRotY !== void 0 || data.netRotZ !== void 0 || data.animationIndex !== void 0)) {
+        this.multiPlayer.update(envelope);
       }
-    });
+      dispatchEvent(new CustomEvent("only-data-receive", { detail: envelope }));
+      dispatchEvent(new CustomEvent("webrtc-message", { detail: { peerId, data } }));
+    };
+    channel.onopen = () => dispatchEvent(new CustomEvent("webrtc-peer-ready", { detail: { peerId } }));
+    channel.onclose = () => this.channels.delete(peerId);
+  }
+  _handleGameMessage(event) {
+    let data = event.data;
+    try {
+      if (typeof data === "string") data = JSON.parse(data);
+    } catch (_) {
+      return;
+    }
+    try {
+      const name2 = data.remoteName || data.sceneName;
+      const object = app.getSceneObjectByName(name2);
+      if (!object) return;
+      if (data.netPos) object.position.setPosition(data.netPos.x, data.netPos.y, data.netPos.z);
+      else if (data.netRotY !== void 0) object.rotation.y = data.netRotY;
+      else if (data.netRotX !== void 0) object.rotation.x = data.netRotX;
+      else if (data.netRotZ !== void 0) object.rotation.z = data.netRotZ;
+      else if (data.animationIndex !== void 0) object.playAnimationByIndex(data.animationIndex);
+    } catch (error) {
+      console.info("[NativeWebRTC] game message:", error);
+    }
+  }
+  _dropPeer(peerId) {
+    const pc = this.peers.get(peerId);
+    if (pc) pc.close();
+    this.peers.delete(peerId);
+    this.channels.delete(peerId);
+    this.pendingIce.delete(peerId);
+  }
+  getPeers() {
+    return Array.from(this.peers.keys());
+  }
+  leaveSession() {
+    if (this.closed) return;
+    this.closed = true;
+    this.peers.forEach((_, id2) => this._dropPeer(id2));
+    if (this.localStream) this.localStream.getTracks().forEach((track) => track.stop());
+    if (this.socket) this.socket.close();
+    dispatchEvent(new CustomEvent("net-left", { detail: { room: this.sessionName } }));
   }
 };
 
-// src/engine/plugin/player-object/player.js
-var tiers = [
-  { threshold: 500, text: "GODLIKE" },
-  { threshold: 250, text: "UNSTOPPABLE" },
-  { threshold: 100, text: "RAMPAGE" },
-  { threshold: 50, text: "KILLING SPREE" },
-  { threshold: 25, text: "WARMING UP" },
-  { threshold: 10, text: "FIRST BLOOD" },
-  { threshold: 2, text: "JUNIO ZOMBIE KILLER" },
-  { threshold: 0, text: "WEEKEND WARRIOR" }
-];
-var Player = class {
-  constructor(o2 = {}) {
-    this.name = o2.name || "local_player";
-    this.respawnItemsInterval = o2.respawnItemsInterval || 12e4;
-    this.typeOfController = o2.typeOfController || "fps";
-    this.maxEnergy = o2.maxEnergy ?? 100;
-    this.energy = o2.energy ?? this.maxEnergy;
-    this.lives = o2.lives ?? 1;
-    this.ammo = o2.ammo ?? 100;
-    this.armor = o2.armor ?? false;
-    this.kills = o2.kills ?? 0;
-    this.isDead = false;
-    this.onEnergyChange = o2.onEnergyChange || null;
-    this._killTiersHit = /* @__PURE__ */ new Set();
-    this.attachEvents();
+// src/engine/networking/matrix-stream.js
+var netConfig = {
+  NETWORKING_DOMAIN: "",
+  NETWORKING_PORT: "2020",
+  isDataOnly: false,
+  streamRender: false
+};
+function byId3(d) {
+  return document.getElementById(d);
+}
+var BIGLOG = "color: #55fd53;font-size:20px;text-shadow: 0px 0px 5px #f4fd63, -1px -1px 5px orange";
+var REDLOG = "color: lime;font-size:15px;text-shadow: 0px 0px 5px red, -2px -2px 5px orangered";
+var OV;
+var numVideos = 0;
+var sessionName;
+var token;
+var session;
+function joinSession(options2) {
+  if (typeof options2 === "undefined") {
+    options2 = {
+      resolution: "320x240"
+    };
   }
-  attachEvents() {
-    addEventListener("pickup-collected", (e) => {
-      const { type: type2 } = e.detail.entry;
-      if (type2 === "energy") {
-        app.player.heal(e.detail.entry);
-      } else if (type2 === "ammo") {
-        app.player.gotAmmo(e.detail.entry);
-      } else if (type2 === "armor") {
-        app.player.gotArmor(e.detail.entry);
-      }
+  document.getElementById("join-btn").disabled = true;
+  document.getElementById("join-btn").innerHTML = "Joining...";
+  getToken(function() {
+    OV = new OpenVidu();
+    window.OV = OV;
+    session = OV.initSession();
+    session.on("connectionCreated", (event) => {
+      dispatchEvent(new CustomEvent("onConnectionCreated", { detail: event }));
+      pushEvent(event);
     });
-    addEventListener("zombie-die", () => {
-      this.addKill(1);
+    session.on("connectionDestroyed", (e) => {
+      dispatchEvent(new CustomEvent("connectionDestroyed", { detail: { connectionId: e.connection.connectionId, event: e } }));
+      pushEvent(e);
     });
-  }
-  setEnergy(value) {
-    this.energy = Math.max(0, Math.min(this.maxEnergy, value));
-    this.onEnergyChange?.(this.energy);
-    if (this.energy <= 0) this.die();
-  }
-  takeDamage(amount) {
-    if (this.isDead) return;
-    if (this.armor === true) {
-      amount = amount * 0.75;
-    }
-    this.setEnergy(this.energy - amount);
-  }
-  heal(entry) {
-    let { amount } = entry;
-    amount = parseInt(amount);
-    if (this.isDead) return;
-    this.setEnergy(this.energy + amount);
-    app.matrixSounds.play("feelgood");
-    setTimeout(() => {
-      app.gameMap.respawnMapItem("energy", entry.id);
-    }, this.respawnItemsInterval);
-  }
-  die() {
-    this.energy = 0;
-    app.energy.setValue(0);
-    if (this.isDead) return;
-    this.isDead = true;
-    this.lives = Math.max(0, this.lives - 1);
-    for (const t of tiers) {
-      if (this.kills >= t.threshold && !this._killTiersHit.has(t.threshold)) {
-        mb.show(`${t.text} \u2014 ${this.kills} KILLS.`, void 0, 5e3);
-        this._killTiersHit.add(t.threshold);
-        app.getCamera().removeKeyboard();
-        MobileDOM.addButton(`GAME OVER ${t.text} YOUR SCORE ${this.kills} kills.`, () => {
-          location.reload();
-        }, void 0, {
-          fontSize: 12,
-          size: isMobile() === true ? 200 : 240,
-          bottom: 40,
-          left: isMobile() === true ? 30 : 45,
-          color: "orangered"
+    if (!options2.isDataOnly) {
+      session.on("streamCreated", (event) => {
+        pushEvent(event);
+        console.log(`%c [onStreamCreated] ${event.stream.streamId}`);
+        setTimeout(() => {
+          console.log(`%c REMOTE STREAM READY [] ${byId3("remote-video-" + event.stream.streamId)}`, BIGLOG);
+        }, 2e3);
+        dispatchEvent(new CustomEvent("onStreamCreated", { detail: { event, msg: `[connectionId][${event.stream.connection.connectionId}]` } }));
+        var subscriber = session.subscribe(event.stream, "video-container");
+        subscriber.on("videoElementCreated", (event2) => {
+          dispatchEvent(new CustomEvent(`videoElementCreatedSubscriber`, { detail: event2 }));
+          updateNumVideos(1);
         });
-        if (document.pointerLockElement === app.canvas) {
-          document.exitPointerLock();
+        subscriber.on("videoElementDestroyed", (event2) => {
+          pushEvent(event2);
+          updateNumVideos(-1);
+        });
+        subscriber.on("streamPlaying", (event2) => {
+          dispatchEvent(new CustomEvent("streamPlaying", { detail: event2 }));
+        });
+      });
+      session.on("streamDestroyed", (event) => {
+        pushEvent(event);
+      });
+    } else {
+      session.on("streamCreated", (event) => {
+        const subscriber = session.subscribe(event.stream, "subscriber");
+        console.log("USER DATA: " + event.stream.connection.data);
+      });
+    }
+    session.on("sessionDisconnected", (event) => {
+      console.log("Session Disconected", event);
+      pushEvent(event);
+      if (event.reason !== "disconnect") {
+        removeUser();
+      }
+      if (event.reason !== "sessionClosedByServer") {
+        session = null;
+        numVideos = 0;
+        byId3("join").style.display = "block";
+        byId3("session").style.display = "none";
+      }
+    });
+    session.on("exception", (exception) => {
+      console.warn(exception);
+    });
+    dispatchEvent(new CustomEvent(`setupSessionObject`, { detail: session }));
+    if (netConfig.streamRender === true) {
+      session.connect(token, netConfig.customData).then(() => {
+        byId3("session-title").innerText = sessionName;
+        byId3("join").style.display = "none";
+        byId3("session").style.display = "block";
+        const stream = app.canvas.captureStream(30);
+        const videoTrack = stream.getVideoTracks()[0];
+        var publisher = OV.initPublisher("video-container", {
+          audioSource: false,
+          videoSource: videoTrack,
+          publishAudio: false,
+          publishVideo: true,
+          resolution: options2.resolution,
+          frameRate: 30,
+          insertMode: "APPEND",
+          mirror: false
+        });
+        session.publish(publisher);
+        console.log("[STREAM RENDER]", session);
+      }).catch((error) => {
+        console.warn("Error connecting to the session [stream render]:", error.code, error.message);
+        enableBtn();
+      });
+    } else if (!netConfig.isDataOnly) {
+      session.connect(token, netConfig.customData).then(() => {
+        byId3("session-title").innerText = sessionName;
+        byId3("join").style.display = "none";
+        byId3("session").style.display = "block";
+        var publisher = OV.initPublisher("video-container", {
+          audioSource: netConfig.isDataOnly ? false : void 0,
+          // The source of audio. If undefined default microphone
+          videoSource: netConfig.isDataOnly ? false : void 0,
+          // The source of video. If undefined default webcam
+          publishAudio: !netConfig.isDataOnly,
+          // Whether you want to start publishing with your audio unmuted or not
+          publishVideo: !netConfig.isDataOnly,
+          // Whether you want to start publishing with your video enabled or not
+          resolution: options2.resolution,
+          // The resolution of your video
+          frameRate: 30,
+          // The frame rate of your video
+          insertMode: "APPEND",
+          // How the video is inserted in the target element 'video-container'
+          mirror: false
+          // Whether to mirror your local video or not
+        });
+        publisher.on("accessAllowed", (event) => {
+          pushEvent({
+            type: "accessAllowed"
+          });
+        });
+        publisher.on("accessDenied", (event) => {
+          pushEvent(event);
+        });
+        publisher.on("accessDialogOpened", (event) => {
+          pushEvent({
+            type: "accessDialogOpened"
+          });
+        });
+        publisher.on("accessDialogClosed", (event) => {
+          pushEvent({
+            type: "accessDialogClosed"
+          });
+        });
+        publisher.on("streamCreated", (event) => {
+          dispatchEvent(new CustomEvent(`LOCAL-STREAM-READY`, { detail: event.stream }));
+          console.log(`%c LOCAL STREAM READY ${event.stream.connection.connectionId}`, BIGLOG);
+          pushEvent(event);
+        });
+        publisher.on("videoElementCreated", (event) => {
+          dispatchEvent(new CustomEvent(`videoElementCreated`, { detail: event }));
+          updateNumVideos(1);
+          console.log("NOT FIXED MUTE event.element, ", event.element);
+          event.element.mute = true;
+        });
+        publisher.on("videoElementDestroyed", (event) => {
+          dispatchEvent(new CustomEvent(`videoElementDestroyed`, { detail: event }));
+          pushEvent(event);
+          updateNumVideos(-1);
+        });
+        publisher.on("streamPlaying", (event) => {
+          console.log("streamPlaying");
+          dispatchEvent(new CustomEvent(`streamPlaying`, { detail: event }));
+        });
+        session.publish(publisher);
+      }).catch((error) => {
+        console.warn("Error connecting to the session:", error.code, error.message);
+        enableBtn();
+      });
+    } else {
+      console.log("netConfig", netConfig.customData);
+      session.connect(token, netConfig.customData).then(() => {
+        byId3("session-title").innerText = sessionName;
+        byId3("join").style.display = "none";
+        byId3("session").style.display = "block";
+      }).catch((error) => {
+        console.warn("Error connecting to the session:", error.code, error.message);
+        enableBtn();
+      });
+    }
+    return false;
+  });
+}
+function leaveSession() {
+  session.disconnect();
+  enableBtn();
+}
+function enableBtn() {
+  document.getElementById("join-btn").disabled = false;
+  document.getElementById("join-btn").innerHTML = "Join!";
+}
+function getToken(callback) {
+  sessionName = byId3("sessionName").value;
+  httpRequest(
+    "POST",
+    "https://" + netConfig.NETWORKING_DOMAIN + ":" + netConfig.NETWORKING_PORT + "/api/get-token",
+    {
+      sessionName
+    },
+    "Request of TOKEN gone WRONG:",
+    (res) => {
+      token = res[0];
+      console.log("Excellent (TOKEN:" + token + ")");
+      callback(token);
+    }
+  );
+}
+function removeUser() {
+  httpRequest(
+    "POST",
+    "https://" + netConfig.NETWORKING_DOMAIN + ":" + netConfig.NETWORKING_PORT + "/api/remove-user",
+    {
+      sessionName,
+      token
+    },
+    "User couldn't be removed from session",
+    (res) => {
+      console.warn("You have been removed from session " + sessionName);
+    }
+  );
+}
+function closeSession() {
+  httpRequest(
+    "DELETE",
+    "https://" + netConfig.NETWORKING_DOMAIN + ":" + netConfig.NETWORKING_PORT + "/api/close-session",
+    {
+      sessionName
+    },
+    "Session couldn't be closed",
+    (res) => {
+      console.warn("Session " + sessionName + " has been closed");
+    }
+  );
+}
+function fetchInfo(sessionName2) {
+  httpRequest(
+    "POST",
+    "https://" + netConfig.NETWORKING_DOMAIN + ":" + netConfig.NETWORKING_PORT + "/api/fetch-info",
+    {
+      sessionName: sessionName2
+    },
+    "Session couldn't be fetched",
+    (res) => {
+      dispatchEvent(new CustomEvent("check-gameplay-channel", { detail: JSON.stringify(res, null, "	") }));
+    }
+  );
+}
+function httpRequest(method, url, body2, errorMsg, callback) {
+  byId3("textarea-http").innerText = "";
+  var http = new XMLHttpRequest();
+  http.open(method, url, true);
+  http.setRequestHeader("Content-type", "application/json");
+  http.addEventListener("readystatechange", processRequest, false);
+  http.send(JSON.stringify(body2));
+  function processRequest() {
+    if (http.readyState == 4) {
+      if (http.status == 200) {
+        try {
+          callback(JSON.parse(http.responseText));
+        } catch (e) {
+          callback(e);
         }
-        break;
+      } else {
+        console.warn(errorMsg + " (" + http.status + ")");
+        if (url.indexOf("fetch-info") != -1) {
+          if (http.status == 0 && errorMsg == "Session couldn't be fetched") {
+            const errorText = errorMsg + ": HTTP " + http.status + " (" + http.responseText + ")";
+            dispatchEvent(new CustomEvent("check-gameplay-channel", { detail: { status: "false", errorText } }));
+          } else {
+            dispatchEvent(new CustomEvent("check-gameplay-channel", { detail: { status: "free", url } }));
+          }
+        }
       }
     }
   }
-  respawn(fullEnergy = true) {
-    if (this.lives <= 0) return false;
-    this.isDead = false;
-    if (fullEnergy) this.setEnergy(this.maxEnergy);
-    return true;
+}
+var events = "";
+window.onbeforeunload = function() {
+  if (session) {
+    removeUser();
+    leaveSession();
   }
-  addKill(n2 = 1) {
-    this.kills += n2;
-    byId("player-status").textContent = "Kills " + this.kills;
+};
+function updateNumVideos(i) {
+  numVideos += i;
+  var coll = document.getElementsByTagName("video");
+  for (var x2 = 0; x2 < coll.length; x2++) {
+    coll.classList = "";
   }
-  useAmmo(n2 = 1) {
-    if (this.ammo < n2) return false;
-    this.ammo -= n2;
-    byId("player-ammo").textContent = "Ammo " + this.ammo;
-    return true;
+  for (var x2 = 0; x2 < coll.length; x2++) {
+    coll.classList = "";
+    switch (numVideos) {
+      case 1:
+        coll[x2].classList.add("two");
+        break;
+      case 2:
+        coll[x2].classList.add("two");
+        break;
+      case 3:
+        coll[x2].classList.add("three");
+        break;
+      case 4:
+        coll[x2].classList.add("four");
+        break;
+    }
   }
-  gotArmor(entry) {
-    this.armor = true;
-    byId("player-armor").textContent = "Armor " + (this.armor === true ? "YES" : "NO");
-    app.matrixSounds.play("feelgood");
-    setTimeout(() => {
-      this.armor = false;
-      byId("player-armor").textContent = "Armor NO";
-      app.gameMap.respawnMapItem("armor", entry.id);
-    }, this.respawnItemsInterval);
+}
+function pushEvent(event) {
+  events += (!events ? "" : "\n") + event.type;
+  byId3("textarea-events").innerText = events;
+}
+
+// src/engine/networking/net.js
+var MatrixStream = class {
+  connection = null;
+  session = null;
+  constructor(arg) {
+    if (typeof arg === "undefined") {
+      throw console.error("MatrixStream constructor must have argument : { domain: <DOMAIN_NAME> , port: <NUMBER> }");
+    }
+    netConfig.NETWORKING_DOMAIN = arg.domain;
+    netConfig.NETWORKING_PORT = arg.port;
+    netConfig.sessionName = arg.sessionName;
+    netConfig.resolution = arg.resolution;
+    netConfig.isDataOnly = arg.isDataOnly;
+    netConfig.streamRender = arg.streamRender;
+    if (arg.customData) netConfig.customData = arg.customData;
+    scriptManager.LOAD("./networking/openvidu-browser-2.20.0.js", void 0, void 0, void 0, () => {
+      setTimeout(() => {
+        this.loadNetHTML();
+      }, 2500);
+    });
   }
-  gotAmmo(entry) {
-    const { amount } = entry;
-    const n2 = parseInt(amount);
-    this.ammo += n2;
-    byId("player-ammo").textContent = "Ammo " + this.ammo;
-    app.matrixSounds.play("feelgood");
-    setTimeout(() => {
-      app.gameMap.respawnMapItem("ammo", entry.id);
-    }, this.respawnItemsInterval);
+  loadNetHTML() {
+    fetch("./networking/broadcaster2.html", { headers: htmlHeader }).then((res) => {
+      return res.text();
+    }).then((html) => {
+      var popupUI = byId3("matrix-net");
+      popupUI.style = "display: block;";
+      popupUI.innerHTML = html;
+      this.joinSessionUI = byId3("join-btn");
+      this.buttonCloseSession = byId3("buttonCloseSession");
+      this.buttonLeaveSession = byId3("buttonLeaveSession");
+      byId3("sessionName").value = netConfig.sessionName;
+      this.sessionName = byId3("sessionName");
+      console.log("[CHANNEL]" + this.sessionName.value);
+      this.attachEvents();
+      this.closeSession = closeSession;
+      console.log(`%cMatrixStream constructed.`, BIGLOG);
+    });
+  }
+  attachEvents() {
+    this.fetchInfo = fetchInfo;
+    this.sendOnlyData = (netArg) => {
+      this.session.signal({
+        data: JSON.stringify(netArg),
+        to: [],
+        type: netConfig.sessionName + "-data"
+      }).then(() => {
+      }).catch((error) => {
+        console.error("Erro signal => ", error);
+      });
+    };
+    this.send = (netArg) => {
+      const to = netArg.toRemote ? netArg.toRemote : [];
+      netArg.toRemote = "null";
+      this.session.signal({
+        data: JSON.stringify(netArg),
+        to,
+        type: netConfig.sessionName
+      }).then(() => {
+      }).catch((error) => {
+        console.error("Erro signal => ", error);
+      });
+    };
+    addEventListener(`LOCAL-STREAM-READY`, (e) => {
+      console.log("LOCAL-STREAM-READY ", e.detail.connection);
+      this.connection = e.detail.connection;
+      var CHANNEL = netConfig.sessionName;
+      this.connection.send = (netArg) => {
+        this.session.signal({
+          data: JSON.stringify(netArg),
+          to: [],
+          type: CHANNEL
+        }).then(() => {
+        }).catch((error) => {
+          console.error("Erro signal => ", error);
+        });
+      };
+    });
+    addEventListener("setupSessionObject", (e) => {
+      this.session = e.detail;
+      this.connection = e.detail.connection;
+      this.session.on(`signal:${netConfig.sessionName}`, (e2) => {
+        if (this.session.connection.connectionId == e2.from.connectionId) {
+        } else {
+          this.multiPlayer.update(e2);
+        }
+      });
+      this.session.on(`signal:${netConfig.sessionName}-data`, (e2) => {
+        if (this.session.connection.connectionId == e2.from.connectionId) {
+          dispatchEvent(new CustomEvent("self-msg-data", { detail: e2 }));
+        } else {
+          dispatchEvent(new CustomEvent("only-data-receive", { detail: e2 }));
+        }
+      });
+    });
+    addEventListener("streamPlaying", (e) => {
+      console.log("streamPlaying from engine ", e.detail);
+      const isRemote = e.detail.target.id.indexOf("remote-video") !== -1;
+      const vr = e.detail.target.videos[0].video;
+      const streamId = e.detail.target.id;
+      if (isRemote) {
+        StreamSlotManager.addRemote(vr, streamId);
+      } else {
+        StreamSlotManager.addLocal(vr);
+      }
+    });
+    addEventListener("connectionDestroyed", (e) => {
+      const rc = byId3("video-container");
+      if (!rc) return;
+      rc.querySelectorAll("div:not(:has(*))").forEach((div2) => div2.remove());
+    });
+    this.joinSessionUI.addEventListener("click", () => {
+      console.log(`%c JOIN SESSION [${netConfig.resolution}] `, REDLOG);
+      console.log(`%c JOIN isDataOnly [${netConfig.isDataOnly}] `, REDLOG);
+      joinSession({
+        resolution: netConfig.resolution,
+        isDataOnly: netConfig.isDataOnly
+      });
+    });
+    this.joinSessionUI.style.zIndex = "10";
+    this.buttonCloseSession.addEventListener("click", closeSession);
+    this.buttonLeaveSession.addEventListener("click", () => {
+      console.log(`%cLEAVE SESSION`, REDLOG);
+      removeUser();
+      leaveSession();
+    });
+    byId3("netHeaderTitle").style.position = "relative";
+    byId3("netHeaderTitle").style.zIndex = "10";
+    byId3("netHeaderTitle").addEventListener("click", this.domManipulation.hideNetPanel);
+    setTimeout(() => dispatchEvent(new CustomEvent("net-ready", {})), 2500);
+  }
+  multiPlayer = {
+    root: this,
+    onFollowPath(e) {
+    },
+    update(e) {
+      e.data = JSON.parse(e.data);
+      try {
+        if (e.data.netPos) {
+          app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);
+        } else if (e.data.netRotY || e.data.netRotY == 0) {
+          app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.y = e.data.netRotY;
+        } else if (e.data.netRotX || e.data.netRotX == 0) {
+          app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.x = e.data.netRotX;
+        } else if (e.data.netRotZ || e.data.netRotZ == 0) {
+          app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.z = e.data.netRotZ;
+        } else if (e.data.animationIndex || e.data.animationIndex == 0) {
+          console.log(`play animation from net , e.data.sceneName:${e.data.sceneName}  vs  e.data.remoteName: ${e.data.remoteName}
+               e.data.animationIndex ${e.data.animationIndex}
+            
+            `);
+          app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).playAnimationByIndex(e.data.animationIndex);
+        }
+      } catch (err) {
+        console.info("mmo-err:", err);
+      }
+    },
+    leaveGamePlay() {
+    }
+  };
+  domManipulation = {
+    hideNetPanel: () => {
+      if (byId3("matrix-net").classList.contains("hide-by-vertical")) {
+        byId3("matrix-net").classList.remove("hide-by-vertical");
+        byId3("matrix-net").classList.add("show-by-vertical");
+        byId3("netHeaderTitle").innerText = "HIDE";
+      } else {
+        byId3("matrix-net").classList.remove("show-by-vertical");
+        byId3("matrix-net").classList.add("hide-by-vertical");
+        byId3("netHeaderTitle").innerText = "SHOW";
+      }
+    }
+  };
+};
+var activateNet2 = (sessionOption) => {
+  console.info(`%cNetworking2 backend params: ${sessionOption}`, LOG_WARN);
+  if (typeof sessionOption === "undefined") {
+    var sessionOption = {};
+    sessionOption.sessionName = "matrix-engine-random";
+    sessionOption.resolution = "160x240";
+    sessionOption.active = true;
+    sessionOption.domain = "maximumroulette.com";
+    sessionOption.port = 2020;
+  }
+  const backend = sessionOption.backend || sessionOption.provider || "kurento";
+  if (backend === "webrtc" || backend === "native-webrtc") {
+    net = new NativeWebRTC({
+      domain: sessionOption.domain,
+      // || t?.networking2?.domain,
+      port: sessionOption.port || 2020,
+      signalingUrl: sessionOption.signalingUrl,
+      sessionName: sessionOption.sessionName,
+      customData: sessionOption.customData,
+      media: sessionOption.media || false,
+      rtcConfig: sessionOption.rtcConfig
+    });
+  } else {
+    net = new MatrixStream({
+      domain: t.networking2.domain,
+      port: t.networking2.port,
+      sessionName: sessionOption.sessionName,
+      resolution: sessionOption.resolution
+    });
+  }
+  addEventListener(`setTitle`, (e) => {
+    document.title = e.detail;
+  });
+  return net;
+};
+var StreamSlotManager = {
+  slots: [],
+  _updateLayout() {
+    const container = document.getElementById("video-container");
+    const count = this.slots.length;
+    if (!container || count === 0) return;
+    const cols = count === 1 ? 1 : count <= 4 ? 2 : 3;
+    const pct = (100 / cols).toFixed(2) + "%";
+    this.slots.forEach((slot) => {
+      slot.wrapper.style.width = `calc(${pct} - 4px)`;
+    });
+  },
+  addRemote(videoEl, streamId) {
+    const container = document.getElementById("video-container");
+    const wrapper = document.createElement("div");
+    wrapper.dataset.streamId = streamId;
+    Object.assign(wrapper.style, {
+      overflow: "hidden",
+      background: "#000",
+      aspectRatio: "16/9",
+      transition: "width 0.3s ease"
+    });
+    videoEl.style.cssText = "width:100%;height:100%;object-fit:cover;display:block;";
+    wrapper.appendChild(videoEl);
+    container.appendChild(wrapper);
+    this.slots.push({ wrapper, streamId });
+    this._updateLayout();
+  },
+  addLocal(videoEl) {
+    videoEl.style.cssText = "position:fixed;bottom:16px;right:16px;width:180px;aspect-ratio:16/9;object-fit:cover;border-radius:8px;border:2px solid rgba(255,255,255,0.3);z-index:999;";
+  },
+  removeRemote(streamId) {
+    const idx = this.slots.findIndex((s) => s.streamId === streamId);
+    if (idx === -1) return;
+    this.slots[idx].wrapper.remove();
+    this.slots.splice(idx, 1);
+    this._updateLayout();
   }
 };
 
-// examples/games/first-person-shooter/hang3d.js
-var loadHang3d = function() {
-  let app2 = new MatrixEngineWGPU({
+// examples/apps/public-chat/freeky-chat.js
+var loadFreekyChat = function() {
+  let freekyChat = new MatrixEngineWGPU({
     canvasSize: "fullscreen",
-    fastRender: 0.95,
-    render: "culling",
-    cullingRange: 1200,
-    dontUsePhysics: true,
+    useCannon: true,
+    fastRender: 0.9,
     MAX_SPOTLIGHTS: 1,
     MAX_BONES: 0,
-    LOAD_AFTER_CLICK_MOBILE: false,
-    MOUSE_SENS: 5e-3,
-    TOUCH_SENS: 0.01,
     mainCameraParams: {
-      type: "firstPersonCamera",
-      usePointerEvents: true,
+      type: "WASD",
       responseCoef: 1e3
     },
-    clearColor: { r: 0, b: 0, g: 0, a: 1 }
+    clearColor: { r: 0, b: 0.122, g: 0.122, a: 1 }
   }, () => {
-    app2.collisionSystem = new CollisionSystem(app2);
-    app2.addLight();
-    addRaycastsAABBListener(void 0, "mousedown");
-    app2.activateHZB();
-    app2.activateBloomEffect();
-    app2.matrixSounds.createAudio("shot", "res/audios/gun/gunshot.mp3", 3);
-    app2.matrixSounds.createAudio("zombie1", "res/audios/zombie/zombie-1.mp3", 2);
-    app2.matrixSounds.createAudio("zombie2", "res/audios/zombie/zombie-2.mp3", 2);
-    app2.matrixSounds.createAudio("zombie3", "res/audios/zombie/zombie-9.mp3", 2);
-    app2.matrixSounds.createAudio("zombie4", "res/audios/zombie/zombie-16.mp3", 2);
-    app2.matrixSounds.createAudio("zombiedead", "res/audios/zombie/zombie-10.mp3", 2);
-    app2.matrixSounds.createAudio("feelgood", "res/audios/feel.mp3", 1);
-    app2.UI = new hang3dUI();
-    MobileDOM.addButton("T", () => {
-    }, void 0, {
-      image: "./res/textures/shooter/s.webp",
-      left: isMobile() === true ? 41 : 46.5,
-      bottom: isMobile() === true ? 40 : 42.5,
-      color: "black",
-      size: innerHeight / 10
-    });
-    app2.energy = MobileDOM.addProgressBar({ width: innerWidth / 3, height: 30, size: innerWidth / 3, bottom: 82.5, left: 33, color: "#00bcd4" });
-    app2.energy.setValue(100);
-    MobileDOM.addButton("Kills 0", () => {
-    }, void 0, {
-      id: "player-status",
-      image: "./res/textures/shooter/s.webp",
-      left: isMobile() === true ? 2 : 15,
-      bottom: isMobile() === true ? 85 : 85,
-      color: "red",
-      size: innerHeight / 10
-    });
-    const timeNode = document.createTextNode("");
-    byId("player-status").appendChild(timeNode);
-    MobileDOM.addButton("Ammo 100", () => {
-    }, void 0, {
-      id: "player-ammo",
-      image: "./res/textures/shooter/s.webp",
-      left: isMobile() === true ? 23.5 : 25,
-      bottom: isMobile() === true ? 85 : 85,
-      color: "#ffeb3b",
-      size: innerHeight / 10
-    });
-    MobileDOM.addButton("Armor NO", () => {
-    }, void 0, {
-      id: "player-armor",
-      image: "./res/textures/shooter/s.webp",
-      left: isMobile() === true ? 44.5 : 35,
-      bottom: isMobile() === true ? 85 : 85,
-      color: "#6cff3b",
-      size: innerHeight / 10
-    });
-    app2.player = new Player({
-      name: "Samanta",
-      typeOfController: "fps",
-      onEnergyChange: (val) => app2.energy.setValue(val)
-    });
-    const cam2 = app2.getCamera();
-    let preventFire = false;
-    downloadMeshes({
-      cube: "./res/meshes/blender/cube.obj",
-      ball: "./res/meshes/blender/sphepe-mob.obj",
-      armor: "./res/meshes/obj/armor.obj",
-      energyItem: "./res/meshes/obj/energy-cube.obj",
-      hang2: "./res/meshes/obj/modelpack19/hang2/hang2.obj",
-      ammo: "./res/meshes/obj/ammo.obj"
-    }, async (m) => {
-      if (isMobile() === true) {
-        MobileDOM.addButton("FIRE", () => {
-          fire();
-        }, void 0, {
-          width: "30px",
-          height: "30px",
-          image: "./res/textures/shooter/s.webp",
-          color: "red",
-          left: 60,
-          bottom: 20,
-          size: innerHeight / 10
-        }, () => {
-          if (preventFire === false) {
-            preventFire = true;
-            fire();
-            setTimeout(() => {
-              preventFire = false;
-            }, 350);
-          }
-        });
-        MobileDOM.addButton("JUMP", () => {
-          if (app2.collisionSystem?._onGround) {
-            app2.collisionSystem._gravityAcc = 0.22;
-            app2.collisionSystem._onGround = false;
-            this._dirty = true;
-            this._dirtyAngle = true;
-          }
-        }, void 0, {
-          width: "30px",
-          height: "30px",
-          image: "./res/textures/shooter/s.webp",
-          color: "red",
-          left: 80,
-          bottom: 20,
-          size: innerHeight / 10
-        });
-        MobileDOM.addButton("FIRE", () => {
-          fire();
-        }, void 0, {
-          width: "30px",
-          height: "30px",
-          image: "./res/textures/shooter/s.webp",
-          color: "red",
-          left: 10,
-          bottom: 20,
-          size: innerHeight / 10
-        }, () => {
-          if (preventFire === false) {
-            preventFire = true;
-            fire();
-            setTimeout(() => {
-              preventFire = false;
-            }, 210);
-          }
-        });
-      }
-      const mc = new MapCreator(app2, m, app2.collisionSystem, {
-        wallTexture: "./res/textures/shooter/metal-block.webp",
-        floorTexture: "./res/textures/shooter/metal-block.webp",
-        ceilTexture: "./res/textures/blankgray2.webp",
-        shadowsCast: true,
-        pillarDecoration: true,
-        pillarsFlame: false
-      }, mapParams);
-      mc.createRoom({
-        origin: { x: -0, y: 0.1, z: 20 },
-        width: 10,
-        depth: 10,
-        height: 4,
-        doors: ["+x", "-z"],
-        doorWidth: 2.5,
-        roof: true,
-        uvShema: [10, 10],
-        tag: "start_room"
+    let PLANE;
+    freekyChat.addLight();
+    addRaycastsListener();
+    addEventListener("PhysicsReady", () => {
+      downloadMeshes({
+        cube: "./res/meshes/blender/cube.obj",
+        plane: "./res/meshes/blender/plane-sub10.obj",
+        ball: "./res/meshes/shapes/sphere-uv-cilinder-proj.obj",
+        reel: "./res/meshes/obj/reel.obj"
+      }, onGround, { scale: [1, 1, 1] });
+      freekyChat.matrixPhysics.speedUpSimulation(2);
+      freekyChat.net = activateNet2({
+        backend: "webrtc",
+        sessionName: "beast-room-01",
+        domain: "https://localhost",
+        signalingUrl: "ws://localhost:2020",
+        media: false
       });
-      mc.createTunnel({
-        from: { x: -35, y: 0.1, z: 0 },
-        to: { x: -15, y: 0, z: 0 },
-        width: 3.5,
-        height: 3,
-        roof: true,
-        tag: "entry_tunnel"
-      });
-      mc.createFightArena({
-        origin: { x: 0, y: 0, z: 0 },
-        width: 32,
-        depth: 32,
-        wallHeight: 2.5,
-        pillars: 16,
-        pillarH: 4,
-        covers: 4,
-        roof: false,
-        doors: ["-x", "+z"],
-        uvShema: [10, 10],
-        tag: "main_arena"
-      });
-      mc.createStairs({
-        origin: { x: -6, y: 0, z: 0 },
-        axis: "z",
-        steps: 8,
-        stepW: 3,
-        stepH: 0.4,
-        stepD: 0.8,
-        walls: true,
-        uvShema: [3, 6],
-        tag: "stairs_up"
-      });
-      mc.createMultiLevelMaze({
-        origin: { x: -65.3, y: -3.3, z: -22 },
-        levels: 2,
-        mazeSize: 13,
-        spacing: 2,
-        wallHeight: 3,
-        levelGap: 1,
-        stairSteps: 8,
-        roofLevels: true
-      });
-      app2.gameMap = mc;
-      var glbFile01 = await fetch("./res/meshes/glb/zombie-cap.glb").then((res) => res.arrayBuffer().then((buf) => uploadGLBModel(buf, app2.device)));
-      var glbFile02 = await fetch("./res/meshes/glb/zombi-crawl1.glb").then((res) => res.arrayBuffer().then((buf) => uploadGLBModel(buf, app2.device)));
-      const options0 = {
-        core: app2,
-        name: "zombi-cap0",
-        archetypes: ["zombie"],
-        position: { x: 0, y: 0.2, z: -10 },
-        data: glbFile01
-      };
-      const options1 = {
-        core: app2,
-        name: "zombi-cap1",
-        archetypes: ["zombie"],
-        position: { x: -4.35, y: 0.2, z: -10 },
-        data: glbFile01
-      };
-      const options2 = {
-        core: app2,
-        name: "zombi-cap2",
-        archetypes: ["zombie"],
-        position: { x: -5.35, y: 0.2, z: -10 },
-        data: glbFile01
-      };
-      const optionsC0 = {
-        core: app2,
-        name: "zombi-crawl0",
-        archetypes: ["zombie-crawl"],
-        position: { x: 4.35, y: 0.2, z: -10 },
-        data: glbFile02
-      };
-      const optionsC1 = {
-        core: app2,
-        name: "zombi-crawl1",
-        archetypes: ["zombie-crawl"],
-        position: { x: 0, y: 0.2, z: -10 },
-        data: glbFile02
-      };
-      const optionsZombiMaze0 = {
-        core: app2,
-        name: "zombi-c-maze0",
-        archetypes: ["zombie-crawl"],
-        position: { x: -44.79292678833008, y: 1.1, z: -0.29 },
-        data: glbFile02
-      };
-      const optionsZombiMaze1 = {
-        core: app2,
-        name: "zombi-c-maze1",
-        archetypes: ["zombie-crawl"],
-        position: { x: -44.14, y: 1.1, z: -21.38 },
-        data: glbFile02
-      };
-      const optionsZombiMaze2 = {
-        core: app2,
-        name: "zombi-c-maze2",
-        archetypes: ["zombie-crawl"],
-        position: { x: -44.14, y: 1.1, z: -21.38 },
-        data: glbFile02
-      };
-      app2.zombies = [
-        // base
-        new Zombi(options0),
-        new Zombi(options1),
-        new Zombi(options2),
-        new Zombi(optionsC0),
-        new Zombi(optionsC1),
-        // maze
-        new Zombi(optionsZombiMaze0),
-        new Zombi(optionsZombiMaze1),
-        new Zombi(optionsZombiMaze2)
-      ];
-      const light = app2.lightContainer[0];
-      light.setPosition(0, 60, 0);
-      light.setIntensity(20);
-      app2.cameras.firstPersonCamera.movementSpeed = 0.1;
-      app2.cameras.firstPersonCamera.setPosition(0, 7, 0);
-      app2.collisionSystem.registerCamera(app2.cameras.firstPersonCamera.position, 1.08);
-      app2.projectileSystem = new ProjectileSystem(
-        app2,
-        m.ball,
-        app2.collisionSystem,
-        {
-          projectileSpeed: 0.45,
-          projectileScale: 0.07,
-          onHitscanHit: (hitPoint, normal, reflect, entry) => {
-            let t = app2.zombies.filter((z) => z.name === entry.id)[0];
-            if (t && entry.group) {
-              if (t && entry.group && entry.group === "enemy") t.takeDamage();
-              if (t && entry.group && entry.group === "zombi_head") t.takeDamage(2.5);
-            }
-          },
-          onProjectileHit: (hitPoint, normal, entry) => {
-          }
+      const W = 8;
+      const H = 8;
+      const NX = 10;
+      const NY = 10;
+      PLANE = app.addProceduralMeshObj({
+        position: { x: 0, y: 15, z: -10 },
+        scale: [1, 1, 1],
+        name: "test",
+        resolutionU: NX,
+        resolutionV: NY,
+        texturesPaths: ["./res/meshes/obj/modelpack19/hand-logo.webp"],
+        meshA: MeshMorpher.clothPlane(W, H),
+        meshB: MeshMorpher.clothPlane(W, H),
+        physics: {
+          enabled: true,
+          geometry: "Cloth",
+          nx: NX,
+          ny: NY,
+          width: W,
+          height: H,
+          pinTop: true
         }
-      );
-      if (isMobile() === false) {
-        app2.canvas.addEventListener("mouseup", (e) => {
-          setTimeout(() => {
-            if (e.button == 2) app2.getCamera().setProjection(2 * Math.PI / 5, app2.getCamera().aspect, 0.3, 200);
-          }, 100);
-        });
-      }
-      app2.canvas.addEventListener("ray.hit.mousedown", (e) => {
-        if (e.detail.button === 2) {
-          app2.getCamera().setProjection(0.5 * Math.PI / 5, app2.getCamera().aspect, 0.3, 200);
-          return;
-        }
-        fire();
       });
-    }, { scale: [1, 1, 1] });
-    const fire = () => {
-      if (app2.player.ammo < 1) return;
-      app2.matrixSounds.play("shot");
-      app2.projectileSystem.fireProjectile();
-      app2.player.useAmmo(1);
-    };
+      let strength = 10;
+      freekyChat.canvas.addEventListener("ray.hit.event", (e) => {
+        console.log("ray.hit.event detected");
+        let b = app.matrixPhysics.getBodyByName(e.detail.hitObject.name);
+        app.matrixPhysics.applyImpulse(b, new PVector(
+          e.detail.rayDirection[0] * strength,
+          e.detail.rayDirection[1] * strength,
+          e.detail.rayDirection[2] * strength
+        ));
+        applyWindToCloth();
+      });
+      function applyWindToCloth(startIndex = 1, count = 121, nx = 10) {
+        for (let i = 0; i < count; i++) {
+          const row2 = Math.floor(i / (nx + 1));
+          if (row2 === 0) continue;
+          app.matrixPhysics.applyImpulse(startIndex + i, {
+            x: Math.sin(performance.now() * 1e-3) * 0.01,
+            y: 0.01,
+            z: 0.01
+          });
+        }
+      }
+    });
+    async function onGround(m) {
+      setTimeout(() => {
+        PLANE.vertexAnim.enableCloth(1);
+        app.activateHZB();
+      }, 500);
+      let cam2 = app.getCamera();
+      cam2.setYaw(-0.03);
+      cam2.setPitch(-0.49);
+      cam2.setZ(0);
+      cam2.setY(3.76);
+      cam2._dirtyAngle = true;
+      freekyChat.addMeshObj({
+        material: { type: "standard" },
+        position: { x: 0, y: 15, z: -20 },
+        rotation: { x: 0, y: 0, z: 0 },
+        rotationSpeed: { x: 0, y: 111, z: 0 },
+        scale: [5, 5, 5],
+        texturesPaths: ["./res/meshes/obj/modelpack19/hand-logo.webp"],
+        name: "ball1",
+        mesh: m.ball,
+        physics: {
+          enabled: true,
+          geometry: "Sphere",
+          group: 2,
+          mask: -1
+        },
+        raycast: { enabled: true, radius: 1 }
+      });
+      freekyChat.addMeshObj({
+        position: { x: 0, y: -0.5, z: -10 },
+        rotation: { x: 0, y: 0, z: 0 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        scale: [25, 0.1, 25],
+        texturesPaths: ["res/icons/editor/chatgpt-gen-bg-inv.webp"],
+        name: "ground",
+        mesh: m.plane,
+        physics: { enabled: false }
+      });
+      app.activateBloomEffect();
+      app.activateVolumetricEffect();
+      freekyChat.lightContainer[0].setPosY(65);
+      freekyChat.lightContainer[0].setIntensity(100);
+    }
   });
-  window.app = app2;
+  window.app = freekyChat;
 };
-loadHang3d();
+loadFreekyChat();
 export {
-  loadHang3d
+  loadFreekyChat
 };

@@ -48,7 +48,7 @@ export class NativeWebRTC {
   async joinSession() {
     const protocol = this.options.protocol || (location.protocol === 'https:' ? 'wss:' : 'ws:');
     const host = this.options.signalingUrl || this.options.url ||
-      protocol + '//' + (this.options.domain || location.hostname) + ':' + (this.options.port || 8081);
+      protocol + '//' + (this.options.domain || location.hostname) + ':' + (this.options.port || 2020);
     this.socket = new WebSocket(host);
     await new Promise((resolve, reject) => {
       const timeout = setTimeout(() => reject(new Error('WebRTC signaling connection timed out')), 10000);

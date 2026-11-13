@@ -18,7 +18,7 @@ const http = require('node:http');
 const { randomUUID } = require('node:crypto');
 const { WebSocketServer, WebSocket } = require('ws');
 
-const PORT = Number(process.env.PORT || 8081);
+const PORT = Number(process.env.PORT || 2020);
 const HOST = process.env.HOST || '0.0.0.0';
 const MAX_PEERS_PER_ROOM = Math.max(2, Number(process.env.MAX_PEERS_PER_ROOM || 32));
 const MAX_MESSAGE_BYTES = 1024 * 1024;
