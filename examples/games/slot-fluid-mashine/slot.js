@@ -267,6 +267,15 @@ export var loadFluidsSlot = function() {
         })
       }
 
+      slotMachine.activateGrade({tonemap: 'agx', exposure: 1.1});
+      slotMachine.gradePass.setVignette(0.35, 1.0, 0.6);
+      slotMachine.gradePass.setChromatic(0.004);
+      slotMachine.gradePass.setGrain(0.03);
+      slotMachine.gradePass.setDistortion(0.08);
+      // slotMachine.gradePass.setLUT(await loadLUT(slotMachine.device, 'res/luts/teal-orange.cube'), 0.8);
+
+      slotMachine.activateMotionBlur({strength: 0.6, samples: 12});
+
       // slotMachine.lightContainer[0].behavior.setOsc0(-2, 2, 0.01)
       // slotMachine.lightContainer[0].behavior.value_ = -1;
       // slotMachine.lightContainer[0].updater.push((light) => {

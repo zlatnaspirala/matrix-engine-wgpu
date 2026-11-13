@@ -84925,6 +84925,12 @@ var loadFluidsSlot = function() {
           lightColor: [1, 1.8, 2]
         });
       }
+      slotMachine.activateGrade({ tonemap: "agx", exposure: 1.1 });
+      slotMachine.gradePass.setVignette(0.35, 1, 0.6);
+      slotMachine.gradePass.setChromatic(4e-3);
+      slotMachine.gradePass.setGrain(0.03);
+      slotMachine.gradePass.setDistortion(0.08);
+      slotMachine.activateMotionBlur({ strength: 0.6, samples: 12 });
       slotMachine.lightContainer[0].setPosition(0, 35, -8);
       slotMachine.lightContainer[0].setTarget(0, 0, -10);
       const FX_MESH = slotMachine.addMeshObj({
