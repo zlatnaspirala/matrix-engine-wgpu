@@ -1,4 +1,5 @@
 import {scriptManager, htmlHeader} from "../utils";
+import {NativeWebRTC} from "./native-webrtc";
 import {BIGLOG, byId, closeSession, fetchInfo, joinSession, leaveSession, netConfig, REDLOG, removeUser} from "./matrix-stream";
 
 /**
@@ -212,7 +213,7 @@ export class MatrixStream {
 
 export let activateNet2 = (sessionOption) => {
 
-  console.info(`%cNetworking2 [openvidu/kurento server] params: ${sessionOption}`, CS3);
+  console.info(`%cNetworking2 backend params: ${sessionOption}`, CS3);
   // -----------------------
   // Make run
   // -----------------------
@@ -224,12 +225,25 @@ export let activateNet2 = (sessionOption) => {
     sessionOption.domain = 'maximumroulette.com';
     sessionOption.port = 2020;
   }
-  net = new MatrixStream({
-    domain: t.networking2.domain,
-    port: t.networking2.port,
-    sessionName: sessionOption.sessionName,
-    resolution: sessionOption.resolution
-  })
+  const backend = sessionOption.backend || sessionOption.provider || 'kurento';
+  if(backend === 'webrtc' || backend === 'native-webrtc') {
+    net = new NativeWebRTC({
+      domain: sessionOption.domain || (t.networking2 && t.networking2.domain),
+      port: sessionOption.port || 8081,
+      signalingUrl: sessionOption.signalingUrl,
+      sessionName: sessionOption.sessionName,
+      customData: sessionOption.customData,
+      media: sessionOption.media || false,
+      rtcConfig: sessionOption.rtcConfig
+    });
+  } else {
+    net = new MatrixStream({
+      domain: t.networking2.domain,
+      port: t.networking2.port,
+      sessionName: sessionOption.sessionName,
+      resolution: sessionOption.resolution
+    });
+  }
 
   addEventListener(`setTitle`, (e) => {
     document.title = e.detail;
