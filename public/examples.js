@@ -55117,10 +55117,12 @@ var MotionBlurPass = class {
       maxBlur: options2.maxBlur ?? 0.03,
       depthTol: options2.depthTol ?? 3e-4
     };
-    this._u = new Float32Array(20);
+    this._u = new Float32Array(24);
+    this.debug = 0;
+    this.ranFrames = 0;
     this.uniformBuffer = device2.createBuffer({
       label: "MotionBlur uniforms",
-      size: 80,
+      size: 96,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
     this._reproj = mat4Impl.create();
@@ -55168,6 +55170,9 @@ var MotionBlurPass = class {
   setDepthTol = (v2) => {
     this.params.depthTol = v2;
   };
+  setDebug = (m2) => {
+    this.debug = m2;
+  };
   resize(width, height) {
     this.width = width;
     this.height = height;
@@ -55203,6 +55208,7 @@ var MotionBlurPass = class {
     u2[17] = this.params.samples;
     u2[18] = this.params.maxBlur;
     u2[19] = this.params.depthTol;
+    u2[20] = this.debug;
     this.device.queue.writeBuffer(this.uniformBuffer, 0, u2);
     if (!this._bg || this._lastScene !== sceneView || this._lastDepth !== depthView) {
       this._bg = this.device.createBindGroup({
@@ -55224,6 +55230,7 @@ var MotionBlurPass = class {
     pass.draw(6);
     pass.end();
     encoder.copyTextureToTexture({ texture: this.tex }, { texture: sceneTexture }, [this.width, this.height]);
+    this.ranFrames++;
     this._prevVP.set(viewProj);
   }
 };
@@ -55237,6 +55244,10 @@ function motionBlurWGSL() {
     samples: f32,
     maxBlur: f32,
     depthTol: f32,
+    debug: f32,
+    _p0: f32,
+    _p1: f32,
+    _p2: f32,
   };
 
   @group(0) @binding(0) var sceneTex : texture_2d<f32>;
@@ -55261,7 +55272,13 @@ function motionBlurWGSL() {
     let prevNdc = pc.xy / pc.w;
 
     // NDC delta -> UV delta (y flipped)
-    var v = (ndc.xy - prevNdc) * vec2<f32>(0.5, -0.5) * mb.strength;
+    let raw = (ndc.xy - prevNdc) * vec2<f32>(0.5, -0.5);
+    if (mb.debug > 0.5 && mb.debug < 1.5) {
+      // velocity view: red = horizontal, green = vertical (60 = ~1% of screen per frame -> full color)
+      return vec4<f32>(center.rgb * 0.3 + vec3<f32>(abs(raw) * 60.0, 0.0), 1.0);
+    }
+    if (mb.debug > 1.5 && uv.x > 0.5) { return center; }   // right half untouched for comparison
+    var v = raw * mb.strength;
     let len = length(v);
     if (len * max(dims.x, dims.y) < 0.75) { return center; }   // sub-pixel: skip
     if (len > mb.maxBlur) { v = v * (mb.maxBlur / len); }
@@ -84689,6 +84706,8 @@ var game2;
 var ENABLE_REMOTE_SPIN_EVENTS2 = false;
 var SPACING2 = 6;
 var SCALE2 = 3.5;
+var SYMBOL_REEL_RADIUS = 4.3;
+var SYMBOL_EFFECT_SCALE = 0.78;
 var reelX2 = (i2, n3) => ((n3 - 1) / 2 - i2) * SPACING2;
 var effectType2 = "default";
 var FLUID_SYMBOL_PALETTE = [
@@ -84767,7 +84786,7 @@ async function initializeSymbolReel2(mesh, engine, reelCfg) {
   if (!mesh.effects) mesh.effects = {};
   const effects = [];
   const count = reelCfg.strip.length;
-  const radius = 4.3;
+  const radius = SYMBOL_REEL_RADIUS;
   for (let index = 0; index < count; index++) {
     const angle2 = index / count * Math.PI * 2;
     const fluid = new FluidEffect(engine.device, {
@@ -84789,7 +84808,7 @@ async function initializeSymbolReel2(mesh, engine, reelCfg) {
       // from the reel cylinder, then let the reel mesh supply parent rotation.
       localRotation: [angle2 - Math.PI / 2, 0, 0],
       // [0, Math.PI / 2, angle],
-      scale: [0.78, 0.78, 1]
+      scale: [SYMBOL_EFFECT_SCALE, SYMBOL_EFFECT_SCALE, 1]
     });
     createSymbolEmitter(fluid, index);
     fluid.burst(0.5, 0.5, 3, 170, FLUID_SYMBOL_PALETTE[index % FLUID_SYMBOL_PALETTE.length]);
@@ -84952,7 +84971,8 @@ var loadFluidsSlot = function() {
         "rgba16float",
         slotMachine.cameraBuffer,
         {
-          maxBeams: 24,
+          // Four beams per visible symbol, plus room for temporary win beams.
+          maxBeams: Math.max(64, n3 * slot.visibleRows * 4 + 24),
           width: 0.045,
           intensity: 2.8,
           colorA: [0.15, 0.95, 1, 1],
@@ -84971,16 +84991,24 @@ var loadFluidsSlot = function() {
         framePoint(b2[0], b2[1]),
         0
       );
+      const halfW = SYMBOL_EFFECT_SCALE * SCALE2;
+      const halfH = SYMBOL_EFFECT_SCALE * SCALE2;
       for (let i2 = 0; i2 < n3; i2++) {
-        const cx = reelX2(i2, n3), halfW = 2.55, halfH = 7, cy = 15;
-        const corners = [
-          [cx - halfW, cy - halfH],
-          [cx + halfW, cy - halfH],
-          [cx + halfW, cy + halfH],
-          [cx - halfW, cy + halfH]
-        ];
-        for (let edge = 0; edge < 4; edge++) {
-          fireFrameEdge(corners[edge], corners[(edge + 1) % 4]);
+        const cx = reelX2(i2, n3);
+        const stripLength = slot.reels[i2].strip.length;
+        const rowStep = Math.PI * 2 / stripLength;
+        for (let row2 = 0; row2 < slot.visibleRows; row2++) {
+          const rowOffset = row2 - Math.floor(slot.visibleRows / 2);
+          const cy = 15 + Math.sin(rowOffset * rowStep) * SYMBOL_REEL_RADIUS * SCALE2;
+          const corners = [
+            [cx - halfW, cy - halfH],
+            [cx + halfW, cy - halfH],
+            [cx + halfW, cy + halfH],
+            [cx - halfW, cy + halfH]
+          ];
+          for (let edge = 0; edge < 4; edge++) {
+            fireFrameEdge(corners[edge], corners[(edge + 1) % 4]);
+          }
         }
       }
       FX_MESH.effects.keeffect = new KaleidoscopeEmitter(slotMachine.device, "rgba16float", 30, slotMachine.cameraBuffer);
