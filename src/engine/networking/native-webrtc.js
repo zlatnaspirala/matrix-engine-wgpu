@@ -22,9 +22,6 @@ export class NativeWebRTC {
     this.peers = new Map();
     this.channels = new Map();
     this.pendingIce = new Map();
-    // Keep the latest registered-object positions so peers that finish
-    // connecting after movement has started still receive the current state.
-    this.latestPositionState = new Map();
     this.localStream = null;
     this.socket = null;
     this.id = null;
@@ -63,21 +60,8 @@ export class NativeWebRTC {
       const payload = JSON.stringify(data);
       const requestedTargets = targets || (data && Array.isArray(data.toRemote) ? data.toRemote : null);
       const wanted = Array.isArray(requestedTargets) && requestedTargets.length ? new Set(requestedTargets) : null;
-
-      // Position.update() can run before every data channel is ready. Retain
-      // the newest state per scene object; _bindChannel flushes it on open.
-      if(data && data.netPos && data.sceneName) {
-        const stateKey = String(data.sceneName) + '::' + String(data.remoteName || '');
-        this.latestPositionState.set(stateKey, {
-          payload,
-          toRemote: Array.isArray(requestedTargets) ? requestedTargets.slice() : []
-        });
-      }
-
       this.channels.forEach((channel, peerId) => {
-        if((!wanted || wanted.has(peerId)) && channel.readyState === 'open') {
-          channel.send(payload);
-        }
+        if ((!wanted || wanted.has(peerId)) && channel.readyState === 'open') channel.send(payload);
       });
     };
     this.fetchInfo = () => this.getPeers();
@@ -227,18 +211,6 @@ export class NativeWebRTC {
     return pc;
   }
 
-  _flushLatestPositionState(peerId, channel) {
-    if(!channel || channel.readyState !== 'open') return;
-    this.latestPositionState.forEach(state => {
-      if(state.toRemote.length && !state.toRemote.includes(peerId)) return;
-      try {
-        channel.send(state.payload);
-      } catch(error) {
-        console.warn('[NativeWebRTC] could not flush position state:', peerId, error);
-      }
-    });
-  }
-
   _bindChannel(peerId, channel) {
     this.channels.set(peerId, channel);
     channel.onmessage = event => {
@@ -253,7 +225,6 @@ export class NativeWebRTC {
     };
     channel.onopen = () => {
       console.log('[NativeWebRTC] DATA CHANNEL OPEN:', peerId, 'label:', channel.label);
-      this._flushLatestPositionState(peerId, channel);
       dispatchEvent(new CustomEvent('webrtc-peer-ready', { detail: { peerId } }));
     };
     channel.onclose = () => {
@@ -263,7 +234,6 @@ export class NativeWebRTC {
     channel.onerror = event => {
       console.error('[NativeWebRTC] DATA CHANNEL ERROR:', peerId, event);
     };
-    if(channel.readyState === 'open') this._flushLatestPositionState(peerId, channel);
   }
 
   _dropPeer(peerId) {
