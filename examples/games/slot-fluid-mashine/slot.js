@@ -26,6 +26,8 @@ export const SLOT_SIMULATOR_CONFIG_TOKEN = "SHITHAPPENS";
 let game;
 const ENABLE_REMOTE_SPIN_EVENTS = false;
 const SPACING = 6, SCALE = 3.5;
+const SYMBOL_REEL_RADIUS = 4.3;
+const SYMBOL_EFFECT_SCALE = 0.78;
 const reelX = (i, n) => ((n - 1) / 2 - i) * SPACING;
 
 let effectType = 'default';
@@ -94,7 +96,7 @@ async function initializeSymbolReel(mesh, engine, reelCfg) {
   if(!mesh.effects) mesh.effects = {};
   const effects = [];
   const count = reelCfg.strip.length;
-  const radius = 4.3;
+  const radius = SYMBOL_REEL_RADIUS;
 
   for(let index = 0;index < count;index++) {
     const angle = (index / count) * Math.PI * 2;
@@ -116,7 +118,7 @@ async function initializeSymbolReel(mesh, engine, reelCfg) {
       // FluidEffect uses radians and its quad normal is +Z. Turn it outward
       // from the reel cylinder, then let the reel mesh supply parent rotation.
       localRotation: [angle - Math.PI / 2, 0, 0], // [0, Math.PI / 2, angle],
-      scale: [0.78, 0.78, 1]
+      scale: [SYMBOL_EFFECT_SCALE, SYMBOL_EFFECT_SCALE, 1]
     });
 
     createSymbolEmitter(fluid, index);
@@ -299,9 +301,11 @@ export var loadFluidsSlot = function() {
 
       laser = FX_MESH.effects.laser = new LaserProjectile(
         slotMachine.device, 'rgba16float', slotMachine.cameraBuffer, {
-        maxBeams: 24, width: 0.045, intensity: 2.8, colorA: [0.15, 0.95, 1, 1], colorB: [0.05, 0.25, 1, 1]
+        // Four beams per visible symbol, plus room for temporary win beams.
+        maxBeams: Math.max(64, n * slot.visibleRows * 4 + 24),
+        width: 0.045, intensity: 2.8,
+        colorA: [0.15, 0.95, 1, 1], colorB: [0.05, 0.25, 1, 1]
       });
-
 
       slotMachine.floor.effects.gpuText.setColor(1, 11, 1);
       slotMachine.laser = laser;
@@ -317,17 +321,30 @@ export var loadFluidsSlot = function() {
         framePoint(a[0], a[1]), framePoint(b[0], b[1]), 0
       );
 
-      // Four permanent laser edges around each reel.
+      // One permanent laser rectangle for every visible symbol cell.
+      // These dimensions share the exact radius and plane scale used by FluidEffect.
+      const halfW = SYMBOL_EFFECT_SCALE * SCALE;
+      const halfH = SYMBOL_EFFECT_SCALE * SCALE;
       for(let i = 0;i < n;i++) {
-        const cx = reelX(i, n), halfW = 2.55, halfH = 7.0, cy = 15;
-        const corners = [
-          [cx - halfW, cy - halfH],
-          [cx + halfW, cy - halfH],
-          [cx + halfW, cy + halfH],
-          [cx - halfW, cy + halfH]
-        ];
-        for(let edge = 0;edge < 4;edge++) {
-          fireFrameEdge(corners[edge], corners[(edge + 1) % 4]);
+        const cx = reelX(i, n);
+        const stripLength = slot.reels[i].strip.length;
+        const rowStep = (Math.PI * 2) / stripLength;
+
+        for(let row = 0;row < slot.visibleRows;row++) {
+          const rowOffset = row - Math.floor(slot.visibleRows / 2);
+          // The reel is viewed from its -Z/front side. Project each symbol's
+          // angular position onto world Y so the borders follow the cylinder spacing.
+          const cy = 15 + Math.sin(rowOffset * rowStep) * SYMBOL_REEL_RADIUS * SCALE;
+          const corners = [
+            [cx - halfW, cy - halfH],
+            [cx + halfW, cy - halfH],
+            [cx + halfW, cy + halfH],
+            [cx - halfW, cy + halfH]
+          ];
+
+          for(let edge = 0;edge < 4;edge++) {
+            fireFrameEdge(corners[edge], corners[(edge + 1) % 4]);
+          }
         }
       }
 
