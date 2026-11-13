@@ -10,6 +10,7 @@
     "android-tv-cast": "esbuild android-tv-cast.js --bundle --outfile=public/android-tv-cast.js --format=esm --watch",
     "jamb": "esbuild ./examples/games/jamb/jamb.js --bundle --outfile=public/yacht.js --format=esm --watch",
     "demo1": "esbuild demo1.js --bundle --outfile=public/app.js --format=esm --watch",
+    "hang3d": "esbuild ./examples/games/first-person-shooter/hang3d.js --bundle --outfile=public/app.js --format=esm --watch",
     "empty": "esbuild empty.js --bundle --outfile=public/empty.js --format=esm --watch",
     "build.jamb": "esbuild main.js --bundle --outfile=public/app.js --format=esm",
     "glb-loader": "esbuild ./examples/glb-loader.js --bundle --outfile=public/app.js --format=esm --watch",

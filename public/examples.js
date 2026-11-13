@@ -70511,13 +70511,6 @@ var loadHang3d = function() {
     addRaycastsAABBListener(void 0, "mousedown");
     app2.activateHZB();
     app2.activateBloomEffect();
-    app2.activateVolumetricEffect({
-      density: 21,
-      steps: 24,
-      scatterStrength: 0.5,
-      heightFalloff: 10,
-      lightColor: [0.3, 1, 2]
-    });
     app2.matrixSounds.createAudio("shot", "res/audios/gun/gunshot.mp3", 3);
     app2.matrixSounds.createAudio("zombie1", "res/audios/zombie/zombie-1.mp3", 2);
     app2.matrixSounds.createAudio("zombie2", "res/audios/zombie/zombie-2.mp3", 2);
@@ -82714,6 +82707,22 @@ var loadPoseToGLB = function() {
     downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, onGround, { scale: [30, 0.5, 30] });
     addRaycastsAABBListener("canvas1", "click");
     async function onGround(m2) {
+      let arg12 = isMobile() && getOrientation() === "portrait" ? { left: "5" } : { left: "53" };
+      MobileDOM.addButton(
+        "Enable camera",
+        function() {
+          if (byId2("auto-video").style.zIndex === "-1") {
+            byId2("auto-video").style.zIndex = 1;
+            byId2("auto-video").style.opacity = 0.4;
+          } else {
+            byId2("auto-video").style.zIndex = -1;
+            byId2("auto-video").style.opacity = 0.4;
+          }
+        },
+        () => {
+        },
+        arg12
+      );
       loadPose.floor = loadPose.addMeshObj({
         material: { type: "dark", share: true },
         position: { x: 0, y: -1, z: -10 },

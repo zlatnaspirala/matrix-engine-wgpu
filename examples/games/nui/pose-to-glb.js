@@ -77,19 +77,19 @@ export var loadPoseToGLB = function() {
     addRaycastsAABBListener('canvas1', 'click');
 
     async function onGround(m) {
-      // let arg1 = isMobile() && getOrientation() === 'portrait' ? {left: '5'} : {left: '53'};
-      // MobileDOM.addButton("Enable camera",
-      //   function() {
-      //     // nui.enableWebcam()
-      //     if(byId('auto-video').style.zIndex === '-1') {
-      //       byId('auto-video').style.zIndex = 1;
-      //       byId('auto-video').style.opacity = 0.4;
-      //     } else {
-      //       byId('auto-video').style.zIndex = -1;
-      //       byId('auto-video').style.opacity = 0.4;
-      //     }
-      //   },
-      //   () => {}, arg1);
+      let arg1 = isMobile() && getOrientation() === 'portrait' ? {left: '5'} : {left: '53'};
+      MobileDOM.addButton("Enable camera",
+        function() {
+          // nui.enableWebcam()
+          if(byId('auto-video').style.zIndex === '-1') {
+            byId('auto-video').style.zIndex = 1;
+            byId('auto-video').style.opacity = 0.4;
+          } else {
+            byId('auto-video').style.zIndex = -1;
+            byId('auto-video').style.opacity = 0.4;
+          }
+        },
+        () => {}, arg1);
 
       loadPose.floor = loadPose.addMeshObj({
         material: {type: 'dark', share: true},
