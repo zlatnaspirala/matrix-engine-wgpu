@@ -246,8 +246,6 @@ export var loadFluidsSlot = function() {
         raycast: {enabled: true, radius: 1}
       });
 
-      app.cone.setAmbient(211,-1,-1)
-
       slotMachine.cone2 = slotMachine.addProceduralMeshObj({
         material: {type: 'standard'},
         position: {x: -14, y: 14.5, z: -10},
@@ -270,7 +268,19 @@ export var loadFluidsSlot = function() {
         raycast: {enabled: true, radius: 1}
       });
 
-      app.cone2.setAmbient(211,-1,-1)
+      // Ambient color palettes for the two large morphing side cones.
+      // Values are linear RGB intensities (not 0-255 color bytes).
+      const setConeAmbient = (left, right) => {
+        app.cone.setAmbient(...left);
+        app.cone2.setAmbient(...right);
+      };
+      const coneAmbient = {
+        idle:  [[2.1, 0.42, 0.12], [0.12, 0.55, 2.1]],
+        spin:  [[0.15, 1.65, 2.4], [2.1, 0.18, 1.5]],
+        win:   [[2.8, 1.55, 0.12], [2.8, 0.35, 1.05]]
+      };
+      const setConeMood = mood => setConeAmbient(...coneAmbient[mood]);
+      setConeMood('idle');
 
       let inputArg = {
         material: {type: 'standard', share: true},
@@ -472,6 +482,7 @@ export var loadFluidsSlot = function() {
         },
         onPresentWin: async res => {
           // console.log("what is res:" + res)
+          setConeMood('win');
           // chatgpt SUGGESTION START
           // Cinematic win fly-through. Keep the first and last keyframes
           // identical to the intro camera pose so the path closes cleanly.
@@ -524,6 +535,7 @@ export var loadFluidsSlot = function() {
 
           app.cone.morphTo(0, 5000)
           app.cone2.morphTo(0, 5000)
+          setConeMood('idle');
 
           FX_MESH.effects.keeffect.setIntensity(1);
           FX_MESH.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(6, 8));
@@ -540,6 +552,7 @@ export var loadFluidsSlot = function() {
         // Flash a bright laser across each winning row, briefly highlighting
         // the exact reel positions reported by the game evaluation.
         if(r.totalWin > 0) {
+          setConeMood('win');
           const flashed = new Set();
           for(const win of(r.lineWins ?? [])) {
             for(const cell of(win.cells ?? [])) {
@@ -575,6 +588,7 @@ export var loadFluidsSlot = function() {
 
         // Spin
         if(e.repeat || game.state !== 'IDLE') return;
+        setConeMood('spin');
         game.spin();
 
         app.cone.morphTo(1, 5000)
@@ -587,7 +601,10 @@ export var loadFluidsSlot = function() {
       // Remote spin events are opt-in; keyboard play stays fully local by default.
       if(ENABLE_REMOTE_SPIN_EVENTS) {
         const es = new EventSource(`${baseUrl}/slot-api/machines/${machineId}/events`);
-        es.addEventListener('spin', e => game.playResult(JSON.parse(e.data)));
+        es.addEventListener('spin', e => {
+          setConeMood('spin');
+          game.playResult(JSON.parse(e.data));
+        });
         slotMachine.slotEventSource = es;
       }
 
@@ -600,6 +617,7 @@ export var loadFluidsSlot = function() {
       console.log('ray.hit.event detected');
       if(e.detail.hitObject.name.startsWith('cubeeffect')) {
         if(game.state !== 'IDLE') return;
+        setConeMood('spin');
         game.spin();
       }
     });
