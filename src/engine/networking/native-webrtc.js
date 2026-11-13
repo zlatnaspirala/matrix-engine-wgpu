@@ -1,3 +1,5 @@
+import {LOG_MATRIX} from "../utils";
+
 /**
  * Native browser WebRTC mesh backend.
  *
@@ -74,7 +76,7 @@ export class NativeWebRTC {
     console.log('[NativeWebRTC] connecting to signaling server:', host, 'room:', this.sessionName);
     this.socket = new WebSocket(host);
     this.socket.addEventListener('open', () => {
-      console.log('[NativeWebRTC] signaling socket OPEN:', host);
+      console.log(`%c[NativeWebRTC] signaling socket OPEN:` + host, LOG_MATRIX);
     });
     this.socket.addEventListener('error', event => {
       console.error('[NativeWebRTC] signaling socket ERROR:', event);

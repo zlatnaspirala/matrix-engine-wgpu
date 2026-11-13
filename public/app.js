@@ -252,6 +252,7 @@ var urlQuery = (function() {
   return query_string;
 })();
 var LOG_WARN = "background: gray; color: yellow; font-size:10px";
+var LOG_MATRIX = "font-family: stormfaze;color: #lime; font-size:11px;text-shadow: 2px 2px 4px orangered;background: black;";
 var LOG_FUNNY = "font-family: stormfaze;color: #f1f033; font-size:15px;text-shadow: 2px 2px 4px #f335f4, 4px 4px 4px #d64444, 2px 2px 4px #c160a6, 6px 2px 0px #123de3;background:linear-gradient(90deg,#111,#222);";
 var LOG_FUNNY_SMALL = "font-family: stormfaze;color: #f1f033; font-size:10px;text-shadow: 2px 2px 4px #f335f4, 4px 4px 4px #d64444, 1px 1px 2px #c160a6, 3px 1px 0px #123de3;background:linear-gradient(90deg,#111,#222); ";
 var LOG_FUNNY_ARCADE = "font-family: system-ui; font-size:16px; font-weight:400;color:#ffffff;text-shadow: 2px 2px 6px #000;background:linear-gradient(90deg,#111,#222); padding:12px 18px;";
@@ -45523,9 +45524,30 @@ var NativeWebRTC = class {
     this.closed = false;
     this.multiPlayer = {
       root: this,
-      onFollowPath() {
+      onFollowPath(e) {
       },
-      update: (event) => this._handleGameMessage(event),
+      update(e) {
+        e.data = JSON.parse(e.data);
+        try {
+          if (e.data.netPos) {
+            app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);
+          } else if (e.data.netRotY || e.data.netRotY == 0) {
+            app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.y = e.data.netRotY;
+          } else if (e.data.netRotX || e.data.netRotX == 0) {
+            app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.x = e.data.netRotX;
+          } else if (e.data.netRotZ || e.data.netRotZ == 0) {
+            app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.z = e.data.netRotZ;
+          } else if (e.data.animationIndex || e.data.animationIndex == 0) {
+            console.log(`play animation from net , e.data.sceneName:${e.data.sceneName}  vs  e.data.remoteName: ${e.data.remoteName}
+                 e.data.animationIndex ${e.data.animationIndex}
+              
+              `);
+            app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).playAnimationByIndex(e.data.animationIndex);
+          }
+        } catch (err) {
+          console.info("mmo-err:", err);
+        }
+      },
       leaveGamePlay() {
       }
     };
@@ -45547,7 +45569,14 @@ var NativeWebRTC = class {
   async joinSession() {
     const protocol = this.options.protocol || (location.protocol === "https:" ? "wss:" : "ws:");
     const host = this.options.signalingUrl || this.options.url || protocol + "//" + (this.options.domain || location.hostname) + ":" + (this.options.port || 2020);
+    console.log("[NativeWebRTC] connecting to signaling server:", host, "room:", this.sessionName);
     this.socket = new WebSocket(host);
+    this.socket.addEventListener("open", () => {
+      console.log(`%c[NativeWebRTC] signaling socket OPEN:` + host, LOG_MATRIX);
+    });
+    this.socket.addEventListener("error", (event) => {
+      console.error("[NativeWebRTC] signaling socket ERROR:", event);
+    });
     await new Promise((resolve, reject) => {
       const timeout = setTimeout(() => reject(new Error("WebRTC signaling connection timed out")), 1e4);
       this.socket.addEventListener("open", () => {
@@ -45560,7 +45589,12 @@ var NativeWebRTC = class {
       }, { once: true });
     });
     this.socket.addEventListener("message", (event) => this._onSignal(JSON.parse(event.data)));
-    this.socket.addEventListener("close", () => {
+    this.socket.addEventListener("close", (event) => {
+      console.warn("[NativeWebRTC] signaling socket CLOSED:", {
+        code: event.code,
+        reason: event.reason,
+        wasClean: event.wasClean
+      });
       this.peers.forEach((_, id2) => this._dropPeer(id2));
       dispatchEvent(new CustomEvent("net-disconnected"));
     });
@@ -45573,6 +45607,7 @@ var NativeWebRTC = class {
   }
   async _onSignal(message) {
     if (message.type === "joined") {
+      console.log("[NativeWebRTC] JOINED room:", message.room, "local peer id:", message.id, "existing peers:", (message.peers || []).map((peer2) => peer2.id));
       this.id = message.id;
       this.connection.connectionId = this.id;
       dispatchEvent(new CustomEvent("net-ready", { detail: { id: this.id, room: message.room } }));
@@ -45580,11 +45615,13 @@ var NativeWebRTC = class {
       return;
     }
     if (message.type === "peer-joined") {
+      console.log("[NativeWebRTC] REMOTE PEER JOINED:", message.id);
       this._createPeer(message.id, false);
       dispatchEvent(new CustomEvent("onConnectionCreated", { detail: message }));
       return;
     }
     if (message.type === "peer-left") {
+      console.log("[NativeWebRTC] REMOTE PEER LEFT:", message.id);
       this._dropPeer(message.id);
       dispatchEvent(new CustomEvent("connectionDestroyed", { detail: { connectionId: message.id } }));
       return;
@@ -45624,8 +45661,29 @@ var NativeWebRTC = class {
   async _createPeer(peerId, initiator) {
     if (this.peers.has(peerId)) return this.peers.get(peerId);
     const config = this.options.rtcConfig || { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
+    console.log("[NativeWebRTC] creating RTCPeerConnection:", { peerId, initiator, config });
     const pc = new RTCPeerConnection(config);
     this.peers.set(peerId, pc);
+    pc.onconnectionstatechange = () => {
+      console.log("[NativeWebRTC] peer connection state:", peerId, pc.connectionState);
+      if (["failed", "closed"].includes(pc.connectionState)) this._dropPeer(peerId);
+    };
+    pc.oniceconnectionstatechange = () => {
+      console.log("[NativeWebRTC] ICE connection state:", peerId, pc.iceConnectionState);
+    };
+    pc.onsignalingstatechange = () => {
+      console.log("[NativeWebRTC] signaling state:", peerId, pc.signalingState);
+    };
+    pc.onicegatheringstatechange = () => {
+      console.log("[NativeWebRTC] ICE gathering state:", peerId, pc.iceGatheringState);
+    };
+    pc.onicecandidateerror = (event) => {
+      console.warn("[NativeWebRTC] ICE candidate error:", peerId, {
+        url: event.url,
+        code: event.errorCode,
+        text: event.errorText
+      });
+    };
     if (this.options.media) {
       try {
         if (!this.localStream) this.localStream = await navigator.mediaDevices.getUserMedia(this.options.media === true ? { audio: true, video: true } : this.options.media);
@@ -45646,9 +45704,6 @@ var NativeWebRTC = class {
     pc.ontrack = (event) => {
       dispatchEvent(new CustomEvent("webrtc-track", { detail: { peerId, stream: event.streams[0], track: event.track } }));
       dispatchEvent(new CustomEvent("streamPlaying", { detail: { peerId, stream: event.streams[0], track: event.track } }));
-    };
-    pc.onconnectionstatechange = () => {
-      if (["failed", "closed"].includes(pc.connectionState)) this._dropPeer(peerId);
     };
     if (initiator) {
       const offer = await pc.createOffer();
@@ -45672,32 +45727,24 @@ var NativeWebRTC = class {
       dispatchEvent(new CustomEvent("only-data-receive", { detail: envelope }));
       dispatchEvent(new CustomEvent("webrtc-message", { detail: { peerId, data } }));
     };
-    channel.onopen = () => dispatchEvent(new CustomEvent("webrtc-peer-ready", { detail: { peerId } }));
-    channel.onclose = () => this.channels.delete(peerId);
-  }
-  _handleGameMessage(event) {
-    let data = event.data;
-    try {
-      if (typeof data === "string") data = JSON.parse(data);
-    } catch (_) {
-      return;
-    }
-    try {
-      const name2 = data.remoteName || data.sceneName;
-      const object = app.getSceneObjectByName(name2);
-      if (!object) return;
-      if (data.netPos) object.position.setPosition(data.netPos.x, data.netPos.y, data.netPos.z);
-      else if (data.netRotY !== void 0) object.rotation.y = data.netRotY;
-      else if (data.netRotX !== void 0) object.rotation.x = data.netRotX;
-      else if (data.netRotZ !== void 0) object.rotation.z = data.netRotZ;
-      else if (data.animationIndex !== void 0) object.playAnimationByIndex(data.animationIndex);
-    } catch (error) {
-      console.info("[NativeWebRTC] game message:", error);
-    }
+    channel.onopen = () => {
+      console.log("[NativeWebRTC] DATA CHANNEL OPEN:", peerId, "label:", channel.label);
+      dispatchEvent(new CustomEvent("webrtc-peer-ready", { detail: { peerId } }));
+    };
+    channel.onclose = () => {
+      console.warn("[NativeWebRTC] DATA CHANNEL CLOSED:", peerId, "label:", channel.label);
+      this.channels.delete(peerId);
+    };
+    channel.onerror = (event) => {
+      console.error("[NativeWebRTC] DATA CHANNEL ERROR:", peerId, event);
+    };
   }
   _dropPeer(peerId) {
     const pc = this.peers.get(peerId);
-    if (pc) pc.close();
+    if (pc) {
+      console.log("[NativeWebRTC] closing peer connection:", peerId, "state:", pc.connectionState);
+      pc.close();
+    }
     this.peers.delete(peerId);
     this.channels.delete(peerId);
     this.pendingIce.delete(peerId);
@@ -45708,6 +45755,7 @@ var NativeWebRTC = class {
   leaveSession() {
     if (this.closed) return;
     this.closed = true;
+    console.log("[NativeWebRTC] leaving session:", this.sessionName);
     this.peers.forEach((_, id2) => this._dropPeer(id2));
     if (this.localStream) this.localStream.getTracks().forEach((track) => track.stop());
     if (this.socket) this.socket.close();
@@ -46207,7 +46255,7 @@ var MatrixStream = class {
 };
 var activateNet2 = (sessionOption) => {
   let net;
-  console.info(`%cNetworking2 backend params: ${sessionOption}`, LOG_WARN);
+  console.info(`%cNetworking2 backend params: ${sessionOption}`, LOG_MATRIX);
   if (typeof sessionOption === "undefined") {
     var sessionOption = {};
     sessionOption.sessionName = "matrix-engine-random";
@@ -46283,6 +46331,7 @@ var StreamSlotManager = {
 
 // examples/apps/public-chat/freeky-chat.js
 var loadFreekyChat = function() {
+  let MYCUBE;
   let freekyChat = new MatrixEngineWGPU({
     canvasSize: "fullscreen",
     useCannon: true,
@@ -46311,7 +46360,10 @@ var loadFreekyChat = function() {
         sessionName: "beast-room-01",
         domain: "https://localhost",
         signalingUrl: "ws://localhost:2020",
-        media: false
+        media: true
+      });
+      addEventListener("net-ready", () => {
+        console.log("net-ready- net-ready");
       });
       const W = 8;
       const H = 8;
@@ -46360,7 +46412,43 @@ var loadFreekyChat = function() {
       }
     });
     async function onGround(m) {
+      MYCUBE = freekyChat.addMeshObj({
+        material: { type: "mirror" },
+        position: { x: 0, y: 4, z: -10 },
+        rotation: { x: 0, y: 0, z: 0 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        scale: [3, 5, 3],
+        texturesPaths: ["./res/textures/floor1.webp", "./res/textures/env-maps/sky1_lod_mid.webp"],
+        name: "cube",
+        mesh: m.cube,
+        envMapParams: {
+          baseColorMix: 0.1,
+          // CLEAR SKY
+          mirrorTint: [0.9, 0.95, 1],
+          // Slight cool tint
+          reflectivity: 0.75,
+          // 25% reflection blend
+          illuminateColor: [0.3, 0.7, 1],
+          // Soft cyan
+          illuminateStrength: 1.5,
+          // Gentle rim
+          illuminatePulse: 0.1,
+          // No pulse (static)
+          fresnelPower: 5,
+          // Medium-sharp edge
+          envLodBias: 1.5,
+          usePlanarReflection: false
+          // Must be false - WIP
+        },
+        raycast: { enabled: true, radius: 1 },
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        }
+      });
       setTimeout(() => {
+        MYCUBE.position.netObject = MYCUBE.name;
         PLANE.vertexAnim.enableCloth(1);
         app.activateHZB();
       }, 500);

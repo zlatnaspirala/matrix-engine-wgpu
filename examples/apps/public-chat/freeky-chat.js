@@ -10,6 +10,8 @@ import {activateNet2} from "../../../src/engine/networking/net.js";
 
 export var loadFreekyChat = function() {
 
+  let MYCUBE;
+
   let freekyChat = new MatrixEngineWGPU({
     canvasSize: 'fullscreen',
     useCannon: true,
@@ -37,13 +39,23 @@ export var loadFreekyChat = function() {
       freekyChat.matrixPhysics.speedUpSimulation(2);
 
 
+
+
       freekyChat.net = activateNet2({
         backend: 'webrtc',
         sessionName: 'beast-room-01',
         domain: "https://localhost",
         signalingUrl: 'ws://localhost:2020',
-        media: false
+        media: true
       });
+
+      //  subMesh.position.netObject = subMesh.name;
+      addEventListener('net-ready', () => {
+        console.log('net-ready- net-ready')
+        // Networking
+
+
+      })
 
       const W = 8;
       const H = 8;
@@ -98,7 +110,39 @@ export var loadFreekyChat = function() {
     })
 
     async function onGround(m) {
+
+      MYCUBE = freekyChat.addMeshObj({
+        material: {type: 'mirror'},
+        position: {x: 0, y: 4, z: -10},
+        rotation: {x: 0, y: 0, z: 0},
+        rotationSpeed: {x: 0, y: 0, z: 0},
+        scale: [3, 5, 3],
+        texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
+        name: 'cube',
+        mesh: m.cube,
+        envMapParams: {
+          baseColorMix: 0.1,                // CLEAR SKY
+          mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
+          reflectivity: 0.75,               // 25% reflection blend
+          illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
+          illuminateStrength: 1.5,          // Gentle rim
+          illuminatePulse: 0.1,             // No pulse (static)
+          fresnelPower: 5,                  // Medium-sharp edge
+          envLodBias: 1.5,
+          usePlanarReflection: false,       // Must be false - WIP
+        },
+        raycast: {enabled: true, radius: 1},
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        }
+      })
+
       setTimeout(() => {
+
+        MYCUBE.position.netObject = MYCUBE.name;
+
         PLANE.vertexAnim.enableCloth(1);
         app.activateHZB();
       }, 500)

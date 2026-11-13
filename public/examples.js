@@ -70809,6 +70809,7 @@ var loadHang3d = function() {
   });
   window.app = app2;
 };
+loadHang3d();
 
 // node_modules/nui-commander/scripts/controls/main-function-menu.js
 var indicatorsBlocks = {

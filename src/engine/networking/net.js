@@ -1,4 +1,4 @@
-import {scriptManager, htmlHeader, LOG_WARN} from "../utils";
+import {scriptManager, htmlHeader, LOG_WARN, LOG_MATRIX} from "../utils";
 import {NativeWebRTC} from "./native-webrtc";
 import {BIGLOG, byId, closeSession, fetchInfo, joinSession, leaveSession, netConfig, REDLOG, removeUser} from "./matrix-stream";
 
@@ -213,7 +213,7 @@ export class MatrixStream {
 
 export let activateNet2 = (sessionOption) => {
   let net;
-  console.info(`%cNetworking2 backend params: ${sessionOption}`, LOG_WARN);
+  console.info(`%cNetworking2 backend params: ${sessionOption}`, LOG_MATRIX);
   // -----------------------
   // Make run
   // -----------------------
