@@ -312,16 +312,16 @@ export var loadFluidsSlot = function() {
 
       // FX_MESH is a static carrier in front of the reels. Convert world XY
       // frame coordinates into its local XZ plane (its 90-degree X rotation).
-      // Move the laser plane 2 world units toward the reels (+Z).
-      // FX_MESH is rotated 90 degrees around X, so lowering this local Y
-      // moves the beam plane forward in world Z.
-      const framePoint = (worldX, worldY) => [
+      // FX_MESH is rotated 90 degrees around X. Its local Y maps to
+      // world Z, so 2 world units toward the camera/reel front is only
+      // a 2/9 local-unit adjustment (not 2 full local units).
+      const framePoint = (worldX, worldY, worldZ = 0) => [
         -worldX / (9 * Math.max(1, n / 3)),
-        0.4,
+        2.4 - 2 / 9 + worldZ / 9,
         (worldY - 15) / 9
       ];
       const fireFrameEdge = (a, b) => laser.fireBeam(
-        framePoint(a[0], a[1]), framePoint(b[0], b[1]), 0
+        framePoint(a[0], a[1], a[2]), framePoint(b[0], b[1], b[2]), 0
       );
 
       // One permanent laser rectangle for every visible symbol cell.
@@ -338,20 +338,21 @@ export var loadFluidsSlot = function() {
           // The reel is viewed from its -Z/front side. Project each symbol's
           // angular position onto world Y so the borders follow the cylinder spacing.
           const cy = 15 + Math.sin(rowOffset * rowStep) * SYMBOL_REEL_RADIUS * SCALE;
-          // The middle symbol faces straight ahead. The top and bottom
-          // symbols follow the reel's curvature, so rotate their laser frames
-          // by the same angular offset instead of keeping every frame linear.
-          const tilt = rowOffset * rowStep;
-          const cosTilt = Math.cos(tilt);
-          const sinTilt = Math.sin(tilt);
+          // Rotate the top/bottom symbol frames around WORLD X.
+          // This keeps their projected width horizontal while adding the
+          // correct depth change; the middle row remains unrotated.
+          const tiltX = rowOffset * rowStep;
+          const cosX = Math.cos(tiltX);
+          const sinX = Math.sin(tiltX);
           const corners = [
             [-halfW, -halfH],
             [ halfW, -halfH],
             [ halfW,  halfH],
             [-halfW,  halfH]
           ].map(([x, y]) => [
-            cx + x * cosTilt - y * sinTilt,
-            cy + x * sinTilt + y * cosTilt
+            cx + x,
+            cy + y * cosX,
+            y * sinX
           ]);
 
           for(let edge = 0;edge < 4;edge++) {
