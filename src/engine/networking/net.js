@@ -212,7 +212,7 @@ export class MatrixStream {
 }
 
 export let activateNet2 = (sessionOption) => {
-
+  let net;
   console.info(`%cNetworking2 backend params: ${sessionOption}`, LOG_WARN);
   // -----------------------
   // Make run

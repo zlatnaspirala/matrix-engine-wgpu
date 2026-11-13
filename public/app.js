@@ -46206,6 +46206,7 @@ var MatrixStream = class {
   };
 };
 var activateNet2 = (sessionOption) => {
+  let net;
   console.info(`%cNetworking2 backend params: ${sessionOption}`, LOG_WARN);
   if (typeof sessionOption === "undefined") {
     var sessionOption = {};
