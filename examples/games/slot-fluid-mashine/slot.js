@@ -312,9 +312,12 @@ export var loadFluidsSlot = function() {
 
       // FX_MESH is a static carrier in front of the reels. Convert world XY
       // frame coordinates into its local XZ plane (its 90-degree X rotation).
+      // Move the laser plane 2 world units toward the reels (+Z).
+      // FX_MESH is rotated 90 degrees around X, so lowering this local Y
+      // moves the beam plane forward in world Z.
       const framePoint = (worldX, worldY) => [
         -worldX / (9 * Math.max(1, n / 3)),
-        2.4,
+        0.4,
         (worldY - 15) / 9
       ];
       const fireFrameEdge = (a, b) => laser.fireBeam(
@@ -335,12 +338,21 @@ export var loadFluidsSlot = function() {
           // The reel is viewed from its -Z/front side. Project each symbol's
           // angular position onto world Y so the borders follow the cylinder spacing.
           const cy = 15 + Math.sin(rowOffset * rowStep) * SYMBOL_REEL_RADIUS * SCALE;
+          // The middle symbol faces straight ahead. The top and bottom
+          // symbols follow the reel's curvature, so rotate their laser frames
+          // by the same angular offset instead of keeping every frame linear.
+          const tilt = rowOffset * rowStep;
+          const cosTilt = Math.cos(tilt);
+          const sinTilt = Math.sin(tilt);
           const corners = [
-            [cx - halfW, cy - halfH],
-            [cx + halfW, cy - halfH],
-            [cx + halfW, cy + halfH],
-            [cx - halfW, cy + halfH]
-          ];
+            [-halfW, -halfH],
+            [ halfW, -halfH],
+            [ halfW,  halfH],
+            [-halfW,  halfH]
+          ].map(([x, y]) => [
+            cx + x * cosTilt - y * sinTilt,
+            cy + x * sinTilt + y * cosTilt
+          ]);
 
           for(let edge = 0;edge < 4;edge++) {
             fireFrameEdge(corners[edge], corners[(edge + 1) % 4]);
