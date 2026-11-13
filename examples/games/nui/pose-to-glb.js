@@ -146,7 +146,7 @@ export var loadPoseToGLB = function() {
       let beast = loadPose.addGlbObjInctance({
         material: {type: 'standard', useTextureFromGlb: true},
         useScale: true,
-        scale: [2, 2, 2],
+        scale: [4, 4, 4],
         position: {x: 0, y: 1.5, z: -15},
         name: 'player',
         physics: {
@@ -163,8 +163,6 @@ export var loadPoseToGLB = function() {
       }, null, glbFile);
 
       loadPose.beast = beast;
-
-
 
       loadPose.addProceduralMeshObj({
         material: {type: 'standard'},
@@ -188,22 +186,22 @@ export var loadPoseToGLB = function() {
         raycast: {enabled: true, radius: 1}
       });
 
-      MYCUBE = loadPose.addMeshObj({
-        material: {type: 'standard', share: true},
-        position: {x: 0, y: 5, z: -10},
-        rotation: {x: 0, y: 0, z: 0},
-        rotationSpeed: {x: 0, y: 0, z: 0},
-        scale: [1, 1, 1],
-        texturesPaths: ['./res/textures/white-metal.png'],
-        name: 'MYCUBE',
-        mesh: m.cube,
-        physics: {
-          enabled: false,
-          mass: 0,
-          geometry: "Cube"
-        },
-        pointerEffect: {enabled: true}
-      });
+      // MYCUBE = loadPose.addMeshObj({
+      //   material: {type: 'standard', share: true},
+      //   position: {x: 0, y: 5, z: -10},
+      //   rotation: {x: 0, y: 0, z: 0},
+      //   rotationSpeed: {x: 0, y: 0, z: 0},
+      //   scale: [1, 1, 1],
+      //   texturesPaths: ['./res/textures/white-metal.png'],
+      //   name: 'MYCUBE',
+      //   mesh: m.cube,
+      //   physics: {
+      //     enabled: false,
+      //     mass: 0,
+      //     geometry: "Cube"
+      //   },
+      //   pointerEffect: {enabled: true}
+      // });
 
       loadPose.SAVE_CUBE = m.cube;
 
@@ -470,8 +468,8 @@ export var loadPoseToGLB = function() {
     loadPose.canvas.addEventListener("ray.hit.event", (e) => {
       console.log('ray.hit.event detected');
       if(isRunning === false) {
-        runnerSet = spawnRunners(loadPose, loadPose.SAVE_CUBE, {count: 8, minX: -22, maxX: 22, minY: 0.5, maxY: 3, startZ: 60, endZ: -50, speedMin: 0.55, speedMax: 1.5});
-        isRunning = true;
+        // runnerSet = spawnRunners(loadPose, loadPose.SAVE_CUBE, {count: 8, minX: -22, maxX: 22, minY: 0.5, maxY: 3, startZ: 60, endZ: -50, speedMin: 0.55, speedMax: 1.5});
+        // isRunning = true;
       }
     });
 
