@@ -33,7 +33,8 @@ export class NativeWebRTC {
     this.sendOnlyData = data => this.send(data);
     this.send = (data, targets) => {
       const payload = JSON.stringify(data);
-      const wanted = Array.isArray(targets) && targets.length ? new Set(targets) : null;
+      const requestedTargets = targets || (data && Array.isArray(data.toRemote) ? data.toRemote : null);
+      const wanted = Array.isArray(requestedTargets) && requestedTargets.length ? new Set(requestedTargets) : null;
       this.channels.forEach((channel, peerId) => {
         if ((!wanted || wanted.has(peerId)) && channel.readyState === 'open') channel.send(payload);
       });
@@ -60,7 +61,6 @@ export class NativeWebRTC {
     });
     this._signal({ type: 'join', room: this.sessionName, metadata: this.options.customData || null });
     dispatchEvent(new CustomEvent('setupSessionObject', { detail: this.session }));
-    dispatchEvent(new CustomEvent('net-ready'));
     return this;
   }
 
@@ -72,6 +72,7 @@ export class NativeWebRTC {
     if (message.type === 'joined') {
       this.id = message.id;
       this.connection.connectionId = this.id;
+      dispatchEvent(new CustomEvent('net-ready', { detail: { id: this.id, room: message.room } }));
       (message.peers || []).forEach(peer => this._createPeer(peer.id, true));
       return;
     }
@@ -83,6 +84,11 @@ export class NativeWebRTC {
     if (message.type === 'peer-left') {
       this._dropPeer(message.id);
       dispatchEvent(new CustomEvent('connectionDestroyed', { detail: { connectionId: message.id } }));
+      return;
+    }
+    if (message.type === 'error') {
+      console.warn('[NativeWebRTC] signaling server:', message.error);
+      dispatchEvent(new CustomEvent('net-error', { detail: message }));
       return;
     }
     const peer = this.peers.get(message.from);
