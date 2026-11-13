@@ -14,7 +14,7 @@
  * setDepthTol   - raw-depth tolerance for foreground-bleed rejection
  */
 import {mat4} from "wgpu-matrix";
-import {fullscreenQuadWGSL} from "./bloom";
+import {fullscreenQuadWGSL} from "./bloom.js";
 
 export class MotionBlurPass {
   constructor(width, height, device, options = {}) {
@@ -28,11 +28,13 @@ export class MotionBlurPass {
       maxBlur: options.maxBlur ?? 0.03,
       depthTol: options.depthTol ?? 0.0003,
     };
-    // mat4 reproj + 4 params
-    this._u = new Float32Array(20);
+
+    this._u = new Float32Array(24); // mat4 reproj + 4 params + debug(4)
+    this.debug = 0;       // 0 off, 1 velocity view, 2 split compare (left blurred / right original)
+    this.ranFrames = 0;   // proof counter: increments only when the blur pass really executed
     this.uniformBuffer = device.createBuffer({
       label: 'MotionBlur uniforms',
-      size: 80,
+      size: 96,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
     this._reproj = mat4.create();
@@ -77,6 +79,7 @@ export class MotionBlurPass {
   setSamples = (v) => {this.params.samples = Math.max(2, Math.min(32, v | 0));}
   setMaxBlur = (v) => {this.params.maxBlur = v;}
   setDepthTol = (v) => {this.params.depthTol = v;}
+  setDebug = (m) => {this.debug = m;}
 
   resize(width, height) {
     this.width = width;
@@ -117,6 +120,7 @@ export class MotionBlurPass {
     u[17] = this.params.samples;
     u[18] = this.params.maxBlur;
     u[19] = this.params.depthTol;
+    u[20] = this.debug;
     this.device.queue.writeBuffer(this.uniformBuffer, 0, u);
 
     if(!this._bg || this._lastScene !== sceneView || this._lastDepth !== depthView) {
@@ -141,6 +145,7 @@ export class MotionBlurPass {
     pass.end();
 
     encoder.copyTextureToTexture({texture: this.tex}, {texture: sceneTexture}, [this.width, this.height]);
+    this.ranFrames++;
     this._prevVP.set(viewProj);
   }
 }
@@ -153,6 +158,10 @@ function motionBlurWGSL() {
     samples: f32,
     maxBlur: f32,
     depthTol: f32,
+    debug: f32,
+    _p0: f32,
+    _p1: f32,
+    _p2: f32,
   };
 
   @group(0) @binding(0) var sceneTex : texture_2d<f32>;
@@ -177,7 +186,13 @@ function motionBlurWGSL() {
     let prevNdc = pc.xy / pc.w;
 
     // NDC delta -> UV delta (y flipped)
-    var v = (ndc.xy - prevNdc) * vec2<f32>(0.5, -0.5) * mb.strength;
+    let raw = (ndc.xy - prevNdc) * vec2<f32>(0.5, -0.5);
+    if (mb.debug > 0.5 && mb.debug < 1.5) {
+      // velocity view: red = horizontal, green = vertical (60 = ~1% of screen per frame -> full color)
+      return vec4<f32>(center.rgb * 0.3 + vec3<f32>(abs(raw) * 60.0, 0.0), 1.0);
+    }
+    if (mb.debug > 1.5 && uv.x > 0.5) { return center; }   // right half untouched for comparison
+    var v = raw * mb.strength;
     let len = length(v);
     if (len * max(dims.x, dims.y) < 0.75) { return center; }   // sub-pixel: skip
     if (len > mb.maxBlur) { v = v * (mb.maxBlur / len); }
