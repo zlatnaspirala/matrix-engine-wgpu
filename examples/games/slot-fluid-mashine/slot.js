@@ -485,7 +485,7 @@ export var loadFluidsSlot = function() {
         game.spin();
 
         FX_MESH.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(1, 2));
-        FX_MESH.effects.keeffect.setIntensity(randomIntFromTo(2, 5));
+        FX_MESH.effects.keeffect.setIntensity(randomIntFromTo(2, 4));
       });
 
       // Remote spin events are opt-in; keyboard play stays fully local by default.

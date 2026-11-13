@@ -24,6 +24,7 @@ export class FXAAPass {
       size: 32,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
+    this.ldr = false;
     this._updateParams();
 
     this.sampler = device.createSampler({magFilter: 'linear', minFilter: 'linear', addressModeU: 'clamp-to-edge', addressModeV: 'clamp-to-edge'});
@@ -55,6 +56,7 @@ export class FXAAPass {
   _updateParams() {
     const p = this.params, s = this._scratch;
     s[0] = p.edgeMin; s[1] = p.edgeRel; s[2] = p.spanMax; s[3] = p.reduceMul; s[4] = p.reduceMin;
+    s[5] = this.ldr ? 1 : 0;
     this.device.queue.writeBuffer(this.paramBuffer, 0, s);
   }
 
@@ -70,7 +72,8 @@ export class FXAAPass {
    * @param {GPUTextureView} ssrView    ssrOutputView or the dummy 1x1 view
    * @param {GPUTextureView} targetView canvas view
    */
-  render(encoder, hdrView, ssrView, targetView) {
+  render(encoder, hdrView, ssrView, targetView, ldr = false) {
+    if(ldr !== this.ldr) {this.ldr = ldr; this._updateParams();}
     if(this._lastHdr !== hdrView || this._lastSSR !== ssrView || !this._bg) {
       this._bg = this.device.createBindGroup({
         label: 'FXAA bindgroup',
@@ -102,7 +105,7 @@ function fxaaWGSL() {
     spanMax: f32,
     reduceMul: f32,
     reduceMin: f32,
-    _a: f32, _b: f32, _c: f32,
+    ldr: f32, _b: f32, _c: f32,
   };
 
   @group(0) @binding(0) var hdrTex : texture_2d<f32>;
@@ -114,6 +117,7 @@ function fxaaWGSL() {
   // everywhere because FXAA branches non-uniformly (textureSample would be invalid).
   fn fetch(uv: vec2<f32>) -> vec3<f32> {
     let hdr = textureSampleLevel(hdrTex, samp, uv, 0.0).rgb;
+    if (fx.ldr > 0.5) { return hdr; }
     let ssr = textureSampleLevel(ssrTex, samp, uv, 0.0);
     let c = mix(hdr, ssr.rgb, ssr.a);
     return c / (c + vec3<f32>(1.0));

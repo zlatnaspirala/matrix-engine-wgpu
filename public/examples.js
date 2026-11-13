@@ -54938,6 +54938,7 @@ var FXAAPass = class {
       size: 32,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
+    this.ldr = false;
     this._updateParams();
     this.sampler = device2.createSampler({ magFilter: "linear", minFilter: "linear", addressModeU: "clamp-to-edge", addressModeV: "clamp-to-edge" });
     this.pipeline = device2.createRenderPipeline({
@@ -54969,6 +54970,7 @@ var FXAAPass = class {
     s2[2] = p2.spanMax;
     s2[3] = p2.reduceMul;
     s2[4] = p2.reduceMin;
+    s2[5] = this.ldr ? 1 : 0;
     this.device.queue.writeBuffer(this.paramBuffer, 0, s2);
   }
   setEdgeThresholdMin = (v2) => {
@@ -54997,7 +54999,11 @@ var FXAAPass = class {
    * @param {GPUTextureView} ssrView    ssrOutputView or the dummy 1x1 view
    * @param {GPUTextureView} targetView canvas view
    */
-  render(encoder, hdrView, ssrView, targetView) {
+  render(encoder, hdrView, ssrView, targetView, ldr = false) {
+    if (ldr !== this.ldr) {
+      this.ldr = ldr;
+      this._updateParams();
+    }
     if (this._lastHdr !== hdrView || this._lastSSR !== ssrView || !this._bg) {
       this._bg = this.device.createBindGroup({
         label: "FXAA bindgroup",
@@ -55028,7 +55034,7 @@ function fxaaWGSL() {
     spanMax: f32,
     reduceMul: f32,
     reduceMin: f32,
-    _a: f32, _b: f32, _c: f32,
+    ldr: f32, _b: f32, _c: f32,
   };
 
   @group(0) @binding(0) var hdrTex : texture_2d<f32>;
@@ -55040,6 +55046,7 @@ function fxaaWGSL() {
   // everywhere because FXAA branches non-uniformly (textureSample would be invalid).
   fn fetch(uv: vec2<f32>) -> vec3<f32> {
     let hdr = textureSampleLevel(hdrTex, samp, uv, 0.0).rgb;
+    if (fx.ldr > 0.5) { return hdr; }
     let ssr = textureSampleLevel(ssrTex, samp, uv, 0.0);
     let c = mix(hdr, ssr.rgb, ssr.a);
     return c / (c + vec3<f32>(1.0));
@@ -55095,6 +55102,480 @@ function fxaaWGSL() {
     return vec4<f32>(outRgb, 1.0);
   }
   `;
+}
+
+// src/engine/postprocessing/motion-blur,js
+var MotionBlurPass = class {
+  constructor(width, height, device2, options2 = {}) {
+    this.enabled = false;
+    this.device = device2;
+    this.width = width;
+    this.height = height;
+    this.params = {
+      strength: options2.strength ?? 0.6,
+      samples: options2.samples ?? 12,
+      maxBlur: options2.maxBlur ?? 0.03,
+      depthTol: options2.depthTol ?? 3e-4
+    };
+    this._u = new Float32Array(20);
+    this.uniformBuffer = device2.createBuffer({
+      label: "MotionBlur uniforms",
+      size: 80,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this._reproj = mat4Impl.create();
+    this._prevVP = new Float32Array(16);
+    this._hasPrev = false;
+    this.sampler = device2.createSampler({ magFilter: "linear", minFilter: "linear", addressModeU: "clamp-to-edge", addressModeV: "clamp-to-edge" });
+    this.tex = this._createTex();
+    this.texView = this.tex.createView();
+    this.pipeline = device2.createRenderPipeline({
+      label: "MotionBlur pipeline",
+      layout: "auto",
+      vertex: { module: device2.createShaderModule({ code: fullscreenQuadWGSL() }), entryPoint: "vert" },
+      fragment: {
+        module: device2.createShaderModule({ code: motionBlurWGSL() }),
+        entryPoint: "main",
+        targets: [{ format: "rgba16float" }]
+      },
+      primitive: { topology: "triangle-list" }
+    });
+    this._passDesc = {
+      label: "MotionBlur pass",
+      colorAttachments: [{ view: this.texView, loadOp: "clear", storeOp: "store", clearValue: { r: 0, g: 0, b: 0, a: 1 } }]
+    };
+    this._bg = null;
+    this._lastScene = null;
+    this._lastDepth = null;
+  }
+  _createTex() {
+    return this.device.createTexture({
+      label: "MotionBlur out",
+      size: [this.width, this.height],
+      format: "rgba16float",
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_SRC
+    });
+  }
+  setStrength = (v2) => {
+    this.params.strength = v2;
+  };
+  setSamples = (v2) => {
+    this.params.samples = Math.max(2, Math.min(32, v2 | 0));
+  };
+  setMaxBlur = (v2) => {
+    this.params.maxBlur = v2;
+  };
+  setDepthTol = (v2) => {
+    this.params.depthTol = v2;
+  };
+  resize(width, height) {
+    this.width = width;
+    this.height = height;
+    this.tex.destroy();
+    this.tex = this._createTex();
+    this.texView = this.tex.createView();
+    this._passDesc.colorAttachments[0].view = this.texView;
+    this._bg = null;
+  }
+  _same(a2, b2) {
+    for (let i2 = 0; i2 < 16; i2++) if (a2[i2] !== b2[i2]) return false;
+    return true;
+  }
+  /**
+   * @param {GPUCommandEncoder} encoder
+   * @param {GPUTexture}     sceneTexture   needs COPY_DST
+   * @param {GPUTextureView} sceneView
+   * @param {GPUTextureView} depthView      mainDepthView
+   * @param {Float32Array}   invViewProj    inverse of current VP
+   * @param {Float32Array}   viewProj       current VP
+   */
+  render(encoder, sceneTexture, sceneView, depthView, invViewProj, viewProj) {
+    if (!this._hasPrev) {
+      this._prevVP.set(viewProj);
+      this._hasPrev = true;
+      return;
+    }
+    if (this._same(viewProj, this._prevVP)) return;
+    mat4Impl.multiply(this._prevVP, invViewProj, this._reproj);
+    const u2 = this._u;
+    u2.set(this._reproj, 0);
+    u2[16] = this.params.strength;
+    u2[17] = this.params.samples;
+    u2[18] = this.params.maxBlur;
+    u2[19] = this.params.depthTol;
+    this.device.queue.writeBuffer(this.uniformBuffer, 0, u2);
+    if (!this._bg || this._lastScene !== sceneView || this._lastDepth !== depthView) {
+      this._bg = this.device.createBindGroup({
+        label: "MotionBlur bindgroup",
+        layout: this.pipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: sceneView },
+          { binding: 1, resource: depthView },
+          { binding: 2, resource: this.sampler },
+          { binding: 3, resource: { buffer: this.uniformBuffer } }
+        ]
+      });
+      this._lastScene = sceneView;
+      this._lastDepth = depthView;
+    }
+    const pass = encoder.beginRenderPass(this._passDesc);
+    pass.setPipeline(this.pipeline);
+    pass.setBindGroup(0, this._bg);
+    pass.draw(6);
+    pass.end();
+    encoder.copyTextureToTexture({ texture: this.tex }, { texture: sceneTexture }, [this.width, this.height]);
+    this._prevVP.set(viewProj);
+  }
+};
+function motionBlurWGSL() {
+  return (
+    /* wgsl */
+    `
+  struct MB {
+    reproj: mat4x4<f32>,
+    strength: f32,
+    samples: f32,
+    maxBlur: f32,
+    depthTol: f32,
+  };
+
+  @group(0) @binding(0) var sceneTex : texture_2d<f32>;
+  @group(0) @binding(1) var depthTex : texture_depth_2d;
+  @group(0) @binding(2) var samp     : sampler;
+  @group(0) @binding(3) var<uniform> mb : MB;
+
+  fn depthAt(uv: vec2<f32>, dims: vec2<f32>) -> f32 {
+    let px = vec2<i32>(clamp(uv * dims, vec2<f32>(0.0), dims - vec2<f32>(1.0)));
+    return textureLoad(depthTex, px, 0);
+  }
+
+  @fragment
+  fn main(@builtin(position) p: vec4<f32>) -> @location(0) vec4<f32> {
+    let dims = vec2<f32>(textureDimensions(sceneTex));
+    let uv = p.xy / dims;
+    let center = textureSampleLevel(sceneTex, samp, uv, 0.0);
+    let d0 = depthAt(uv, dims);
+
+    let ndc = vec4<f32>(uv.x * 2.0 - 1.0, (1.0 - uv.y) * 2.0 - 1.0, d0, 1.0);
+    let pc = mb.reproj * ndc;
+    let prevNdc = pc.xy / pc.w;
+
+    // NDC delta -> UV delta (y flipped)
+    var v = (ndc.xy - prevNdc) * vec2<f32>(0.5, -0.5) * mb.strength;
+    let len = length(v);
+    if (len * max(dims.x, dims.y) < 0.75) { return center; }   // sub-pixel: skip
+    if (len > mb.maxBlur) { v = v * (mb.maxBlur / len); }
+
+    let n = i32(mb.samples);
+    var acc = center.rgb;
+    var wsum = 1.0;
+    for (var i = 0; i < n; i++) {
+      let t = (f32(i) + 0.5) / f32(n) - 0.5;
+      let suv = uv + v * t;
+      let sd = depthAt(suv, dims);
+      // Reject taps that are nearer than the center pixel (foreground bleeding onto background)
+      let w = select(0.0, 1.0, sd >= d0 - mb.depthTol);
+      acc += textureSampleLevel(sceneTex, samp, suv, 0.0).rgb * w;
+      wsum += w;
+    }
+    return vec4<f32>(acc / wsum, center.a);
+  }
+  `
+  );
+}
+
+// src/engine/postprocessing/grade.js
+var TONEMAP = { reinhard: 0, aces: 1, agx: 2, neutral: 3 };
+var GradePass = class {
+  constructor(device2, targetFormat, options2 = {}) {
+    this.enabled = false;
+    this.device = device2;
+    this.params = {
+      exposure: 1,
+      tonemap: 0,
+      saturation: 1,
+      contrast: 1,
+      distortion: 0,
+      chromatic: 0,
+      vignette: 0,
+      vignetteRadius: 1,
+      vignetteSoft: 0.5,
+      grain: 0,
+      lutStrength: 0
+    };
+    const { tonemap, ...rest } = options2;
+    Object.assign(this.params, rest);
+    if (tonemap !== void 0) this.params.tonemap = typeof tonemap === "string" ? TONEMAP[tonemap] ?? 0 : tonemap;
+    this._scratch = new Float32Array(16);
+    this._timeScratch = new Float32Array(1);
+    this.paramBuffer = device2.createBuffer({
+      label: "Grade params",
+      size: 64,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.sampler = device2.createSampler({ magFilter: "linear", minFilter: "linear", addressModeU: "clamp-to-edge", addressModeV: "clamp-to-edge", addressModeW: "clamp-to-edge" });
+    this._lutView = createIdentityLUT(device2, 2);
+    this._updateParams();
+    this.pipeline = device2.createRenderPipeline({
+      label: "Grade pipeline",
+      layout: "auto",
+      vertex: { module: device2.createShaderModule({ code: fullscreenQuadWGSL() }), entryPoint: "vert" },
+      fragment: {
+        module: device2.createShaderModule({ code: gradeWGSL() }),
+        entryPoint: "main",
+        targets: [{ format: targetFormat }]
+      },
+      primitive: { topology: "triangle-list" }
+    });
+    this._passDesc = {
+      label: "Grade pass",
+      colorAttachments: [{ view: null, loadOp: "clear", storeOp: "store", clearValue: { r: 0, g: 0, b: 0, a: 1 } }]
+    };
+    this._bg = null;
+    this._lastHdr = null;
+    this._lastSSR = null;
+  }
+  _updateParams() {
+    const p2 = this.params, s2 = this._scratch;
+    s2[0] = p2.exposure;
+    s2[1] = p2.tonemap;
+    s2[2] = p2.saturation;
+    s2[3] = p2.contrast;
+    s2[4] = p2.distortion;
+    s2[5] = p2.chromatic;
+    s2[6] = p2.vignette;
+    s2[7] = p2.vignetteRadius;
+    s2[8] = p2.vignetteSoft;
+    s2[9] = p2.grain;
+    s2[11] = p2.lutStrength;
+    this.device.queue.writeBuffer(this.paramBuffer, 0, s2);
+  }
+  setExposure = (v2) => {
+    this.params.exposure = v2;
+    this._updateParams();
+  };
+  setTonemap = (v2) => {
+    this.params.tonemap = typeof v2 === "string" ? TONEMAP[v2] ?? 0 : v2;
+    this._updateParams();
+  };
+  setSaturation = (v2) => {
+    this.params.saturation = v2;
+    this._updateParams();
+  };
+  setContrast = (v2) => {
+    this.params.contrast = v2;
+    this._updateParams();
+  };
+  setDistortion = (v2) => {
+    this.params.distortion = Math.max(0, v2);
+    this._updateParams();
+  };
+  setChromatic = (v2) => {
+    this.params.chromatic = v2;
+    this._updateParams();
+  };
+  setGrain = (v2) => {
+    this.params.grain = v2;
+    this._updateParams();
+  };
+  setVignette = (strength, radius = this.params.vignetteRadius, soft = this.params.vignetteSoft) => {
+    this.params.vignette = strength;
+    this.params.vignetteRadius = radius;
+    this.params.vignetteSoft = soft;
+    this._updateParams();
+  };
+  /** @param {GPUTextureView|null} view 3D view from createLUTFromCube / loadLUT, null = identity */
+  setLUT = (view, strength = 1) => {
+    this._lutView = view ?? createIdentityLUT(this.device, 2);
+    this.params.lutStrength = view ? strength : 0;
+    this._bg = null;
+    this._updateParams();
+  };
+  render(encoder, hdrView, ssrView, targetView) {
+    if (this.params.grain > 0) {
+      this._timeScratch[0] = performance.now() * 1e-3 % 1e3;
+      this.device.queue.writeBuffer(this.paramBuffer, 40, this._timeScratch);
+    }
+    if (!this._bg || this._lastHdr !== hdrView || this._lastSSR !== ssrView) {
+      this._bg = this.device.createBindGroup({
+        label: "Grade bindgroup",
+        layout: this.pipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: hdrView },
+          { binding: 1, resource: this.sampler },
+          { binding: 2, resource: ssrView },
+          { binding: 3, resource: { buffer: this.paramBuffer } },
+          { binding: 4, resource: this._lutView }
+        ]
+      });
+      this._lastHdr = hdrView;
+      this._lastSSR = ssrView;
+    }
+    this._passDesc.colorAttachments[0].view = targetView;
+    const pass = encoder.beginRenderPass(this._passDesc);
+    pass.setPipeline(this.pipeline);
+    pass.setBindGroup(0, this._bg);
+    pass.draw(6);
+    pass.end();
+  }
+};
+function upload3D(device2, data, n3) {
+  const tex = device2.createTexture({
+    label: `LUT ${n3}^3`,
+    size: [n3, n3, n3],
+    dimension: "3d",
+    format: "rgba8unorm",
+    usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
+  });
+  device2.queue.writeTexture({ texture: tex }, data, { bytesPerRow: n3 * 4, rowsPerImage: n3 }, [n3, n3, n3]);
+  return tex.createView({ dimension: "3d" });
+}
+function createIdentityLUT(device2, size2 = 2) {
+  const n3 = size2;
+  const data = new Uint8Array(n3 * n3 * n3 * 4);
+  let j2 = 0;
+  for (let b2 = 0; b2 < n3; b2++) for (let g2 = 0; g2 < n3; g2++) for (let r3 = 0; r3 < n3; r3++) {
+    data[j2++] = Math.round(r3 / (n3 - 1) * 255);
+    data[j2++] = Math.round(g2 / (n3 - 1) * 255);
+    data[j2++] = Math.round(b2 / (n3 - 1) * 255);
+    data[j2++] = 255;
+  }
+  return upload3D(device2, data, n3);
+}
+function gradeWGSL() {
+  return (
+    /* wgsl */
+    `
+  struct Grade {
+    exposure: f32, tonemap: f32, saturation: f32, contrast: f32,
+    distortion: f32, chromatic: f32, vigStrength: f32, vigRadius: f32,
+    vigSoft: f32, grain: f32, time: f32, lutStrength: f32,
+    _p0: f32, _p1: f32, _p2: f32, _p3: f32,
+  };
+
+  @group(0) @binding(0) var hdrTex : texture_2d<f32>;
+  @group(0) @binding(1) var samp   : sampler;
+  @group(0) @binding(2) var ssrTex : texture_2d<f32>;
+  @group(0) @binding(3) var<uniform> g : Grade;
+  @group(0) @binding(4) var lutTex : texture_3d<f32>;
+
+  fn composite(uv: vec2<f32>) -> vec3<f32> {
+    let hdr = textureSampleLevel(hdrTex, samp, uv, 0.0).rgb;
+    let ssr = textureSampleLevel(ssrTex, samp, uv, 0.0);
+    return mix(hdr, ssr.rgb, ssr.a);
+  }
+
+  // Barrel distortion, zoom-compensated so corners stay on the frame edge (use k >= 0).
+  fn distort(uv: vec2<f32>, k: f32) -> vec2<f32> {
+    let c = uv - vec2<f32>(0.5);
+    let r2 = dot(c, c);
+    return vec2<f32>(0.5) + c * (1.0 + k * r2) / (1.0 + k * 0.5);
+  }
+
+  fn aces(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+  }
+
+  fn agxContrast(x: vec3<f32>) -> vec3<f32> {
+    let x2 = x * x;
+    let x4 = x2 * x2;
+    return 15.5 * x4 * x2 - 40.14 * x4 * x + 31.96 * x4 - 6.868 * x2 * x
+         + 0.4298 * x2 + 0.1191 * x - vec3<f32>(0.00232);
+  }
+
+  // Compact AgX approximation. Output is already display-encoded (no extra gamma).
+  fn agx(v0: vec3<f32>) -> vec3<f32> {
+    let m = mat3x3<f32>(
+      vec3<f32>(0.842479062253094, 0.0423282422610123, 0.0423756549057051),
+      vec3<f32>(0.0784335999999992, 0.878468636469772, 0.0784336),
+      vec3<f32>(0.0792237451477643, 0.0791661274605434, 0.879142973793104)
+    );
+    let minEv = -12.47393;
+    let maxEv = 4.026069;
+    var v = max(m * v0, vec3<f32>(1e-10));
+    v = clamp(log2(v), vec3<f32>(minEv), vec3<f32>(maxEv));
+    v = (v - vec3<f32>(minEv)) / (maxEv - minEv);
+    return clamp(agxContrast(v), vec3<f32>(0.0), vec3<f32>(1.0));
+  }
+
+  // Khronos PBR Neutral
+  fn neutral(c0: vec3<f32>) -> vec3<f32> {
+    let startCompression = 0.76;
+    let desaturation = 0.15;
+    var c = c0;
+    let x = min(c.r, min(c.g, c.b));
+    var offset = 0.04;
+    if (x < 0.08) { offset = x - 6.25 * x * x; }
+    c = c - vec3<f32>(offset);
+    let peak = max(c.r, max(c.g, c.b));
+    if (peak < startCompression) { return c; }
+    let d = 1.0 - startCompression;
+    let newPeak = 1.0 - d * d / (peak + d - startCompression);
+    c = c * (newPeak / peak);
+    let gg = 1.0 - 1.0 / (desaturation * (peak - newPeak) + 1.0);
+    return mix(c, vec3<f32>(newPeak), gg);
+  }
+
+  fn tonemap(c: vec3<f32>, mode: i32) -> vec3<f32> {
+    let inv = vec3<f32>(1.0 / 2.2);
+    if (mode == 1) { return pow(aces(c), inv); }
+    if (mode == 2) { return agx(c); }
+    if (mode == 3) { return pow(max(neutral(c), vec3<f32>(0.0)), inv); }
+    return c / (c + vec3<f32>(1.0));   // legacy Reinhard, same as the old present pass
+  }
+
+  fn hash21(p: vec2<f32>) -> f32 {
+    var q = fract(p * vec2<f32>(123.34, 456.21));
+    q += dot(q, q + 45.32);
+    return fract(q.x * q.y);
+  }
+
+  @fragment
+  fn main(@builtin(position) p: vec4<f32>) -> @location(0) vec4<f32> {
+    let size = vec2<f32>(textureDimensions(hdrTex));
+    let uv0 = p.xy / size;
+    let uv = distort(uv0, g.distortion);
+
+    var hdr: vec3<f32>;
+    if (g.chromatic > 0.0) {
+      let off = (uv - vec2<f32>(0.5)) * g.chromatic;
+      hdr = vec3<f32>(composite(uv + off).r, composite(uv).g, composite(uv - off).b);
+    } else {
+      hdr = composite(uv);
+    }
+
+    var c = tonemap(hdr * g.exposure, i32(g.tonemap + 0.5));
+
+    // Everything below works on display-encoded LDR values
+    c = clamp(c, vec3<f32>(0.0), vec3<f32>(1.0));
+    let l = dot(c, vec3<f32>(0.2126, 0.7152, 0.0722));
+    c = mix(vec3<f32>(l), c, g.saturation);
+    c = (c - vec3<f32>(0.5)) * g.contrast + vec3<f32>(0.5);
+    c = clamp(c, vec3<f32>(0.0), vec3<f32>(1.0));
+
+    if (g.lutStrength > 0.0) {
+      let n = f32(textureDimensions(lutTex).x);
+      let lc = c * ((n - 1.0) / n) + vec3<f32>(0.5 / n);
+      let graded = textureSampleLevel(lutTex, samp, lc, 0.0).rgb;
+      c = mix(c, graded, g.lutStrength);
+    }
+
+    if (g.vigStrength > 0.0) {
+      let d = distance(uv0, vec2<f32>(0.5)) * 1.41421356;
+      let v = 1.0 - smoothstep(g.vigRadius - g.vigSoft, g.vigRadius, d);
+      c = c * mix(1.0, v, g.vigStrength);
+    }
+
+    if (g.grain > 0.0) {
+      let n = hash21(p.xy + vec2<f32>(g.time * 91.7, g.time * 47.3));
+      c = c + vec3<f32>((n - 0.5) * g.grain);
+    }
+
+    return vec4<f32>(clamp(c, vec3<f32>(0.0), vec3<f32>(1.0)), 1.0);
+  }
+  `
+  );
 }
 
 // src/world.js
@@ -55609,6 +56090,7 @@ var MatrixEngineWGPU = class {
     MEConfig.gpuCapabilities = this.gpuCapabilities;
     this.context = canvas.getContext("webgpu");
     const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
+    this.presentationFormat = presentationFormat;
     this.context.configure({
       device: this.device,
       format: presentationFormat,
@@ -55718,12 +56200,12 @@ var MatrixEngineWGPU = class {
       setThreshold: (v2) => {
       }
     };
-    this.ssrPass = {
-      enabled: false
-    };
+    this.ssrPass = { enabled: false };
     this.volumetricPass = { enabled: false };
     this.volumetricPass2 = { enabled: false };
     this.fxaaPass = { enabled: false };
+    this.motionBlurPass = { enabled: false };
+    this.gradePass = { enabled: false };
     this.bloomOutputTex = this.device.createTexture({
       size: [this.canvas.width, this.canvas.height],
       format: "rgba16float",
@@ -55733,7 +56215,7 @@ var MatrixEngineWGPU = class {
       label: "final pipeline sceneTexture",
       size: [this.canvas.width, this.canvas.height],
       format: "rgba16float",
-      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
     });
     this.sceneTextureView = this.sceneTexture.createView();
     this.presentSampler = this.device.createSampler({
@@ -56433,6 +56915,17 @@ var MatrixEngineWGPU = class {
         }
       }
       pass.end();
+      if (this.motionBlurPass.enabled === true) {
+        mat4Impl.invert(camera.VP, this._invViewProj);
+        this.motionBlurPass.render(
+          commandEncoder,
+          this.sceneTexture,
+          this.sceneTextureView,
+          this.mainDepthView,
+          this._invViewProj,
+          camera.VP
+        );
+      }
       if (this.ssrPass.enabled === true) {
         mat4Impl.invert(camera.VP, this._invViewProj);
         this.ssrPass.updateConfig(this._invViewProj, camera.projectionMatrix);
@@ -56468,9 +56961,16 @@ var MatrixEngineWGPU = class {
       }
       if (this.bloomPass.enabled === true) this.bloomPass.render(commandEncoder, this._bloomOutputView);
       this.finalPS.colorAttachments[0].view = this._canvasView;
-      if (this.fxaaPass.enabled === true) {
-        const hdrView = this.bloomPass.enabled ? this._bloomOutputView : this.sceneTextureView;
-        const ssrView = this.ssrPass.enabled ? this.ssrPass.ssrOutputView : this._dummySSRView;
+      const hdrView = this.bloomPass.enabled ? this._bloomOutputView : this.sceneTextureView;
+      const ssrView = this.ssrPass.enabled ? this.ssrPass.ssrOutputView : this._dummySSRView;
+      if (this.gradePass.enabled === true) {
+        if (this.fxaaPass.enabled === true) {
+          this.gradePass.render(commandEncoder, hdrView, ssrView, this._ldrView);
+          this.fxaaPass.render(commandEncoder, this._ldrView, ssrView, this._canvasView, true);
+        } else {
+          this.gradePass.render(commandEncoder, hdrView, ssrView, this._canvasView);
+        }
+      } else if (this.fxaaPass.enabled === true) {
         this.fxaaPass.render(commandEncoder, hdrView, ssrView, this._canvasView);
       } else {
         pass = commandEncoder.beginRenderPass(this.finalPS);
@@ -56877,6 +57377,25 @@ var MatrixEngineWGPU = class {
     if (this.fxaaPass.enabled != true) {
       this.fxaaPass = new FXAAPass(this.device, isMobile() == true ? "rgba8unorm" : "bgra8unorm");
       this.fxaaPass.enabled = true;
+    }
+  };
+  activateMotionBlur = (opts) => {
+    if (this.motionBlurPass.enabled != true) {
+      this.motionBlurPass = new MotionBlurPass(this.canvas.width, this.canvas.height, this.device, opts);
+      this.motionBlurPass.enabled = true;
+    }
+  };
+  activateGrade = (opts) => {
+    if (this.gradePass.enabled != true) {
+      this.gradePass = new GradePass(this.device, this.presentationFormat, opts);
+      this.gradePass.enabled = true;
+      this._ldrTex = this.device.createTexture({
+        label: "grade LDR",
+        size: [this.canvas.width, this.canvas.height],
+        format: this.presentationFormat,
+        usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
+      });
+      this._ldrView = this._ldrTex.createView();
     }
   };
 };
@@ -84570,7 +85089,7 @@ var loadFluidsSlot = function() {
         if (e2.repeat || game2.state !== "IDLE") return;
         game2.spin();
         FX_MESH.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(1, 2));
-        FX_MESH.effects.keeffect.setIntensity(randomIntFromTo(2, 5));
+        FX_MESH.effects.keeffect.setIntensity(randomIntFromTo(2, 4));
       });
       if (ENABLE_REMOTE_SPIN_EVENTS2) {
         const es2 = new EventSource(`${baseUrl2}/slot-api/machines/${machineId2}/events`);

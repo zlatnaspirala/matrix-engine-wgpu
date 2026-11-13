@@ -40,6 +40,8 @@ import {AdvancedVolumetricPass} from "./engine/postprocessing/volumetric-advance
 import {CloudsVolumetric} from "./engine/postprocessing/clouds-volumetric.js";
 import {CloudsVolumetric2} from "./engine/postprocessing/cloudes-volumetric-2.js";
 import {FXAAPass} from "./engine/postprocessing/fxaa.js";
+import {MotionBlurPass} from "./engine/postprocessing/motion-blur,js";
+import {GradePass} from "./engine/postprocessing/grade.js";
 
 /**
  * The world of Beast.
@@ -583,6 +585,7 @@ export default class MatrixEngineWGPU {
 
     this.context = canvas.getContext('webgpu');
     const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
+    this.presentationFormat = presentationFormat;
     this.context.configure({
       device: this.device,
       format: presentationFormat,
@@ -711,14 +714,12 @@ export default class MatrixEngineWGPU {
       setThreshold: (v) => {},
     };
 
-    this.ssrPass = {
-      enabled: false,
-    };
-
+    this.ssrPass = {enabled: false};
     this.volumetricPass = {enabled: false};
     this.volumetricPass2 = {enabled: false};
-
     this.fxaaPass = {enabled: false};
+    this.motionBlurPass = {enabled: false};
+    this.gradePass = {enabled: false};
 
     this.bloomOutputTex = this.device.createTexture({
       size: [this.canvas.width, this.canvas.height],
@@ -730,7 +731,7 @@ export default class MatrixEngineWGPU {
       label: "final pipeline sceneTexture",
       size: [this.canvas.width, this.canvas.height],
       format: 'rgba16float',
-      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
     });
 
     this.sceneTextureView = this.sceneTexture.createView();
@@ -1374,10 +1375,7 @@ export default class MatrixEngineWGPU {
         pass.setPipeline(pipeline);
         let l = null;
         for(const mesh of meshes) {
-          // chatgpt SUGGESTION START
-          // Never submit a stale external-texture bind group when no current frame is ready.
           if(mesh.isVideo && !mesh.videoFrameReady) continue;
-          // chatgpt SUGGESTION end
           if(mesh.materialBindGroup !== l) {
             pass.setBindGroup(1, mesh.materialBindGroup);
             l = mesh.materialBindGroup;
@@ -1430,6 +1428,12 @@ export default class MatrixEngineWGPU {
       }
       pass.end();
 
+      if(this.motionBlurPass.enabled === true) {
+        mat4.invert(camera.VP, this._invViewProj);
+        this.motionBlurPass.render(commandEncoder, this.sceneTexture, this.sceneTextureView,
+          this.mainDepthView, this._invViewProj, camera.VP);
+      }
+
       if(this.ssrPass.enabled === true) {
         mat4.invert(camera.VP, this._invViewProj);
         this.ssrPass.updateConfig(this._invViewProj, camera.projectionMatrix);
@@ -1466,10 +1470,19 @@ export default class MatrixEngineWGPU {
       }
       // if(this.bloomPass.enabled === true) this.bloomPass.render(commandEncoder, this.bloomOutputTex.createView());
       if(this.bloomPass.enabled === true) this.bloomPass.render(commandEncoder, this._bloomOutputView);
+
+
       this.finalPS.colorAttachments[0].view = this._canvasView;
-      if(this.fxaaPass.enabled === true) {
-        const hdrView = this.bloomPass.enabled ? this._bloomOutputView : this.sceneTextureView;
-        const ssrView = this.ssrPass.enabled ? this.ssrPass.ssrOutputView : this._dummySSRView;
+      const hdrView = this.bloomPass.enabled ? this._bloomOutputView : this.sceneTextureView;
+      const ssrView = this.ssrPass.enabled ? this.ssrPass.ssrOutputView : this._dummySSRView;
+      if(this.gradePass.enabled === true) {
+        if(this.fxaaPass.enabled === true) {
+          this.gradePass.render(commandEncoder, hdrView, ssrView, this._ldrView);
+          this.fxaaPass.render(commandEncoder, this._ldrView, ssrView, this._canvasView, true);
+        } else {
+          this.gradePass.render(commandEncoder, hdrView, ssrView, this._canvasView);
+        }
+      } else if(this.fxaaPass.enabled === true) {
         this.fxaaPass.render(commandEncoder, hdrView, ssrView, this._canvasView);
       } else {
         pass = commandEncoder.beginRenderPass(this.finalPS);
@@ -1479,11 +1492,17 @@ export default class MatrixEngineWGPU {
         pass.end();
       }
       // this.finalPS.colorAttachments[0].view = this._canvasView;
-      // pass = commandEncoder.beginRenderPass(this.finalPS);
-      // pass.setPipeline(this.presentPipeline);
-      // pass.setBindGroup(0, this._activeBindGroup);
-      // pass.draw(6);
-      // pass.end();
+      // if(this.fxaaPass.enabled === true) {
+      //   const hdrView = this.bloomPass.enabled ? this._bloomOutputView : this.sceneTextureView;
+      //   const ssrView = this.ssrPass.enabled ? this.ssrPass.ssrOutputView : this._dummySSRView;
+      //   this.fxaaPass.render(commandEncoder, hdrView, ssrView, this._canvasView);
+      // } else {
+      //   pass = commandEncoder.beginRenderPass(this.finalPS);
+      //   pass.setPipeline(this.presentPipeline);
+      //   pass.setBindGroup(0, this._activeBindGroup);
+      //   pass.draw(6);
+      //   pass.end();
+      // }
 
       this.submitQueue[0] = commandEncoder.finish();
       this.device.queue.submit(this.submitQueue);
@@ -1814,6 +1833,27 @@ export default class MatrixEngineWGPU {
     if(this.fxaaPass.enabled != true) {
       this.fxaaPass = new FXAAPass(this.device, isMobile() == true ? 'rgba8unorm' : 'bgra8unorm');
       this.fxaaPass.enabled = true;
+    }
+  }
+
+  activateMotionBlur = (opts) => {
+    if(this.motionBlurPass.enabled != true) {
+      this.motionBlurPass = new MotionBlurPass(this.canvas.width, this.canvas.height, this.device, opts);
+      this.motionBlurPass.enabled = true;
+    }
+  }
+
+  activateGrade = (opts) => {
+    if(this.gradePass.enabled != true) {
+      this.gradePass = new GradePass(this.device, this.presentationFormat, opts);
+      this.gradePass.enabled = true;
+      this._ldrTex = this.device.createTexture({
+        label: 'grade LDR',
+        size: [this.canvas.width, this.canvas.height],
+        format: this.presentationFormat,
+        usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
+      });
+      this._ldrView = this._ldrTex.createView();
     }
   }
 }
