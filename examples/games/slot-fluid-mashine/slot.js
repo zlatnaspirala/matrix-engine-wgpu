@@ -24,7 +24,7 @@ console.log('machineId1', machineId1)
 const machineId = machineId1 || '6ac80510c453c7d32ec5364a';
 export const SLOT_SIMULATOR_CONFIG_TOKEN = "SHITHAPPENS";
 
-let game;
+let game, setConeMood;
 const ENABLE_REMOTE_SPIN_EVENTS = false;
 const SPACING = 6, SCALE = 3.5;
 const SYMBOL_REEL_RADIUS = 4.3;
@@ -228,7 +228,7 @@ export var loadFluidsSlot = function() {
         material: {type: 'standard'},
         position: {x: 14, y: 14.5, z: -10},
         rotation: {x: 0, y: 0, z: -90},
-        scale: [16, 6, 16],
+        scale: [15, 8, 15],
         rotationSpeed: {x: 0, y: 0, z: 0},
         texturesPaths: ['./res/textures/cube-g1_low.webp'],
         meshA: MeshMorpher.cone(1, 3, false),
@@ -250,7 +250,7 @@ export var loadFluidsSlot = function() {
         material: {type: 'standard'},
         position: {x: -14, y: 14.5, z: -10},
         rotation: {x: 0, y: 0, z: 90},
-        scale: [16, 6, 16],
+        scale: [15, 8, 15],
         rotationSpeed: {x: 0, y: 0, z: 0},
         texturesPaths: ['./res/textures/cube-g1_low.webp'],
         meshA: MeshMorpher.cone(1, 3, false),
@@ -270,16 +270,16 @@ export var loadFluidsSlot = function() {
 
       // Ambient color palettes for the two large morphing side cones.
       // Values are linear RGB intensities (not 0-255 color bytes).
-      const setConeAmbient = (left, right) => {
+      const setConeAmbient = (left) => {
         app.cone.setAmbient(...left);
-        app.cone2.setAmbient(...right);
+        app.cone2.setAmbient(...left);
       };
       const coneAmbient = {
-        idle:  [[2.1, 0.42, 0.12], [0.12, 0.55, 2.1]],
-        spin:  [[0.15, 1.65, 2.4], [2.1, 0.18, 1.5]],
-        win:   [[2.8, 1.55, 0.12], [2.8, 0.35, 1.05]]
+        idle:  [[-1, -1, -1]],
+        spin:  [[-2, -2, -2]],
+        win:   [[-2, 2, -2]]
       };
-      const setConeMood = mood => setConeAmbient(...coneAmbient[mood]);
+        setConeMood = mood => setConeAmbient(...coneAmbient[mood]);
       setConeMood('idle');
 
       let inputArg = {
@@ -530,9 +530,9 @@ export var loadFluidsSlot = function() {
           //   },
           // });
           app.floor.rotation.rotationSpeed.y = 30;
-
           await sleep(2500);
-
+          app.cone.rotation.rotationSpeed.x = 1;
+          app.cone2.rotation.rotationSpeed.x = 1;
           app.cone.morphTo(0, 5000)
           app.cone2.morphTo(0, 5000)
           setConeMood('idle');
@@ -593,6 +593,8 @@ export var loadFluidsSlot = function() {
 
         app.cone.morphTo(1, 5000)
         app.cone2.morphTo(1, 5000)
+        app.cone.rotation.rotationSpeed.x = 0;
+        app.cone2.rotation.rotationSpeed.x = 0;
 
         FX_MESH.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(1, 2));
         FX_MESH.effects.keeffect.setIntensity(randomIntFromTo(2, 4));

@@ -84703,6 +84703,7 @@ console.log("machineId1", machineId12);
 var machineId2 = machineId12 || "6ac80510c453c7d32ec5364a";
 var SLOT_SIMULATOR_CONFIG_TOKEN2 = "SHITHAPPENS";
 var game2;
+var setConeMood;
 var ENABLE_REMOTE_SPIN_EVENTS2 = false;
 var SPACING2 = 6;
 var SCALE2 = 3.5;
@@ -84900,7 +84901,7 @@ var loadFluidsSlot = function() {
         material: { type: "standard" },
         position: { x: 14, y: 14.5, z: -10 },
         rotation: { x: 0, y: 0, z: -90 },
-        scale: [16, 6, 16],
+        scale: [15, 8, 15],
         rotationSpeed: { x: 0, y: 0, z: 0 },
         texturesPaths: ["./res/textures/cube-g1_low.webp"],
         meshA: MeshMorpher.cone(1, 3, false),
@@ -84917,12 +84918,11 @@ var loadFluidsSlot = function() {
         },
         raycast: { enabled: true, radius: 1 }
       });
-      app.cone.setAmbient(211, -1, -1);
       slotMachine.cone2 = slotMachine.addProceduralMeshObj({
         material: { type: "standard" },
         position: { x: -14, y: 14.5, z: -10 },
         rotation: { x: 0, y: 0, z: 90 },
-        scale: [16, 6, 16],
+        scale: [15, 8, 15],
         rotationSpeed: { x: 0, y: 0, z: 0 },
         texturesPaths: ["./res/textures/cube-g1_low.webp"],
         meshA: MeshMorpher.cone(1, 3, false),
@@ -84939,7 +84939,17 @@ var loadFluidsSlot = function() {
         },
         raycast: { enabled: true, radius: 1 }
       });
-      app.cone2.setAmbient(211, -1, -1);
+      const setConeAmbient = (left2) => {
+        app.cone.setAmbient(...left2);
+        app.cone2.setAmbient(...left2);
+      };
+      const coneAmbient = {
+        idle: [[-1, -1, -1]],
+        spin: [[-2, -2, -2]],
+        win: [[-2, 2, -2]]
+      };
+      setConeMood = (mood) => setConeAmbient(...coneAmbient[mood]);
+      setConeMood("idle");
       let inputArg = {
         material: { type: "standard", share: true },
         position: { x: 0, y: -1, z: -20 },
@@ -85092,6 +85102,7 @@ var loadFluidsSlot = function() {
           slotMachine.floor?.effects?.gpuText?.setText(slotMachine.demoBalanceText);
         },
         onPresentWin: async (res) => {
+          setConeMood("win");
           const adaptedZ2 = isMobile() ? -53 * Math.max(1, n3 / 3) : -45;
           const pulsingPath = new CameraPath([
             { position: [0, 13, adaptedZ2], target: [0, 12, 0] },
@@ -85118,8 +85129,11 @@ var loadFluidsSlot = function() {
           await sleep(500);
           app.floor.rotation.rotationSpeed.y = 30;
           await sleep(2500);
+          app.cone.rotation.rotationSpeed.x = 1;
+          app.cone2.rotation.rotationSpeed.x = 1;
           app.cone.morphTo(0, 5e3);
           app.cone2.morphTo(0, 5e3);
+          setConeMood("idle");
           FX_MESH.effects.keeffect.setIntensity(1);
           FX_MESH.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(6, 8));
           app.lightContainer[0].setColorR(1);
@@ -85131,6 +85145,7 @@ var loadFluidsSlot = function() {
       });
       game2.on("result", (r3) => {
         if (r3.totalWin > 0) {
+          setConeMood("win");
           const flashed = /* @__PURE__ */ new Set();
           for (const win of r3.lineWins ?? []) {
             for (const cell of win.cells ?? []) {
@@ -85162,15 +85177,21 @@ var loadFluidsSlot = function() {
         if (e2.code !== "Space") return;
         e2.preventDefault();
         if (e2.repeat || game2.state !== "IDLE") return;
+        setConeMood("spin");
         game2.spin();
         app.cone.morphTo(1, 5e3);
         app.cone2.morphTo(1, 5e3);
+        app.cone.rotation.rotationSpeed.x = 0;
+        app.cone2.rotation.rotationSpeed.x = 0;
         FX_MESH.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(1, 2));
         FX_MESH.effects.keeffect.setIntensity(randomIntFromTo(2, 4));
       });
       if (ENABLE_REMOTE_SPIN_EVENTS2) {
         const es2 = new EventSource(`${baseUrl2}/slot-api/machines/${machineId2}/events`);
-        es2.addEventListener("spin", (e2) => game2.playResult(JSON.parse(e2.data)));
+        es2.addEventListener("spin", (e2) => {
+          setConeMood("spin");
+          game2.playResult(JSON.parse(e2.data));
+        });
         slotMachine.slotEventSource = es2;
       }
       game2.on("insufficientBalance", ({ balance, betAmount }) => {
@@ -85181,6 +85202,7 @@ var loadFluidsSlot = function() {
       console.log("ray.hit.event detected");
       if (e2.detail.hitObject.name.startsWith("cubeeffect")) {
         if (game2.state !== "IDLE") return;
+        setConeMood("spin");
         game2.spin();
       }
     });
