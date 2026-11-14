@@ -23,6 +23,9 @@ export class NativeWebRTC {
     this.channels = new Map();
     this.pendingIce = new Map();
     this.localStream = null;
+    this.localVideoElement = null;
+    this.remoteMedia = new Map();
+    this.localStreamReadyDispatched = false;
     this.socket = null;
     this.id = null;
     this.closed = false;
@@ -198,41 +201,83 @@ export class NativeWebRTC {
   }
 
   _showLocalStream(stream) {
-    const existing = document.getElementById('native-local-video');
-    if(existing) return;
-    const video = document.createElement('video');
-    video.id = 'native-local-video';
-    video.autoplay = true;
-    video.muted = true;
-    video.playsInline = true;
-    video.srcObject = stream;
-    Object.assign(video.style, {
-      position: 'fixed', bottom: '16px', right: '16px', width: '180px',
-      aspectRatio: '16/9', objectFit: 'cover', borderRadius: '8px',
-      border: '2px solid rgba(255,255,255,0.3)', zIndex: '999'
-    });
-    document.body.appendChild(video);
+    let video = this.localVideoElement || document.getElementById('native-local-video');
+    if(!video) {
+      video = document.createElement('video');
+      video.id = 'native-local-video';
+      video.autoplay = true;
+      video.muted = true;
+      video.playsInline = true;
+      Object.assign(video.style, {
+        position: 'fixed', bottom: '16px', right: '16px', width: '180px',
+        aspectRatio: '16/9', objectFit: 'cover', borderRadius: '8px',
+        border: '2px solid rgba(255,255,255,0.3)', zIndex: '999'
+      });
+      document.body.appendChild(video);
+    }
+    this.localVideoElement = video;
+    if(video.srcObject !== stream) video.srcObject = stream;
+    video.play().catch(error => console.warn('[NativeWebRTC] local preview autoplay blocked:', error));
+    if(!this.localStreamReadyDispatched) {
+      this.localStreamReadyDispatched = true;
+      const detail = {connection: this.connection, stream, videoElement: video};
+      dispatchEvent(new CustomEvent('LOCAL-STREAM-READY', {detail}));
+      dispatchEvent(new CustomEvent('streamPlaying', {
+        detail: {peerId: this.id, stream, target: {id: 'local-video', videos: [{video}]}}
+      }));
+    }
+    return video;
   }
 
-  _showRemoteStream(peerId, stream) {
+  async _showRemoteStream(peerId, stream) {
+    if(!stream) return null;
     const container = document.getElementById('video-container');
-    if(!container || document.getElementById('native-remote-' + peerId)) return;
-    const wrapper = document.createElement('div');
-    wrapper.id = 'native-remote-' + peerId;
-    wrapper.dataset.peerId = peerId;
-    Object.assign(wrapper.style, {
-      display: 'inline-block', width: 'calc(50% - 4px)', overflow: 'hidden',
-      background: '#000', aspectRatio: '16/9', margin: '2px'
-    });
-    const video = document.createElement('video');
-    video.autoplay = true;
-    video.playsInline = true;
-    video.srcObject = stream;
-    Object.assign(video.style, {
-      width: '100%', height: '100%', objectFit: 'cover', display: 'block'
-    });
-    wrapper.appendChild(video);
-    container.appendChild(wrapper);
+    if(!container) return null;
+
+    // One stable video element per peer stream. Track events and renegotiation
+    // reuse this element instead of appending another video tag.
+    let media = this.remoteMedia.get(peerId);
+    let wrapper = document.getElementById('native-remote-' + peerId);
+    let video = media?.video || document.getElementById('remote-video-' + peerId);
+    if(!video) {
+      wrapper = document.createElement('div');
+      wrapper.id = 'native-remote-' + peerId;
+      wrapper.dataset.peerId = peerId;
+      Object.assign(wrapper.style, {
+        display: 'inline-block', width: 'calc(50% - 4px)', overflow: 'hidden',
+        background: '#000', aspectRatio: '16/9', margin: '2px'
+      });
+      video = document.createElement('video');
+      video.id = 'remote-video-' + peerId;
+      video.autoplay = true;
+      video.playsInline = true;
+      video.muted = false;
+      Object.assign(video.style, {
+        width: '100%', height: '100%', objectFit: 'cover', display: 'block'
+      });
+      wrapper.appendChild(video);
+      container.appendChild(wrapper);
+    } else if(!wrapper) {
+      wrapper = video.parentElement;
+    }
+
+    if(video.srcObject !== stream) video.srcObject = stream;
+    this.remoteMedia.set(peerId, {video, wrapper, stream});
+    try {
+      await video.play();
+    } catch(error) {
+      console.warn('[NativeWebRTC] remote video autoplay blocked:', peerId, error);
+    }
+    // Keep the legacy Kurento event contract so existing streamPlaying
+    // consumers can use target.id and target.videos[0].video unchanged.
+    const detail = {
+      peerId,
+      stream,
+      target: {id: video.id, videos: [{video}]}
+    };
+    dispatchEvent(new CustomEvent('streamPlaying', {detail}));
+    dispatchEvent(new CustomEvent('webrtc-track', {detail: {peerId, stream, videoElement: video}}));
+    return video;
   }
 
   _signal(message) {
@@ -338,9 +383,12 @@ export class NativeWebRTC {
       if(event.candidate) this._signal({type: 'ice-candidate', to: peerId, candidate: event.candidate});
     };
     pc.ontrack = event => {
-      this._showRemoteStream(peerId, event.streams[0]);
-      dispatchEvent(new CustomEvent('webrtc-track', {detail: {peerId, stream: event.streams[0], track: event.track}}));
-      dispatchEvent(new CustomEvent('streamPlaying', {detail: {peerId, stream: event.streams[0], track: event.track}}));
+      const stream = event.streams[0] || new MediaStream([event.track]);
+      if(event.track.kind === 'video') {
+        this._showRemoteStream(peerId, stream).catch(error => {
+          console.warn('[NativeWebRTC] could not attach remote stream:', peerId, error);
+        });
+      }
     };
     if(initiator) {
       const offer = await pc.createOffer();
@@ -404,7 +452,17 @@ export class NativeWebRTC {
     this.peers.delete(peerId);
     this.channels.delete(peerId);
     this.pendingIce.delete(peerId);
-    document.getElementById('native-remote-' + peerId)?.remove();
+    const media = this.remoteMedia.get(peerId);
+    if(media) {
+      media.video.pause();
+      media.video.srcObject = null;
+      media.video.remove();
+      media.wrapper?.remove();
+      this.remoteMedia.delete(peerId);
+    } else {
+      document.getElementById('native-remote-' + peerId)?.remove();
+      document.getElementById('remote-video-' + peerId)?.remove();
+    }
   }
 
   getPeers() {return Array.from(this.peers.keys());}
@@ -420,7 +478,15 @@ export class NativeWebRTC {
     }
     if(this.socket) this.socket.close();
     this.socket = null;
-    document.getElementById('native-local-video')?.remove();
+    if(this.localVideoElement) {
+      this.localVideoElement.pause();
+      this.localVideoElement.srcObject = null;
+      this.localVideoElement.remove();
+      this.localVideoElement = null;
+    } else {
+      document.getElementById('native-local-video')?.remove();
+    }
+    this.localStreamReadyDispatched = false;
     this._showJoinUI();
     dispatchEvent(new CustomEvent('net-left', {detail: {room: this.sessionName}}));
   }
