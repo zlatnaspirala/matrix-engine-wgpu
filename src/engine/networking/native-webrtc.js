@@ -303,7 +303,6 @@ export class NativeWebRTC {
     if(message.type === 'peer-left') {
       console.log('[NativeWebRTC] REMOTE PEER LEFT:', message.id);
       this._dropPeer(message.id);
-      dispatchEvent(new CustomEvent('connectionDestroyed', {detail: {connectionId: message.id}}));
       return;
     }
     if(message.type === 'error') {
@@ -463,6 +462,7 @@ export class NativeWebRTC {
       document.getElementById('native-remote-' + peerId)?.remove();
       document.getElementById('remote-video-' + peerId)?.remove();
     }
+    dispatchEvent(new CustomEvent('connectionDestroyed', {detail: {connectionId: peerId}}));
   }
 
   getPeers() {return Array.from(this.peers.keys());}
