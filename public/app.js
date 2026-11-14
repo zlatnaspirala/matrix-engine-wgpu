@@ -4394,6 +4394,12 @@ var Position = class {
         if (this.netObject != null) {
           if (this.netTolerance__ > this.netTolerance) {
             if (this.teams.length == 0) {
+              console.log("[POSITION NET SEND]", {
+                object: this.netObject,
+                position: { x: this.x, y: this.y, z: this.z },
+                net: app.net,
+                peers: app.net?.channels?.size
+              });
               app.net.send({
                 toRemote: this.toRemote,
                 // default null
@@ -4506,7 +4512,6 @@ var Position = class {
     this.targetX = newx;
     this.targetY = newy;
     this.targetZ = newz;
-    this.inMove = true;
   }
 };
 var Rotation = class {
@@ -45561,6 +45566,11 @@ var NativeWebRTC = class {
       this.channels.forEach((channel, peerId) => {
         if ((!wanted || wanted.has(peerId)) && channel.readyState === "open") channel.send(payload);
       });
+      console.log("[WEBRTC SEND]", {
+        localId: this.id,
+        targets: [...this.channels.keys()],
+        data
+      });
     };
     this.fetchInfo = () => this.getPeers();
     this.closeSession = () => this.leaveSession();
@@ -45715,7 +45725,18 @@ var NativeWebRTC = class {
   _bindChannel(peerId, channel) {
     this.channels.set(peerId, channel);
     channel.onmessage = (event) => {
+      console.log("[WEBRTC CHANNEL MESSAGE]", {
+        localId: this.id,
+        remotePeerId: peerId,
+        data: event.data
+      });
       let data = event.data;
+      console.log("[WEBRTC RECEIVED]", data);
+      console.log("[WEBRTC MESSAGE]", {
+        peerId,
+        localId: this.peerId,
+        data
+      });
       try {
         data = JSON.parse(data);
       } catch (_) {
@@ -46332,6 +46353,7 @@ var StreamSlotManager = {
 // examples/apps/public-chat/freeky-chat.js
 var loadFreekyChat = function() {
   let MYCUBE;
+  let PLANE;
   let freekyChat = new MatrixEngineWGPU({
     canvasSize: "fullscreen",
     useCannon: true,
@@ -46344,7 +46366,6 @@ var loadFreekyChat = function() {
     },
     clearColor: { r: 0, b: 0.122, g: 0.122, a: 1 }
   }, () => {
-    let PLANE;
     freekyChat.addLight();
     addRaycastsListener();
     addEventListener("PhysicsReady", () => {
@@ -46449,6 +46470,7 @@ var loadFreekyChat = function() {
       });
       setTimeout(() => {
         MYCUBE.position.netObject = MYCUBE.name;
+        MYCUBE.rotation.emitY = MYCUBE.name;
         PLANE.vertexAnim.enableCloth(1);
         app.activateHZB();
       }, 500);

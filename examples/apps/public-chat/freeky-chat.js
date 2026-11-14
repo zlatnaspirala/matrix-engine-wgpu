@@ -11,6 +11,7 @@ import {activateNet2} from "../../../src/engine/networking/net.js";
 export var loadFreekyChat = function() {
 
   let MYCUBE;
+  let PLANE;
 
   let freekyChat = new MatrixEngineWGPU({
     canvasSize: 'fullscreen',
@@ -25,7 +26,7 @@ export var loadFreekyChat = function() {
     clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
   }, () => {
 
-    let PLANE;
+
     freekyChat.addLight();
     addRaycastsListener();
     addEventListener('PhysicsReady', () => {
@@ -142,10 +143,12 @@ export var loadFreekyChat = function() {
       setTimeout(() => {
 
         MYCUBE.position.netObject = MYCUBE.name;
+        MYCUBE.rotation.emitY = MYCUBE.name;
 
         PLANE.vertexAnim.enableCloth(1);
         app.activateHZB();
       }, 500)
+
       let cam = app.getCamera();
       cam.setYaw(-0.03);
       cam.setPitch(-0.49);
