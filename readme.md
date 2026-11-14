@@ -1037,14 +1037,38 @@ Dimension (TextureViewDimension::e2DArray) of [TextureView of Texture "shadowTex
 
 ### Networking
 
+From [2.2.x] Standalone solution for TheBeast networking, no more explicit kurento/openvidu,
+now we can simple just run `npm run dedicated` for signlaing server. APi level is stay same.
+
+```js
+// Easy activating networking
+app.net = activateNet2({
+  backend: 'webrtc',
+  sessionName: 'beast-room-01',
+  domain: "https://localhost",
+  signalingUrl: 'ws://localhost:2020',
+  media: {audio: true, video: true}
+});
+
+// Direct way
+net = new NativeWebRTC({
+  domain: sessionOption.domain,
+  port: sessionOption.port || 2020,
+  signalingUrl: sessionOption.signalingUrl,
+  sessionName: sessionOption.sessionName,
+  customData: sessionOption.customData,
+  media: sessionOption.media || false,
+  rtcConfig: sessionOption.rtcConfig
+});
+```
+
 From 1.7.0 engine powered by networking. Used kurento&Openvidu server for backend.
 Very good for handling streams, channels etc...
-
 All you need to do is start Kurento and OpenVidu and connect them to this Node.js server.
 https://github.com/zlatnaspirala/matrix-stream/blob/main/middleware/server.js
 
 
-See example code at `./examples/games/moba/`
+See more net example code at `./examples/games/moba/`
 
 Buildin net sync basic:
 Let's say app is engine root object and net is networking object.
@@ -1107,6 +1131,10 @@ if (this.teams.length > 0)
       netPos: {x: this.x, y: this.y, z: this.z},
     });
 ```
+
+#### Accounts
+ - It will be deeply integrated with rocketcraftingserver NodeJS MongoDB.
+
 
 ### About URLParams
 

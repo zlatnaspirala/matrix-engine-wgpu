@@ -45573,6 +45573,7 @@ var NativeWebRTC = class {
     this.channels = /* @__PURE__ */ new Map();
     this.pendingIce = /* @__PURE__ */ new Map();
     this.localStream = null;
+    this.localMediaPromise = null;
     this.localVideoElement = null;
     this.remoteMedia = /* @__PURE__ */ new Map();
     this.localStreamReadyDispatched = false;
@@ -45864,6 +45865,7 @@ var NativeWebRTC = class {
     if (!peer) return;
     try {
       if (message.type === "offer") {
+        if (peer.mediaReady) await peer.mediaReady;
         await peer.setRemoteDescription(message.description);
         const answer = await peer.createAnswer();
         await peer.setLocalDescription(answer);
@@ -45928,15 +45930,40 @@ var NativeWebRTC = class {
         });
       }
     };
-    if (this.options.media) {
+    pc.mediaReady = (async () => {
+      if (!this.options.media) return;
       try {
-        if (!this.localStream) this.localStream = await navigator.mediaDevices.getUserMedia(this.options.media === true ? { audio: true, video: true } : this.options.media);
-        this.localStream.getTracks().forEach((track) => pc.addTrack(track, this.localStream));
+        if (!this.localStream) {
+          if (!this.localMediaPromise) {
+            this.localMediaPromise = navigator.mediaDevices.getUserMedia(
+              this.options.media === true ? { audio: true, video: true } : this.options.media
+            ).then((stream) => {
+              this.localStream = stream;
+              return stream;
+            }).catch((error) => {
+              this.localMediaPromise = null;
+              throw error;
+            });
+          }
+          await this.localMediaPromise;
+        }
+        this.localStream.getTracks().forEach((track) => {
+          const alreadyAdded = pc.getSenders().some((sender) => sender.track === track);
+          if (!alreadyAdded) pc.addTrack(track, this.localStream);
+        });
+        console.log("[NativeWebRTC] LOCAL MEDIA READY:", peerId, {
+          tracks: this.localStream.getTracks().map((track) => ({
+            kind: track.kind,
+            readyState: track.readyState,
+            enabled: track.enabled
+          }))
+        });
         this._showLocalStream(this.localStream);
       } catch (error) {
-        console.warn("[NativeWebRTC] media permission/device error:", error);
+        console.warn("[NativeWebRTC] media permission/device error:", peerId, error);
       }
-    }
+    })();
+    await pc.mediaReady;
     if (initiator) {
       const channel = pc.createDataChannel("matrix-engine");
       this._bindChannel(peerId, channel);
@@ -46024,6 +46051,7 @@ var NativeWebRTC = class {
     if (this.localStream) {
       this.localStream.getTracks().forEach((track) => track.stop());
       this.localStream = null;
+      this.localMediaPromise = null;
     }
     if (this.socket) this.socket.close();
     this.socket = null;
@@ -46638,15 +46666,15 @@ var loadFreekyChat = function() {
     const index = remoteVideoCubes.size;
     const object = freekyChat.addMeshObj({
       material: { type: "standard" },
-      position: { x: (index - 0.5) * 9, y: 8, z: -24 },
-      rotation: { x: 0, y: 0, z: 0 },
+      position: { x: (index - 0.5) * 9, y: 8, z: -10 },
+      rotation: { x: 0, y: 0, z: 90 },
       rotationSpeed: { x: 0, y: 0, z: 0 },
-      scale: [4, 3, 0.2],
+      scale: [2, 2, 2],
       texturesPaths: ["./res/textures/cube-g1-extra_low.png"],
       name: "remote-video-" + String(peerId).replace(/[^a-zA-Z0-9_-]/g, "_"),
       mesh: loadedMeshes.cube,
-      physics: { enabled: false },
-      raycast: { enabled: false, radius: 1 }
+      physics: { enabled: true, geometry: "Cube" },
+      raycast: { enabled: true, radius: 1 }
     });
     try {
       await object.loadVideoTexture({ type: "videoElement", videoElement: video });
@@ -46768,7 +46796,7 @@ var loadFreekyChat = function() {
       }
       MYCUBE = freekyChat.addMeshObj({
         material: { type: "mirror" },
-        position: { x: 0, y: 4, z: -10 },
+        position: { x: 0, y: 1, z: -10 },
         rotation: { x: 0, y: 0, z: 0 },
         rotationSpeed: { x: 0, y: 0, z: 0 },
         scale: [5, 1, 5],

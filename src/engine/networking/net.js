@@ -9,6 +9,9 @@ import {BIGLOG, byId, closeSession, fetchInfo, joinSession, leaveSession, netCon
  * 
  * You can use old networking if you wanna 
  * full control (MultiRtc3 like in matrix-engine old versions)
+ * 
+ * NEW - From 2.2.0 Standalone nodejs signaling server
+ * npm run dedicated
  */
 export class MatrixStream {
 

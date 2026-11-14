@@ -14,6 +14,28 @@
 
     NETWORK API Level same :  NET DRIVE (kurento,node signaling)
 
+```js
+// Easy way
+freekyChat.net = activateNet2({
+  backend: 'webrtc',
+  sessionName: 'beast-room-01',
+  domain: "https://localhost",
+  signalingUrl: 'ws://localhost:2020',
+  media: {audio: true, video: true}
+});
+
+// or core access:
+net = new NativeWebRTC({
+  domain: sessionOption.domain,
+  port: sessionOption.port || 2020,
+  signalingUrl: sessionOption.signalingUrl,
+  sessionName: sessionOption.sessionName,
+  customData: sessionOption.customData,
+  media: sessionOption.media || false,
+  rtcConfig: sessionOption.rtcConfig
+});
+
+```
 
 
 [2.0.0]
