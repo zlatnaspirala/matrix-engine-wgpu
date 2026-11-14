@@ -46716,6 +46716,7 @@ var loadFreekyChat = function() {
       const NX = 10;
       const NY = 10;
       PLANE = app.addProceduralMeshObj({
+        material: { type: "standard" },
         position: { x: 0, y: 15, z: -10 },
         scale: [1, 1, 1],
         name: "test",
@@ -46770,7 +46771,7 @@ var loadFreekyChat = function() {
         position: { x: 0, y: 4, z: -10 },
         rotation: { x: 0, y: 0, z: 0 },
         rotationSpeed: { x: 0, y: 0, z: 0 },
-        scale: [3, 5, 3],
+        scale: [5, 1, 5],
         texturesPaths: ["./res/textures/floor1.webp", "./res/textures/env-maps/sky1_lod_mid.webp"],
         name: "cube",
         mesh: m.cube,
