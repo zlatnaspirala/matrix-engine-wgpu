@@ -82,12 +82,6 @@ export class NativeWebRTC {
       this.channels.forEach((channel, peerId) => {
         if((!wanted || wanted.has(peerId)) && channel.readyState === 'open') channel.send(payload);
       });
-
-      console.log('[WEBRTC SEND]', {
-        localId: this.id,
-        targets: [...this.channels.keys()],
-        data
-      });
     };
     this.fetchInfo = () => this.getPeers();
     this.closeSession = () => this.leaveSession();
@@ -439,27 +433,11 @@ export class NativeWebRTC {
   _bindChannel(peerId, channel) {
     this.channels.set(peerId, channel);
     channel.onmessage = event => {
-
-      console.log('[WEBRTC CHANNEL MESSAGE]', {
-        localId: this.id,
-        remotePeerId: peerId,
-        data: event.data
-      });
-
       // if(peerId === this.id) {
       //   console.log('[EHOO]', data);
       //   return;
       // }
-
       let data = event.data;
-      console.log('[WEBRTC RECEIVED]', data);
-
-      console.log('[WEBRTC MESSAGE]', {
-        peerId,
-        localId: this.peerId,
-        data
-      });
-
       try {data = JSON.parse(data);} catch(_) {}
       const envelope = {data: typeof data === 'string' ? data : JSON.stringify(data), from: {connectionId: peerId}, type: 'data'};
       if(data && typeof data === 'object' && (data.netPos || data.netRotX !== undefined || data.netRotY !== undefined || data.netRotZ !== undefined || data.animationIndex !== undefined)) {

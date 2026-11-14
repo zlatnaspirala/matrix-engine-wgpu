@@ -45633,11 +45633,6 @@ var NativeWebRTC = class {
       this.channels.forEach((channel, peerId) => {
         if ((!wanted || wanted.has(peerId)) && channel.readyState === "open") channel.send(payload);
       });
-      console.log("[WEBRTC SEND]", {
-        localId: this.id,
-        targets: [...this.channels.keys()],
-        data
-      });
     };
     this.fetchInfo = () => this.getPeers();
     this.closeSession = () => this.leaveSession();
@@ -45983,18 +45978,7 @@ var NativeWebRTC = class {
   _bindChannel(peerId, channel) {
     this.channels.set(peerId, channel);
     channel.onmessage = (event) => {
-      console.log("[WEBRTC CHANNEL MESSAGE]", {
-        localId: this.id,
-        remotePeerId: peerId,
-        data: event.data
-      });
       let data = event.data;
-      console.log("[WEBRTC RECEIVED]", data);
-      console.log("[WEBRTC MESSAGE]", {
-        peerId,
-        localId: this.peerId,
-        data
-      });
       try {
         data = JSON.parse(data);
       } catch (_) {
@@ -46686,6 +46670,8 @@ var loadFreekyChat = function() {
     } finally {
       creatingRemoteVideoCubes.delete(peerId);
     }
+    object.position.netObject = object.name;
+    object.position.remoteName = "remote-video-" + String(peerId).replace(/[^a-zA-Z0-9_-]/g, "_");
   };
   addEventListener("streamPlaying", (event) => {
     const detail = event.detail || {};

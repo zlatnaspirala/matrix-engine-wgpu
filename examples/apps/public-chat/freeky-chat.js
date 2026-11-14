@@ -62,6 +62,10 @@ export var loadFreekyChat = function() {
     } finally {
       creatingRemoteVideoCubes.delete(peerId);
     }
+
+    object.position.netObject = object.name;
+    object.position.remoteName =  'remote-video-' + String(peerId).replace(/[^a-zA-Z0-9_-]/g, '_')
+
   };
 
   addEventListener('streamPlaying', event => {
@@ -99,7 +103,6 @@ export var loadFreekyChat = function() {
     },
     clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
   }, () => {
-
 
     freekyChat.addLight();
     addRaycastsListener();
