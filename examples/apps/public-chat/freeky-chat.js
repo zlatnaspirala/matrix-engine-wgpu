@@ -195,4 +195,4 @@ export var loadFreekyChat = function() {
 
 // Activate if whne you wanna final prodc build.
 // No need to pack whole examples.
-// loadFreekyChat();
+loadFreekyChat();
