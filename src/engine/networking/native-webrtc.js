@@ -414,7 +414,10 @@ export class NativeWebRTC {
     this.closed = true;
     console.log('[NativeWebRTC] leaving session:', this.sessionName);
     this.peers.forEach((_, id) => this._dropPeer(id));
-    if(this.localStream) this.localStream.getTracks().forEach(track => track.stop());
+    if(this.localStream) {
+      this.localStream.getTracks().forEach(track => track.stop());
+      this.localStream = null;
+    }
     if(this.socket) this.socket.close();
     this.socket = null;
     document.getElementById('native-local-video')?.remove();
