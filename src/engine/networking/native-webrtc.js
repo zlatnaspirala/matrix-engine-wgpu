@@ -363,6 +363,23 @@ export class NativeWebRTC {
         url: event.url, code: event.errorCode, text: event.errorText
       });
     };
+    // Install ontrack immediately. setRemoteDescription() can emit track
+    // events while getUserMedia() below is still awaiting permission/device setup.
+    pc.ontrack = event => {
+      console.log('[NativeWebRTC] REMOTE TRACK RECEIVED:', peerId, {
+        kind: event.track.kind,
+        trackId: event.track.id,
+        readyState: event.track.readyState,
+        streams: event.streams?.length || 0,
+        transceiverDirection: event.transceiver?.currentDirection
+      });
+      const stream = event.streams[0] || new MediaStream([event.track]);
+      if(event.track.kind === 'video') {
+        this._showRemoteStream(peerId, stream).catch(error => {
+          console.warn('[NativeWebRTC] could not attach remote stream:', peerId, error);
+        });
+      }
+    };
     if(this.options.media) {
       try {
         if(!this.localStream) this.localStream = await navigator.mediaDevices.getUserMedia(this.options.media === true ? {audio: true, video: true} : this.options.media);
@@ -380,14 +397,6 @@ export class NativeWebRTC {
     }
     pc.onicecandidate = event => {
       if(event.candidate) this._signal({type: 'ice-candidate', to: peerId, candidate: event.candidate});
-    };
-    pc.ontrack = event => {
-      const stream = event.streams[0] || new MediaStream([event.track]);
-      if(event.track.kind === 'video') {
-        this._showRemoteStream(peerId, stream).catch(error => {
-          console.warn('[NativeWebRTC] could not attach remote stream:', peerId, error);
-        });
-      }
     };
     if(initiator) {
       const offer = await pc.createOffer();
