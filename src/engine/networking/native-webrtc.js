@@ -23,6 +23,7 @@ export class NativeWebRTC {
     this.channels = new Map();
     this.pendingIce = new Map();
     this.localStream = null;
+    this.localMediaPromise = null;
     this.localVideoElement = null;
     this.remoteMedia = new Map();
     this.localStreamReadyDispatched = false;
@@ -314,6 +315,10 @@ export class NativeWebRTC {
     if(!peer) return;
     try {
       if(message.type === 'offer') {
+        // The peer may have been created from peer-joined while getUserMedia()
+        // was still pending. Add our tracks before generating the answer so
+        // the answer negotiates both directions of webcam media.
+        if(peer.mediaReady) await peer.mediaReady;
         await peer.setRemoteDescription(message.description);
         const answer = await peer.createAnswer();
         await peer.setLocalDescription(answer);
@@ -380,15 +385,40 @@ export class NativeWebRTC {
         });
       }
     };
-    if(this.options.media) {
+    // Share one getUserMedia() request across all peers. In a mesh room,
+    // several peer connections can be created almost simultaneously.
+    pc.mediaReady = (async () => {
+      if(!this.options.media) return;
       try {
-        if(!this.localStream) this.localStream = await navigator.mediaDevices.getUserMedia(this.options.media === true ? {audio: true, video: true} : this.options.media);
-        this.localStream.getTracks().forEach(track => pc.addTrack(track, this.localStream));
+        if(!this.localStream) {
+          if(!this.localMediaPromise) {
+            this.localMediaPromise = navigator.mediaDevices.getUserMedia(
+              this.options.media === true ? {audio: true, video: true} : this.options.media
+            ).then(stream => {
+              this.localStream = stream;
+              return stream;
+            }).catch(error => {
+              this.localMediaPromise = null;
+              throw error;
+            });
+          }
+          await this.localMediaPromise;
+        }
+        this.localStream.getTracks().forEach(track => {
+          const alreadyAdded = pc.getSenders().some(sender => sender.track === track);
+          if(!alreadyAdded) pc.addTrack(track, this.localStream);
+        });
+        console.log('[NativeWebRTC] LOCAL MEDIA READY:', peerId, {
+          tracks: this.localStream.getTracks().map(track => ({
+            kind: track.kind, readyState: track.readyState, enabled: track.enabled
+          }))
+        });
         this._showLocalStream(this.localStream);
       } catch(error) {
-        console.warn('[NativeWebRTC] media permission/device error:', error);
+        console.warn('[NativeWebRTC] media permission/device error:', peerId, error);
       }
-    }
+    })();
+    await pc.mediaReady;
     if(initiator) {
       const channel = pc.createDataChannel('matrix-engine');
       this._bindChannel(peerId, channel);
@@ -484,6 +514,7 @@ export class NativeWebRTC {
     if(this.localStream) {
       this.localStream.getTracks().forEach(track => track.stop());
       this.localStream = null;
+      this.localMediaPromise = null;
     }
     if(this.socket) this.socket.close();
     this.socket = null;
