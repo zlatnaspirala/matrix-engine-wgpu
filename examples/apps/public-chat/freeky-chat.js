@@ -9,6 +9,115 @@ export var loadFreekyChat = function() {
 
   let MYCUBE;
   let PLANE;
+  let loadedMeshes = null;
+  const remoteVideoCubes = new Map();
+  const pendingRemoteStreams = new Map();
+
+  // Native WebRTC delivers a real MediaStream per remote peer.
+  // Reuse the engine's existing videoElement texture path (also used by MOBA).
+  const creatingRemoteVideoCubes = new Set();
+  const addRemoteVideoCube = async (peerId, stream) => {
+    if(!loadedMeshes || !loadedMeshes.cube || !freekyChat) {
+      pendingRemoteStreams.set(peerId, stream);
+      return;
+    }
+    const existing = remoteVideoCubes.get(peerId);
+    if(existing) {
+      if(existing.stream === stream) return;
+      existing.stream = stream;
+      existing.video.srcObject = stream;
+      await existing.object.loadVideoTexture({type: 'videoElement', videoElement: existing.video});
+      if(existing.audio && stream.getAudioTracks().length) {
+        existing.audio.srcObject = new MediaStream(stream.getAudioTracks());
+        existing.audio.play().catch(error => console.warn('[public-chat] remote audio autoplay blocked:', peerId, error));
+      }
+      return;
+    }
+    // A MediaStream can produce both audio-track and video-track events.
+    // Do not create a second cube while the first track is initializing it.
+    if(creatingRemoteVideoCubes.has(peerId)) return;
+    creatingRemoteVideoCubes.add(peerId);
+
+    const video = document.createElement('video');
+    video.autoplay = true;
+    video.playsInline = true;
+    video.muted = true; // Keep texture playback independent from audio autoplay policy.
+    video.srcObject = stream;
+    video.style.position = 'fixed';
+    video.style.width = '2px';
+    video.style.height = '2px';
+    video.style.opacity = '0';
+    video.style.pointerEvents = 'none';
+    document.body.appendChild(video);
+
+    const audio = document.createElement('audio');
+    audio.autoplay = true;
+    audio.srcObject = new MediaStream(stream.getAudioTracks());
+    audio.style.display = 'none';
+    document.body.appendChild(audio);
+    audio.play().catch(error => console.warn('[public-chat] remote audio autoplay blocked:', peerId, error));
+
+    const index = remoteVideoCubes.size;
+    const object = freekyChat.addMeshObj({
+      material: {type: 'standard'},
+      position: {
+        x: (index - 0.5) * 9,
+        y: 8,
+        z: -24
+      },
+      rotation: {x: 0, y: 0, z: 0},
+      rotationSpeed: {x: 0, y: 0, z: 0},
+      scale: [4, 3, 0.2],
+      texturesPaths: ['./res/textures/cube-g1-extra_low.png'],
+      name: 'remote-video-' + String(peerId).replace(/[^a-zA-Z0-9_-]/g, '_'),
+      mesh: loadedMeshes.cube,
+      physics: {enabled: false},
+      raycast: {enabled: false, radius: 1}
+    });
+
+    try {
+      await object.loadVideoTexture({type: 'videoElement', videoElement: video});
+      remoteVideoCubes.set(peerId, {object, video, audio, stream});
+      console.log('[public-chat] remote video cube created:', peerId, object.name);
+    } catch(error) {
+      video.pause();
+      video.srcObject = null;
+      video.remove();
+      audio.pause();
+      audio.srcObject = null;
+      audio.remove();
+      throw error;
+    } finally {
+      creatingRemoteVideoCubes.delete(peerId);
+    }
+  };
+
+  addEventListener('webrtc-track', event => {
+    const {peerId, stream} = event.detail || {};
+    if(!peerId || !stream || !stream.getVideoTracks().length) return;
+    addRemoteVideoCube(peerId, stream).catch(error => {
+      console.error('[public-chat] could not create remote video cube:', peerId, error);
+    });
+  });
+
+  addEventListener('connectionDestroyed', event => {
+    const peerId = event.detail?.connectionId;
+    const remote = remoteVideoCubes.get(peerId);
+    if(!remote) return;
+    // Stop displaying this peer's media and release its video element.
+    remote.video.pause();
+    remote.video.srcObject = null;
+    remote.video.remove();
+    remote.audio?.pause();
+    if(remote.audio) {
+      remote.audio.srcObject = null;
+      remote.audio.remove();
+    }
+    // Keep the scene object hidden; engine scene-object removal is not exposed
+    // through the public API used by this example.
+    remote.object.position.setPosition(0, -10000, 0);
+    remoteVideoCubes.delete(peerId);
+  });
 
   let freekyChat = new MatrixEngineWGPU({
     canvasSize: 'fullscreen',
@@ -44,7 +153,7 @@ export var loadFreekyChat = function() {
         sessionName: 'beast-room-01',
         domain: "https://localhost",
         signalingUrl: 'ws://localhost:2020',
-        media: true
+        media: {audio: true, video: true}
       });
 
       //  subMesh.position.netObject = subMesh.name;
@@ -108,6 +217,14 @@ export var loadFreekyChat = function() {
     })
 
     async function onGround(m) {
+      loadedMeshes = m;
+      // A peer can publish before the scene meshes finish loading.
+      for(const [peerId, stream] of pendingRemoteStreams) {
+        pendingRemoteStreams.delete(peerId);
+        addRemoteVideoCube(peerId, stream).catch(error => {
+          console.error('[public-chat] queued remote video cube failed:', peerId, error);
+        });
+      }
 
       MYCUBE = freekyChat.addMeshObj({
         material: {type: 'mirror'},
