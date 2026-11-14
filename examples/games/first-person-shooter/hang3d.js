@@ -376,5 +376,3 @@ export var loadHang3d = function() {
   window.app = app;
 };
 
-
-loadHang3d();
