@@ -41,15 +41,15 @@ export var loadFreekyChat = function() {
     const index = remoteVideoCubes.size;
     const object = freekyChat.addMeshObj({
       material: {type: 'standard'},
-      position: {x: (index - 0.5) * 9, y: 8, z: -24},
-      rotation: {x: 0, y: 0, z: 0},
+      position: {x: (index - 0.5) * 9, y: 8, z: -10},
+      rotation: {x: 0, y: 0, z: 90},
       rotationSpeed: {x: 0, y: 0, z: 0},
-      scale: [4, 3, 0.2],
+      scale: [2, 2, 2],
       texturesPaths: ['./res/textures/cube-g1-extra_low.png'],
       name: 'remote-video-' + String(peerId).replace(/[^a-zA-Z0-9_-]/g, '_'),
       mesh: loadedMeshes.cube,
-      physics: {enabled: false},
-      raycast: {enabled: false, radius: 1}
+      physics: {enabled: true, geometry: "Cube"},
+      raycast: {enabled: true, radius: 1}
     });
 
     try {
@@ -192,7 +192,7 @@ export var loadFreekyChat = function() {
 
       MYCUBE = freekyChat.addMeshObj({
         material: {type: 'mirror'},
-        position: {x: 0, y: 4, z: -10},
+        position: {x: 0, y: 1, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
         scale: [5, 1, 5],

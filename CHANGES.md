@@ -1,8 +1,20 @@
 ## CHANGES [Started from feb 2026]
 
 
-[2.0.1]
- - 
+[2.2.x]
+ New postproccessing
+ - FXAA
+ - GRADE
+ - MotionBlurPass
+ - CloudsVolumetric
+ - CloudsVolumetric2
+ - Networking is now modular 
+    - Kurento/Openvidu support
+    - Native nodejs singnaling server (npm run dedicated)
+
+    NETWORK API Level same :  NET DRIVE (kurento,node signaling)
+
+
 
 [2.0.0]
 
