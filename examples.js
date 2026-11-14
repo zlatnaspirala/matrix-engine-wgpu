@@ -1,7 +1,7 @@
 /**
  * @examples
  * MATRIX_ENGINE_WGPU EXAMPLE WORKSPACE
- * @version 2.0.0
+ * @version 2.2.0
  * @www maximumroulette.com 2026
  */
 import {loadCameraTexture} from "./examples/camera-texture.js";

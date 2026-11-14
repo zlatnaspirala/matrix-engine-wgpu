@@ -16162,9 +16162,29 @@ var Rotation = class {
   getRotX = () => {
     if (this.rotationSpeed.x === 0) {
       if (this.netx !== this.x && this.emitX) {
-        app.net.send({ remoteName: this.remoteName, sceneName: this.emitX, netRotX: this.x });
+        if (this.teams.length == 0) {
+          app.net.send({
+            toRemote: this.toRemote,
+            remoteName: this.remoteName,
+            sceneName: this.emitX,
+            netRotX: this.x
+          });
+          this.netx = this.x;
+        } else {
+          if (this.teams[0].length > 0) app.net.send({
+            toRemote: this.teams[0],
+            sceneName: this.emitX,
+            netRotX: this.x
+          });
+          if (this.teams[1].length > 0) app.net.send({
+            toRemote: this.teams[1],
+            remoteName: this.remoteName,
+            sceneName: this.emitX,
+            netRotX: this.x
+          });
+          this.netx = this.x;
+        }
       }
-      this.netx = this.x;
       if (this._lastX !== this.x) {
         this._cachedRadX = degToRad(this.x);
         this._lastX = this.x;
@@ -16221,12 +16241,28 @@ var Rotation = class {
   getRotZ = () => {
     if (this.rotationSpeed.z === 0) {
       if (this.netz !== this.z && this.emitZ) {
-        app.net.send({
-          remoteName: this.remoteName,
-          sceneName: this.emitZ,
-          netRotZ: this.z
-        });
-        this.netz = this.z;
+        if (this.teams.length == 0) {
+          app.net.send({
+            toRemote: this.toRemote,
+            remoteName: this.remoteName,
+            sceneName: this.emitZ,
+            netRotZ: this.z
+          });
+          this.netz = this.z;
+        } else {
+          if (this.teams[0].length > 0) app.net.send({
+            toRemote: this.teams[0],
+            sceneName: this.emitZ,
+            netRotZ: this.z
+          });
+          if (this.teams[1].length > 0) app.net.send({
+            toRemote: this.teams[1],
+            remoteName: this.remoteName,
+            sceneName: this.emitZ,
+            netRotZ: this.z
+          });
+          this.netz = this.z;
+        }
       }
       if (this._lastZ !== this.z) {
         this._cachedRotZ = degToRad(this.z);
@@ -70809,7 +70845,6 @@ var loadHang3d = function() {
   });
   window.app = app2;
 };
-loadHang3d();
 
 // node_modules/nui-commander/scripts/controls/main-function-menu.js
 var indicatorsBlocks = {

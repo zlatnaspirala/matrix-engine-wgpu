@@ -376,5 +376,5 @@ export var loadHang3d = function() {
   window.app = app;
 };
 
-
-loadHang3d();
+// Use for single prodc build
+// loadHang3d();

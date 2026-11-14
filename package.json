@@ -18,7 +18,7 @@
     "moba": "esbuild ./examples/games/moba/forestOfHollowBlood.js --bundle --outfile=public/moba-game.js --format=esm --watch",
     "moba-menu": "esbuild ./examples/games/moba/start-menu.js --bundle --outfile=public/moba-menu.js --format=esm --watch",
     "build-all": "npm run examples | npm run main | npm run empty",
-    "dedicated-server": "node src/tools/dedicated-server/websocket/server.js",
+    "dedicated": "node src/tools/dedicated-server/websocket/server.js",
     "creator-install": "npm --prefix src/tools/the-beast-code-gen i",
     "creator": "npm --prefix src/tools/the-beast-code-gen run dev",
     "creator-backend": "npm --prefix src/tools/the-beast-code-gen run backend",

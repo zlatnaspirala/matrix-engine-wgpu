@@ -2,11 +2,8 @@ import MatrixEngineWGPU from "../../../src/world.js";
 import {downloadMeshes} from '../../../src/engine/loader-obj.js';
 import {addRaycastsListener} from "../../../src/engine/raycast.js";
 import {MeshMorpher} from "../../../src/engine/procedural-mesh.js";
-
-import {isMobile} from "../../../src/engine/utils.js";
 import {PVector} from "../../../src/engine/matrix-class.js";
 import {activateNet2} from "../../../src/engine/networking/net.js";
-
 
 export var loadFreekyChat = function() {
 
@@ -196,4 +193,6 @@ export var loadFreekyChat = function() {
   window.app = freekyChat;
 }
 
-loadFreekyChat();
+// Activate if whne you wanna final prodc build.
+// No need to pack whole examples.
+// loadFreekyChat();
