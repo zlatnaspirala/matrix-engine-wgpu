@@ -54,7 +54,22 @@ export class NativeWebRTC {
       },
       leaveGamePlay() {}
     };
-    this.domManipulation = {hideNetPanel() {} };
+    this.domManipulation = {
+      hideNetPanel: () => {
+        const panel = document.getElementById('matrix-net');
+        const title = document.getElementById('netHeaderTitle');
+        if(!panel || !title) return;
+        if(panel.classList.contains('hide-by-vertical')) {
+          panel.classList.remove('hide-by-vertical');
+          panel.classList.add('show-by-vertical');
+          title.innerText = 'HIDE';
+        } else {
+          panel.classList.remove('show-by-vertical');
+          panel.classList.add('hide-by-vertical');
+          title.innerText = 'SHOW';
+        }
+      }
+    };
     this.sendOnlyData = data => this.send(data);
     this.send = (data, targets) => {
       const payload = JSON.stringify(data);
@@ -72,10 +87,13 @@ export class NativeWebRTC {
     };
     this.fetchInfo = () => this.getPeers();
     this.closeSession = () => this.leaveSession();
-    this.ready = this.joinSession();
+    this.ready = Promise.resolve(this);
+    this.loadNetHTML();
   }
 
   async joinSession() {
+    if(this.socket && this.socket.readyState === WebSocket.OPEN) return this;
+    this.closed = false;
     const protocol = this.options.protocol || (location.protocol === 'https:' ? 'wss:' : 'ws:');
     const host = this.options.signalingUrl || this.options.url ||
       protocol + '//' + (this.options.domain || location.hostname) + ':' + (this.options.port || 2020);
@@ -105,6 +123,118 @@ export class NativeWebRTC {
     return this;
   }
 
+  async loadNetHTML() {
+    try {
+      const response = await fetch('./networking/broadcaster2.html');
+      if(!response.ok) throw new Error('Could not load broadcaster2.html: ' + response.status);
+      const html = await response.text();
+      const panel = document.getElementById('matrix-net');
+      if(!panel) {
+        console.warn('[NativeWebRTC] #matrix-net container is missing; networking UI was not mounted');
+        return;
+      }
+      panel.style.display = 'block';
+      panel.innerHTML = html;
+
+      const sessionInput = document.getElementById('sessionName');
+      const joinButton = document.getElementById('join-btn');
+      const closeButton = document.getElementById('buttonCloseSession');
+      const leaveButton = document.getElementById('buttonLeaveSession');
+      const headerButton = document.getElementById('netHeaderTitle');
+      if(sessionInput) sessionInput.value = this.sessionName;
+
+      joinButton?.addEventListener('click', async event => {
+        event.preventDefault();
+        if(sessionInput && sessionInput.value.trim()) this.sessionName = sessionInput.value.trim();
+        joinButton.disabled = true;
+        joinButton.textContent = 'Connecting...';
+        try {
+          await this.joinSession();
+        } catch(error) {
+          console.error('[NativeWebRTC] join failed:', error);
+          this._setUIStatus('Connection failed: ' + error.message);
+          joinButton.disabled = false;
+          joinButton.textContent = 'Join!';
+        }
+      });
+
+      // Native mesh rooms have no Kurento-style room owner. Close and Leave
+      // both close this client's peer connections and leave the room.
+      closeButton?.addEventListener('click', () => this.leaveSession());
+      leaveButton?.addEventListener('click', () => this.leaveSession());
+      headerButton?.addEventListener('click', () => this.domManipulation.hideNetPanel());
+      this._setUIStatus('Ready to join');
+      console.log('%c[NativeWebRTC] broadcaster2 UI mounted', LOG_MATRIX);
+    } catch(error) {
+      console.error('[NativeWebRTC] networking UI error:', error);
+    }
+  }
+
+  _setUIStatus(message) {
+    const title = document.getElementById('session-title');
+    if(title) title.textContent = message;
+  }
+
+  _showJoinedUI() {
+    const joinContainer = document.getElementById('pwa-container-2');
+    const session = document.getElementById('session');
+    if(joinContainer) joinContainer.style.display = 'none';
+    if(session) session.style.display = 'block';
+    this._setUIStatus('Session: ' + this.sessionName);
+  }
+
+  _showJoinUI() {
+    const joinContainer = document.getElementById('pwa-container-2');
+    const session = document.getElementById('session');
+    const videoContainer = document.getElementById('video-container');
+    if(joinContainer) joinContainer.style.display = 'block';
+    if(session) session.style.display = 'none';
+    if(videoContainer) videoContainer.innerHTML = '';
+    const joinButton = document.getElementById('join-btn');
+    if(joinButton) {
+      joinButton.disabled = false;
+      joinButton.textContent = 'Join!';
+    }
+  }
+
+  _showLocalStream(stream) {
+    const existing = document.getElementById('native-local-video');
+    if(existing) return;
+    const video = document.createElement('video');
+    video.id = 'native-local-video';
+    video.autoplay = true;
+    video.muted = true;
+    video.playsInline = true;
+    video.srcObject = stream;
+    Object.assign(video.style, {
+      position: 'fixed', bottom: '16px', right: '16px', width: '180px',
+      aspectRatio: '16/9', objectFit: 'cover', borderRadius: '8px',
+      border: '2px solid rgba(255,255,255,0.3)', zIndex: '999'
+    });
+    document.body.appendChild(video);
+  }
+
+  _showRemoteStream(peerId, stream) {
+    const container = document.getElementById('video-container');
+    if(!container || document.getElementById('native-remote-' + peerId)) return;
+    const wrapper = document.createElement('div');
+    wrapper.id = 'native-remote-' + peerId;
+    wrapper.dataset.peerId = peerId;
+    Object.assign(wrapper.style, {
+      display: 'inline-block', width: 'calc(50% - 4px)', overflow: 'hidden',
+      background: '#000', aspectRatio: '16/9', margin: '2px'
+    });
+    const video = document.createElement('video');
+    video.autoplay = true;
+    video.playsInline = true;
+    video.srcObject = stream;
+    Object.assign(video.style, {
+      width: '100%', height: '100%', objectFit: 'cover', display: 'block'
+    });
+    wrapper.appendChild(video);
+    container.appendChild(wrapper);
+  }
+
   _signal(message) {
     if(this.socket && this.socket.readyState === WebSocket.OPEN) this.socket.send(JSON.stringify(message));
   }
@@ -115,6 +245,7 @@ export class NativeWebRTC {
       this.id = message.id;
       this.connection.connectionId = this.id;
       dispatchEvent(new CustomEvent('net-ready', {detail: {id: this.id, room: message.room}}));
+      this._showJoinedUI();
       (message.peers || []).forEach(peer => this._createPeer(peer.id, true));
       return;
     }
@@ -192,6 +323,7 @@ export class NativeWebRTC {
       try {
         if(!this.localStream) this.localStream = await navigator.mediaDevices.getUserMedia(this.options.media === true ? {audio: true, video: true} : this.options.media);
         this.localStream.getTracks().forEach(track => pc.addTrack(track, this.localStream));
+        this._showLocalStream(this.localStream);
       } catch(error) {
         console.warn('[NativeWebRTC] media permission/device error:', error);
       }
@@ -206,6 +338,7 @@ export class NativeWebRTC {
       if(event.candidate) this._signal({type: 'ice-candidate', to: peerId, candidate: event.candidate});
     };
     pc.ontrack = event => {
+      this._showRemoteStream(peerId, event.streams[0]);
       dispatchEvent(new CustomEvent('webrtc-track', {detail: {peerId, stream: event.streams[0], track: event.track}}));
       dispatchEvent(new CustomEvent('streamPlaying', {detail: {peerId, stream: event.streams[0], track: event.track}}));
     };
@@ -271,6 +404,7 @@ export class NativeWebRTC {
     this.peers.delete(peerId);
     this.channels.delete(peerId);
     this.pendingIce.delete(peerId);
+    document.getElementById('native-remote-' + peerId)?.remove();
   }
 
   getPeers() {return Array.from(this.peers.keys());}
@@ -282,6 +416,9 @@ export class NativeWebRTC {
     this.peers.forEach((_, id) => this._dropPeer(id));
     if(this.localStream) this.localStream.getTracks().forEach(track => track.stop());
     if(this.socket) this.socket.close();
+    this.socket = null;
+    document.getElementById('native-local-video')?.remove();
+    this._showJoinUI();
     dispatchEvent(new CustomEvent('net-left', {detail: {room: this.sessionName}}));
   }
 }
