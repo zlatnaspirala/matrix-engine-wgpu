@@ -12,59 +12,36 @@ export var loadFreekyChat = function() {
   let loadedMeshes = null;
   const remoteVideoCubes = new Map();
   const pendingRemoteStreams = new Map();
-
-  // Native WebRTC delivers a real MediaStream per remote peer.
-  // Reuse the engine's existing videoElement texture path (also used by MOBA).
   const creatingRemoteVideoCubes = new Set();
-  const addRemoteVideoCube = async (peerId, stream) => {
-    if(!loadedMeshes || !loadedMeshes.cube || !freekyChat) {
-      pendingRemoteStreams.set(peerId, stream);
+
+  // Native WebRTC owns exactly one DOM video element per remote stream.
+  // The example only consumes that element for the engine's video texture.
+  const addRemoteVideoCube = async (peerId, stream, video) => {
+    if(!loadedMeshes?.cube || !freekyChat) {
+      pendingRemoteStreams.set(peerId, {stream, video});
       return;
     }
+    if(!video) {
+      console.warn('[public-chat] streamPlaying did not provide its engine video element:', peerId);
+      return;
+    }
+
     const existing = remoteVideoCubes.get(peerId);
     if(existing) {
-      if(existing.stream === stream) return;
-      existing.stream = stream;
-      existing.video.srcObject = stream;
-      await existing.object.loadVideoTexture({type: 'videoElement', videoElement: existing.video});
-      if(existing.audio && stream.getAudioTracks().length) {
-        existing.audio.srcObject = new MediaStream(stream.getAudioTracks());
-        existing.audio.play().catch(error => console.warn('[public-chat] remote audio autoplay blocked:', peerId, error));
+      if(existing.video !== video) {
+        existing.video = video;
+        existing.stream = stream;
+        await existing.object.loadVideoTexture({type: 'videoElement', videoElement: video});
       }
       return;
     }
-    // A MediaStream can produce both audio-track and video-track events.
-    // Do not create a second cube while the first track is initializing it.
     if(creatingRemoteVideoCubes.has(peerId)) return;
     creatingRemoteVideoCubes.add(peerId);
-
-    const video = document.createElement('video');
-    video.autoplay = true;
-    video.playsInline = true;
-    video.muted = true; // Keep texture playback independent from audio autoplay policy.
-    video.srcObject = stream;
-    video.style.position = 'fixed';
-    video.style.width = '2px';
-    video.style.height = '2px';
-    video.style.opacity = '0';
-    video.style.pointerEvents = 'none';
-    document.body.appendChild(video);
-
-    const audio = document.createElement('audio');
-    audio.autoplay = true;
-    audio.srcObject = new MediaStream(stream.getAudioTracks());
-    audio.style.display = 'none';
-    document.body.appendChild(audio);
-    audio.play().catch(error => console.warn('[public-chat] remote audio autoplay blocked:', peerId, error));
 
     const index = remoteVideoCubes.size;
     const object = freekyChat.addMeshObj({
       material: {type: 'standard'},
-      position: {
-        x: (index - 0.5) * 9,
-        y: 8,
-        z: -24
-      },
+      position: {x: (index - 0.5) * 9, y: 8, z: -24},
       rotation: {x: 0, y: 0, z: 0},
       rotationSpeed: {x: 0, y: 0, z: 0},
       scale: [4, 3, 0.2],
@@ -77,25 +54,24 @@ export var loadFreekyChat = function() {
 
     try {
       await object.loadVideoTexture({type: 'videoElement', videoElement: video});
-      remoteVideoCubes.set(peerId, {object, video, audio, stream});
+      remoteVideoCubes.set(peerId, {object, video, stream});
       console.log('[public-chat] remote video cube created:', peerId, object.name);
     } catch(error) {
-      video.pause();
-      video.srcObject = null;
-      video.remove();
-      audio.pause();
-      audio.srcObject = null;
-      audio.remove();
+      console.error('[public-chat] video texture initialization failed:', peerId, error);
       throw error;
     } finally {
       creatingRemoteVideoCubes.delete(peerId);
     }
   };
 
-  addEventListener('webrtc-track', event => {
-    const {peerId, stream} = event.detail || {};
-    if(!peerId || !stream || !stream.getVideoTracks().length) return;
-    addRemoteVideoCube(peerId, stream).catch(error => {
+  addEventListener('streamPlaying', event => {
+    const detail = event.detail || {};
+    const target = detail.target;
+    const video = target?.videos?.[0]?.video;
+    const peerId = detail.peerId || target?.id?.replace(/^remote-video-/, '');
+    const stream = detail.stream || video?.srcObject;
+    if(!peerId || !stream || !video || target?.id?.indexOf('remote-video-') !== 0) return;
+    addRemoteVideoCube(peerId, stream, video).catch(error => {
       console.error('[public-chat] could not create remote video cube:', peerId, error);
     });
   });
@@ -103,20 +79,12 @@ export var loadFreekyChat = function() {
   addEventListener('connectionDestroyed', event => {
     const peerId = event.detail?.connectionId;
     const remote = remoteVideoCubes.get(peerId);
-    if(!remote) return;
-    // Stop displaying this peer's media and release its video element.
-    remote.video.pause();
-    remote.video.srcObject = null;
-    remote.video.remove();
-    remote.audio?.pause();
-    if(remote.audio) {
-      remote.audio.srcObject = null;
-      remote.audio.remove();
+    if(remote) {
+      // Native WebRTC owns and disposes the single video element.
+      remote.object.position.setPosition(0, -10000, 0);
+      remoteVideoCubes.delete(peerId);
     }
-    // Keep the scene object hidden; engine scene-object removal is not exposed
-    // through the public API used by this example.
-    remote.object.position.setPosition(0, -10000, 0);
-    remoteVideoCubes.delete(peerId);
+    pendingRemoteStreams.delete(peerId);
   });
 
   let freekyChat = new MatrixEngineWGPU({
@@ -219,9 +187,9 @@ export var loadFreekyChat = function() {
     async function onGround(m) {
       loadedMeshes = m;
       // A peer can publish before the scene meshes finish loading.
-      for(const [peerId, stream] of pendingRemoteStreams) {
+      for(const [peerId, media] of pendingRemoteStreams) {
         pendingRemoteStreams.delete(peerId);
-        addRemoteVideoCube(peerId, stream).catch(error => {
+        addRemoteVideoCube(peerId, media.stream, media.video).catch(error => {
           console.error('[public-chat] queued remote video cube failed:', peerId, error);
         });
       }
