@@ -38935,13 +38935,19 @@ var cullingPass = function() {
       this._lastCanvasTex = canvasTexture;
       this._canvasView = canvasTexture.createView();
     }
-    if (this.bloomPass.enabled === true) this.bloomPass.render(commandEncoder, this.bloomOutputTex.createView());
+    if (this.bloomPass.enabled === true) this.bloomPass.render(commandEncoder, this._bloomOutputView);
     this.finalPS.colorAttachments[0].view = this._canvasView;
-    pass = commandEncoder.beginRenderPass(this.finalPS);
-    pass.setPipeline(this.presentPipeline);
-    pass.setBindGroup(0, this._activeBindGroup);
-    pass.draw(6);
-    pass.end();
+    if (this.fxaaPass.enabled === true) {
+      const hdrView = this.bloomPass.enabled ? this._bloomOutputView : this.sceneTextureView;
+      const ssrView = this.ssrPass.enabled ? this.ssrPass.ssrOutputView : this._dummySSRView;
+      this.fxaaPass.render(commandEncoder, hdrView, ssrView, this._canvasView);
+    } else {
+      pass = commandEncoder.beginRenderPass(this.finalPS);
+      pass.setPipeline(this.presentPipeline);
+      pass.setBindGroup(0, this._activeBindGroup);
+      pass.draw(6);
+      pass.end();
+    }
     this.submitQueue[0] = commandEncoder.finish();
     this.device.queue.submit(this.submitQueue);
     this.submitQueue[0] = null;
@@ -39063,13 +39069,19 @@ var noShadowPass = function() {
       this._lastCanvasTex = canvasTexture;
       this._canvasView = canvasTexture.createView();
     }
-    if (this.bloomPass.enabled === true) this.bloomPass.render(commandEncoder, this.bloomOutputTex.createView());
+    if (this.bloomPass.enabled === true) this.bloomPass.render(commandEncoder, this._bloomOutputView);
     this.finalPS.colorAttachments[0].view = this._canvasView;
-    pass = commandEncoder.beginRenderPass(this.finalPS);
-    pass.setPipeline(this.presentPipeline);
-    pass.setBindGroup(0, this._activeBindGroup);
-    pass.draw(6);
-    pass.end();
+    if (this.fxaaPass.enabled === true) {
+      const hdrView = this.bloomPass.enabled ? this._bloomOutputView : this.sceneTextureView;
+      const ssrView = this.ssrPass.enabled ? this.ssrPass.ssrOutputView : this._dummySSRView;
+      this.fxaaPass.render(commandEncoder, hdrView, ssrView, this._canvasView);
+    } else {
+      pass = commandEncoder.beginRenderPass(this.finalPS);
+      pass.setPipeline(this.presentPipeline);
+      pass.setBindGroup(0, this._activeBindGroup);
+      pass.draw(6);
+      pass.end();
+    }
     this.submitQueue[0] = commandEncoder.finish();
     this.device.queue.submit(this.submitQueue);
     this.submitQueue[0] = null;
@@ -41206,13 +41218,19 @@ async function GPUIndirectDraws() {
       this._lastCanvasTex = canvasTexture;
       this._canvasView = canvasTexture.createView();
     }
-    if (this.bloomPass.enabled === true) this.bloomPass.render(commandEncoder, this.bloomOutputTex.createView());
+    if (this.bloomPass.enabled === true) this.bloomPass.render(commandEncoder, this._bloomOutputView);
     this.finalPS.colorAttachments[0].view = this._canvasView;
-    pass = commandEncoder.beginRenderPass(this.finalPS);
-    pass.setPipeline(this.presentPipeline);
-    pass.setBindGroup(0, this._activeBindGroup);
-    pass.draw(6);
-    pass.end();
+    if (this.fxaaPass.enabled === true) {
+      const hdrView = this.bloomPass.enabled ? this._bloomOutputView : this.sceneTextureView;
+      const ssrView = this.ssrPass.enabled ? this.ssrPass.ssrOutputView : this._dummySSRView;
+      this.fxaaPass.render(commandEncoder, hdrView, ssrView, this._canvasView);
+    } else {
+      pass = commandEncoder.beginRenderPass(this.finalPS);
+      pass.setPipeline(this.presentPipeline);
+      pass.setBindGroup(0, this._activeBindGroup);
+      pass.draw(6);
+      pass.end();
+    }
     this.device.queue.submit([commandEncoder.finish()]);
     if (this.collisionSystem) this.collisionSystem.update();
   } catch (err) {
@@ -45555,6 +45573,9 @@ var NativeWebRTC = class {
     this.channels = /* @__PURE__ */ new Map();
     this.pendingIce = /* @__PURE__ */ new Map();
     this.localStream = null;
+    this.localVideoElement = null;
+    this.remoteMedia = /* @__PURE__ */ new Map();
+    this.localStreamReadyDispatched = false;
     this.socket = null;
     this.id = null;
     this.closed = false;
@@ -45726,53 +45747,89 @@ var NativeWebRTC = class {
     }
   }
   _showLocalStream(stream) {
-    const existing = document.getElementById("native-local-video");
-    if (existing) return;
-    const video = document.createElement("video");
-    video.id = "native-local-video";
-    video.autoplay = true;
-    video.muted = true;
-    video.playsInline = true;
-    video.srcObject = stream;
-    Object.assign(video.style, {
-      position: "fixed",
-      bottom: "16px",
-      right: "16px",
-      width: "180px",
-      aspectRatio: "16/9",
-      objectFit: "cover",
-      borderRadius: "8px",
-      border: "2px solid rgba(255,255,255,0.3)",
-      zIndex: "999"
-    });
-    document.body.appendChild(video);
+    let video = this.localVideoElement || document.getElementById("native-local-video");
+    if (!video) {
+      video = document.createElement("video");
+      video.id = "native-local-video";
+      video.autoplay = true;
+      video.muted = true;
+      video.playsInline = true;
+      Object.assign(video.style, {
+        position: "fixed",
+        bottom: "16px",
+        right: "16px",
+        width: "180px",
+        aspectRatio: "16/9",
+        objectFit: "cover",
+        borderRadius: "8px",
+        border: "2px solid rgba(255,255,255,0.3)",
+        zIndex: "999"
+      });
+      document.body.appendChild(video);
+    }
+    this.localVideoElement = video;
+    if (video.srcObject !== stream) video.srcObject = stream;
+    video.play().catch((error) => console.warn("[NativeWebRTC] local preview autoplay blocked:", error));
+    if (!this.localStreamReadyDispatched) {
+      this.localStreamReadyDispatched = true;
+      const detail = { connection: this.connection, stream, videoElement: video };
+      dispatchEvent(new CustomEvent("LOCAL-STREAM-READY", { detail }));
+      dispatchEvent(new CustomEvent("streamPlaying", {
+        detail: { peerId: this.id, stream, target: { id: "local-video", videos: [{ video }] } }
+      }));
+    }
+    return video;
   }
-  _showRemoteStream(peerId, stream) {
+  async _showRemoteStream(peerId, stream) {
+    if (!stream) return null;
     const container = document.getElementById("video-container");
-    if (!container || document.getElementById("native-remote-" + peerId)) return;
-    const wrapper = document.createElement("div");
-    wrapper.id = "native-remote-" + peerId;
-    wrapper.dataset.peerId = peerId;
-    Object.assign(wrapper.style, {
-      display: "inline-block",
-      width: "calc(50% - 4px)",
-      overflow: "hidden",
-      background: "#000",
-      aspectRatio: "16/9",
-      margin: "2px"
-    });
-    const video = document.createElement("video");
-    video.autoplay = true;
-    video.playsInline = true;
-    video.srcObject = stream;
-    Object.assign(video.style, {
-      width: "100%",
-      height: "100%",
-      objectFit: "cover",
-      display: "block"
-    });
-    wrapper.appendChild(video);
-    container.appendChild(wrapper);
+    if (!container) return null;
+    let media = this.remoteMedia.get(peerId);
+    let wrapper = document.getElementById("native-remote-" + peerId);
+    let video = media?.video || document.getElementById("remote-video-" + peerId);
+    if (!video) {
+      wrapper = document.createElement("div");
+      wrapper.id = "native-remote-" + peerId;
+      wrapper.dataset.peerId = peerId;
+      Object.assign(wrapper.style, {
+        display: "inline-block",
+        width: "calc(50% - 4px)",
+        overflow: "hidden",
+        background: "#000",
+        aspectRatio: "16/9",
+        margin: "2px"
+      });
+      video = document.createElement("video");
+      video.id = "remote-video-" + peerId;
+      video.autoplay = true;
+      video.playsInline = true;
+      video.muted = false;
+      Object.assign(video.style, {
+        width: "100%",
+        height: "100%",
+        objectFit: "cover",
+        display: "block"
+      });
+      wrapper.appendChild(video);
+      container.appendChild(wrapper);
+    } else if (!wrapper) {
+      wrapper = video.parentElement;
+    }
+    if (video.srcObject !== stream) video.srcObject = stream;
+    this.remoteMedia.set(peerId, { video, wrapper, stream });
+    try {
+      await video.play();
+    } catch (error) {
+      console.warn("[NativeWebRTC] remote video autoplay blocked:", peerId, error);
+    }
+    const detail = {
+      peerId,
+      stream,
+      target: { id: video.id, videos: [{ video }] }
+    };
+    dispatchEvent(new CustomEvent("streamPlaying", { detail }));
+    dispatchEvent(new CustomEvent("webrtc-track", { detail: { peerId, stream, videoElement: video } }));
+    return video;
   }
   _signal(message) {
     if (this.socket && this.socket.readyState === WebSocket.OPEN) this.socket.send(JSON.stringify(message));
@@ -45796,7 +45853,6 @@ var NativeWebRTC = class {
     if (message.type === "peer-left") {
       console.log("[NativeWebRTC] REMOTE PEER LEFT:", message.id);
       this._dropPeer(message.id);
-      dispatchEvent(new CustomEvent("connectionDestroyed", { detail: { connectionId: message.id } }));
       return;
     }
     if (message.type === "error") {
@@ -45857,6 +45913,21 @@ var NativeWebRTC = class {
         text: event.errorText
       });
     };
+    pc.ontrack = (event) => {
+      console.log("[NativeWebRTC] REMOTE TRACK RECEIVED:", peerId, {
+        kind: event.track.kind,
+        trackId: event.track.id,
+        readyState: event.track.readyState,
+        streams: event.streams?.length || 0,
+        transceiverDirection: event.transceiver?.currentDirection
+      });
+      const stream = event.streams[0] || new MediaStream([event.track]);
+      if (event.track.kind === "video") {
+        this._showRemoteStream(peerId, stream).catch((error) => {
+          console.warn("[NativeWebRTC] could not attach remote stream:", peerId, error);
+        });
+      }
+    };
     if (this.options.media) {
       try {
         if (!this.localStream) this.localStream = await navigator.mediaDevices.getUserMedia(this.options.media === true ? { audio: true, video: true } : this.options.media);
@@ -45874,11 +45945,6 @@ var NativeWebRTC = class {
     }
     pc.onicecandidate = (event) => {
       if (event.candidate) this._signal({ type: "ice-candidate", to: peerId, candidate: event.candidate });
-    };
-    pc.ontrack = (event) => {
-      this._showRemoteStream(peerId, event.streams[0]);
-      dispatchEvent(new CustomEvent("webrtc-track", { detail: { peerId, stream: event.streams[0], track: event.track } }));
-      dispatchEvent(new CustomEvent("streamPlaying", { detail: { peerId, stream: event.streams[0], track: event.track } }));
     };
     if (initiator) {
       const offer = await pc.createOffer();
@@ -45934,7 +46000,18 @@ var NativeWebRTC = class {
     this.peers.delete(peerId);
     this.channels.delete(peerId);
     this.pendingIce.delete(peerId);
-    document.getElementById("native-remote-" + peerId)?.remove();
+    const media = this.remoteMedia.get(peerId);
+    if (media) {
+      media.video.pause();
+      media.video.srcObject = null;
+      media.video.remove();
+      media.wrapper?.remove();
+      this.remoteMedia.delete(peerId);
+    } else {
+      document.getElementById("native-remote-" + peerId)?.remove();
+      document.getElementById("remote-video-" + peerId)?.remove();
+    }
+    dispatchEvent(new CustomEvent("connectionDestroyed", { detail: { connectionId: peerId } }));
   }
   getPeers() {
     return Array.from(this.peers.keys());
@@ -45950,7 +46027,15 @@ var NativeWebRTC = class {
     }
     if (this.socket) this.socket.close();
     this.socket = null;
-    document.getElementById("native-local-video")?.remove();
+    if (this.localVideoElement) {
+      this.localVideoElement.pause();
+      this.localVideoElement.srcObject = null;
+      this.localVideoElement.remove();
+      this.localVideoElement = null;
+    } else {
+      document.getElementById("native-local-video")?.remove();
+    }
+    this.localStreamReadyDispatched = false;
     this._showJoinUI();
     dispatchEvent(new CustomEvent("net-left", { detail: { room: this.sessionName } }));
   }
@@ -46526,6 +46611,74 @@ var StreamSlotManager = {
 var loadFreekyChat = function() {
   let MYCUBE;
   let PLANE;
+  let loadedMeshes = null;
+  const remoteVideoCubes = /* @__PURE__ */ new Map();
+  const pendingRemoteStreams = /* @__PURE__ */ new Map();
+  const creatingRemoteVideoCubes = /* @__PURE__ */ new Set();
+  const addRemoteVideoCube = async (peerId, stream, video) => {
+    if (!loadedMeshes?.cube || !freekyChat) {
+      pendingRemoteStreams.set(peerId, { stream, video });
+      return;
+    }
+    if (!video) {
+      console.warn("[public-chat] streamPlaying did not provide its engine video element:", peerId);
+      return;
+    }
+    const existing = remoteVideoCubes.get(peerId);
+    if (existing) {
+      if (existing.video !== video) {
+        existing.video = video;
+        existing.stream = stream;
+        await existing.object.loadVideoTexture({ type: "videoElement", videoElement: video });
+      }
+      return;
+    }
+    if (creatingRemoteVideoCubes.has(peerId)) return;
+    creatingRemoteVideoCubes.add(peerId);
+    const index = remoteVideoCubes.size;
+    const object = freekyChat.addMeshObj({
+      material: { type: "standard" },
+      position: { x: (index - 0.5) * 9, y: 8, z: -24 },
+      rotation: { x: 0, y: 0, z: 0 },
+      rotationSpeed: { x: 0, y: 0, z: 0 },
+      scale: [4, 3, 0.2],
+      texturesPaths: ["./res/textures/cube-g1-extra_low.png"],
+      name: "remote-video-" + String(peerId).replace(/[^a-zA-Z0-9_-]/g, "_"),
+      mesh: loadedMeshes.cube,
+      physics: { enabled: false },
+      raycast: { enabled: false, radius: 1 }
+    });
+    try {
+      await object.loadVideoTexture({ type: "videoElement", videoElement: video });
+      remoteVideoCubes.set(peerId, { object, video, stream });
+      console.log("[public-chat] remote video cube created:", peerId, object.name);
+    } catch (error) {
+      console.error("[public-chat] video texture initialization failed:", peerId, error);
+      throw error;
+    } finally {
+      creatingRemoteVideoCubes.delete(peerId);
+    }
+  };
+  addEventListener("streamPlaying", (event) => {
+    const detail = event.detail || {};
+    const target = detail.target;
+    const video = target?.videos?.[0]?.video;
+    const peerId = detail.peerId || target?.id?.replace(/^remote-video-/, "");
+    const stream = detail.stream || video?.srcObject;
+    if (!peerId || !stream || !video || target?.id?.indexOf("remote-video-") !== 0) return;
+    addRemoteVideoCube(peerId, stream, video).catch((error) => {
+      console.error("[public-chat] could not create remote video cube:", peerId, error);
+    });
+  });
+  addEventListener("connectionDestroyed", (event) => {
+    const peerId = event.detail?.connectionId;
+    const remote = remoteVideoCubes.get(peerId);
+    if (remote) {
+      remote.object.position.setPosition(0, -1e4, 0);
+      remoteVideoCubes.delete(peerId);
+    }
+    pendingRemoteStreams.delete(peerId);
+  });
   let freekyChat = new MatrixEngineWGPU({
     canvasSize: "fullscreen",
     useCannon: true,
@@ -46553,7 +46706,7 @@ var loadFreekyChat = function() {
         sessionName: "beast-room-01",
         domain: "https://localhost",
         signalingUrl: "ws://localhost:2020",
-        media: true
+        media: { audio: true, video: true }
       });
       addEventListener("net-ready", () => {
         console.log("net-ready- net-ready");
@@ -46605,6 +46758,13 @@ var loadFreekyChat = function() {
       }
     });
     async function onGround(m) {
+      loadedMeshes = m;
+      for (const [peerId, media] of pendingRemoteStreams) {
+        pendingRemoteStreams.delete(peerId);
+        addRemoteVideoCube(peerId, media.stream, media.video).catch((error) => {
+          console.error("[public-chat] queued remote video cube failed:", peerId, error);
+        });
+      }
       MYCUBE = freekyChat.addMeshObj({
         material: { type: "mirror" },
         position: { x: 0, y: 4, z: -10 },
@@ -46687,6 +46847,7 @@ var loadFreekyChat = function() {
   });
   window.app = freekyChat;
 };
+loadFreekyChat();
 export {
   loadFreekyChat
 };
