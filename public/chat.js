@@ -46855,7 +46855,6 @@ var loadFreekyChat = function() {
         physics: { enabled: false }
       });
       app.activateBloomEffect();
-      app.activateVolumetricEffect();
       freekyChat.lightContainer[0].setPosY(65);
       freekyChat.lightContainer[0].setIntensity(100);
     }
