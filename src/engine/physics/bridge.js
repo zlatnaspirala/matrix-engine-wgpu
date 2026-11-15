@@ -6,18 +6,12 @@ export class PhysicsBridge {
     const isModule = workerUrl.indexOf('ammo') === -1 && workerUrl.indexOf('matter') === -1;
     const needsBlobBridge = new URL(workerUrl, location.href).origin !== location.origin;
     if(needsBlobBridge) {
-      const blobText = isModule
-        ? `import ${JSON.stringify(workerUrl)};`
-        : `importScripts(${JSON.stringify(workerUrl)});`;
+      const blobText = isModule ? `import ${JSON.stringify(workerUrl)};` : `importScripts(${JSON.stringify(workerUrl)});`;
       const blob = new Blob([blobText], {type: 'application/javascript'});
       const blobUrl = URL.createObjectURL(blob);
-      this._worker = isModule
-        ? new Worker(blobUrl, {type: 'module'})
-        : new Worker(blobUrl);
+      this._worker = isModule ? new Worker(blobUrl, {type: 'module'}) : new Worker(blobUrl);
     } else {
-      this._worker = isModule
-        ? new Worker(workerUrl, {type: 'module'})
-        : new Worker(workerUrl);
+      this._worker = isModule ? new Worker(workerUrl, {type: 'module'}) : new Worker(workerUrl);
     }
     this._worker.onerror = (e) => {
       console.error('MEWorker error:', e.message, e.filename, e.lineno);
@@ -340,25 +334,6 @@ export class PhysicsBridge {
       meObj.position.y = pos[1];
       meObj.position.z = pos[2];
     }
-
-    // if(this._clothMap) {
-    //   for(const [startIndex, clothData] of this._clothMap) {
-    //     const meObj = clothData.mesh;
-    //     const count = clothData.count;
-    //     try {
-    //       const clothPositions = new Float32Array(count * 4);
-    //       for(let i = 0;i < count;i++) {
-    //         const base = (startIndex + i) * STRIDE;
-    //         clothPositions[i * 4 + 0] = snap[base + 0];
-    //         clothPositions[i * 4 + 1] = snap[base + 1];
-    //         clothPositions[i * 4 + 2] = snap[base + 2];
-    //         clothPositions[i * 4 + 3] = 0.0;
-    //       }
-    //       app.device.queue.writeBuffer(meObj.vertexAnim.clothBuffer, 0, clothPositions);
-    //     } catch(err) {}
-    //   }
-    // }
-
   }
 
   _send(cmd, extra = {}) {
@@ -386,8 +361,6 @@ export class PhysicsBridge {
         const resolveFn = this._pending.get(data.id);
         if(resolveFn) {
           if(data.count && data.count > 1) {
-            // resolveFn({idx: data.idx, count: data.count, nx: data.nx, ny: data.ny});
-            // resolveFn({idx: data.idx, count: data.count, nx: data.nx, ny: data.ny, vertexToNode: data.vertexToNode});
             resolveFn({
               idx: data.idx, count: data.count, nx: data.nx, ny: data.ny,
               vertexToNode: data.vertexToNode, vertexOffsets: data.vertexOffsets
@@ -409,10 +382,6 @@ export class PhysicsBridge {
             const n = v2n ? v2n.length : meta.count;
             if(!meta._scratch || meta._scratch.length !== n * 4) meta._scratch = new Float32Array(n * 4);
             const dst = meta._scratch;
-            // for(let i = 0;i < n;i++) {
-            //   const s = (v2n ? v2n[i] : i) * 3;
-            //   dst[i * 4] = src[s]; dst[i * 4 + 1] = src[s + 1]; dst[i * 4 + 2] = src[s + 2];
-            // }
             const o = meta.off; // per-vertex offset from its node (null for cloth)
             for(let i = 0;i < n;i++) {
               const s = (v2n ? v2n[i] : i) * 3;
@@ -423,7 +392,6 @@ export class PhysicsBridge {
             app.device.queue.writeBuffer(buf, 0, dst);
           }
         }
-
         this._syncToObjects();
         break;
       case 'collision':
