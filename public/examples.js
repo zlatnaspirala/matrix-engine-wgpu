@@ -50719,13 +50719,19 @@ var cullingPass = function() {
       this._lastCanvasTex = canvasTexture;
       this._canvasView = canvasTexture.createView();
     }
-    if (this.bloomPass.enabled === true) this.bloomPass.render(commandEncoder, this.bloomOutputTex.createView());
+    if (this.bloomPass.enabled === true) this.bloomPass.render(commandEncoder, this._bloomOutputView);
     this.finalPS.colorAttachments[0].view = this._canvasView;
-    pass = commandEncoder.beginRenderPass(this.finalPS);
-    pass.setPipeline(this.presentPipeline);
-    pass.setBindGroup(0, this._activeBindGroup);
-    pass.draw(6);
-    pass.end();
+    if (this.fxaaPass.enabled === true) {
+      const hdrView = this.bloomPass.enabled ? this._bloomOutputView : this.sceneTextureView;
+      const ssrView = this.ssrPass.enabled ? this.ssrPass.ssrOutputView : this._dummySSRView;
+      this.fxaaPass.render(commandEncoder, hdrView, ssrView, this._canvasView);
+    } else {
+      pass = commandEncoder.beginRenderPass(this.finalPS);
+      pass.setPipeline(this.presentPipeline);
+      pass.setBindGroup(0, this._activeBindGroup);
+      pass.draw(6);
+      pass.end();
+    }
     this.submitQueue[0] = commandEncoder.finish();
     this.device.queue.submit(this.submitQueue);
     this.submitQueue[0] = null;
@@ -50847,13 +50853,19 @@ var noShadowPass = function() {
       this._lastCanvasTex = canvasTexture;
       this._canvasView = canvasTexture.createView();
     }
-    if (this.bloomPass.enabled === true) this.bloomPass.render(commandEncoder, this.bloomOutputTex.createView());
+    if (this.bloomPass.enabled === true) this.bloomPass.render(commandEncoder, this._bloomOutputView);
     this.finalPS.colorAttachments[0].view = this._canvasView;
-    pass = commandEncoder.beginRenderPass(this.finalPS);
-    pass.setPipeline(this.presentPipeline);
-    pass.setBindGroup(0, this._activeBindGroup);
-    pass.draw(6);
-    pass.end();
+    if (this.fxaaPass.enabled === true) {
+      const hdrView = this.bloomPass.enabled ? this._bloomOutputView : this.sceneTextureView;
+      const ssrView = this.ssrPass.enabled ? this.ssrPass.ssrOutputView : this._dummySSRView;
+      this.fxaaPass.render(commandEncoder, hdrView, ssrView, this._canvasView);
+    } else {
+      pass = commandEncoder.beginRenderPass(this.finalPS);
+      pass.setPipeline(this.presentPipeline);
+      pass.setBindGroup(0, this._activeBindGroup);
+      pass.draw(6);
+      pass.end();
+    }
     this.submitQueue[0] = commandEncoder.finish();
     this.device.queue.submit(this.submitQueue);
     this.submitQueue[0] = null;
@@ -51001,54 +51013,24 @@ var PhysicsBridge = class {
     }
     this._doAddPhysics(MEObject, pOptions);
   }
-  // _doAddPhysics(MEObject, pOptions) {
-  //   MEObject.isKinematic = pOptions.state === 4;
-  //   this._send('addBody', {pOptions}).then((startIndex) => {
-  //     // Check if this specific body option was a Cloth
-  //     if(pOptions.geometry === 'Cloth') {
-  //       console.log("addBody cloth startIndex:", startIndex);
-  //       // nx: 15, // Must match your OBJ's width subdivisions + 1 (or match total vertex math)
-  //       // ny: 23, // Must match your OBJ's height subdivisions + 1
-  //       const nx = pOptions.nx || 15;
-  //       const ny = pOptions.ny || 23;
-  //       const count = (nx + 1) * (ny + 1);
-  //       if(!this._clothMap) this._clothMap = new Map();
-  //       this._clothMap.set(startIndex, {
-  //         mesh: MEObject,
-  //         startIndex: startIndex,
-  //         nx: nx,
-  //         ny: ny,
-  //         count: count
-  //       });
-  //       console.log("Cloth registered successfully:", {startIndex, nx, ny, count});
-  //     } else {
-  //       // Regular rigid body
-  //       this._bodyIndexMap.set(startIndex, MEObject);
-  //     }
-  //   });
-  // }
   _doAddPhysics(MEObject, pOptions) {
     MEObject.isKinematic = pOptions.state === 4;
     this._send("addBody", { pOptions }).then((response) => {
       const startIndex = typeof response === "object" ? response.idx : response;
+      if (pOptions.geometry === "SoftBody") {
+        this._clothMap.set(startIndex, {
+          mesh: MEObject,
+          startIndex,
+          count: response?.count ?? 0,
+          v2n: response?.vertexToNode || null
+        });
+        return;
+      }
       if (pOptions.geometry === "Cloth") {
         const nx = response?.nx ?? pOptions.nx ?? 10;
         const ny = response?.ny ?? pOptions.ny ?? 10;
         const count = response?.count ?? (nx + 1) * (ny + 1);
-        this._clothMap.set(startIndex, {
-          mesh: MEObject,
-          startIndex,
-          nx,
-          ny,
-          count
-        });
-        console.log(
-          "[CLOTH REGISTERED]",
-          startIndex,
-          nx,
-          ny,
-          count
-        );
+        this._clothMap.set(startIndex, { mesh: MEObject, startIndex, nx, ny, count });
         return;
       }
       this._bodyIndexMap.set(startIndex, MEObject);
@@ -51224,6 +51206,9 @@ var PhysicsBridge = class {
   createSphereBoundary(idxs, pos2 = { x: 0, y: 0, z: 0 }, radius = 20) {
     this._worker.postMessage({ cmd: "createSphereBoundary", idxs, pos: pos2, radius });
   }
+  applyClothForce(startIndex, x3, y3, z2) {
+    this._worker.postMessage({ cmd: "applyClothForce", startIndex, x: x3, y: y3, z: z2 });
+  }
   _syncToObjects() {
     const snap = this._snapshot;
     if (!snap) return;
@@ -51243,24 +51228,6 @@ var PhysicsBridge = class {
       meObj.position.x = pos2[0];
       meObj.position.y = pos2[1];
       meObj.position.z = pos2[2];
-    }
-    if (this._clothMap) {
-      for (const [startIndex, clothData] of this._clothMap) {
-        const meObj = clothData.mesh;
-        const count = clothData.count;
-        try {
-          const clothPositions = new Float32Array(count * 4);
-          for (let i2 = 0; i2 < count; i2++) {
-            const base = (startIndex + i2) * STRIDE;
-            clothPositions[i2 * 4 + 0] = snap[base + 0];
-            clothPositions[i2 * 4 + 1] = snap[base + 1];
-            clothPositions[i2 * 4 + 2] = snap[base + 2];
-            clothPositions[i2 * 4 + 3] = 0;
-          }
-          app.device.queue.writeBuffer(meObj.vertexAnim.clothBuffer, 0, clothPositions);
-        } catch (err) {
-        }
-      }
     }
   }
   _send(cmd, extra = {}) {
@@ -51285,7 +51252,7 @@ var PhysicsBridge = class {
         const resolveFn = this._pending.get(data.id);
         if (resolveFn) {
           if (data.count && data.count > 1) {
-            resolveFn({ idx: data.idx, count: data.count, nx: data.nx, ny: data.ny });
+            resolveFn({ idx: data.idx, count: data.count, nx: data.nx, ny: data.ny, vertexToNode: data.vertexToNode });
           } else {
             resolveFn(data.idx);
           }
@@ -51296,19 +51263,20 @@ var PhysicsBridge = class {
         this._snapshot = data.snap;
         if (data.clothPackets) {
           for (const packet of data.clothPackets) {
-            const clothMeta = this._clothMap.get(packet.startIndex);
-            if (clothMeta && clothMeta.mesh && clothMeta.mesh.vertexAnim?.clothBuffer) {
-              const count = clothMeta.count;
-              const src = packet.positions;
-              const clothPositions = new Float32Array(count * 4);
-              for (let i2 = 0; i2 < count; i2++) {
-                clothPositions[i2 * 4 + 0] = src[i2 * 3 + 0];
-                clothPositions[i2 * 4 + 1] = src[i2 * 3 + 1];
-                clothPositions[i2 * 4 + 2] = src[i2 * 3 + 2];
-                clothPositions[i2 * 4 + 3] = 0;
-              }
-              app.device.queue.writeBuffer(clothMeta.mesh.vertexAnim.clothBuffer, 0, clothPositions);
+            const meta = this._clothMap.get(packet.startIndex);
+            const buf = meta?.mesh?.vertexAnim?.clothBuffer;
+            if (!buf) continue;
+            const src = packet.positions, v2n = meta.v2n;
+            const n3 = v2n ? v2n.length : meta.count;
+            if (!meta._scratch || meta._scratch.length !== n3 * 4) meta._scratch = new Float32Array(n3 * 4);
+            const dst = meta._scratch;
+            for (let i2 = 0; i2 < n3; i2++) {
+              const s2 = (v2n ? v2n[i2] : i2) * 3;
+              dst[i2 * 4] = src[s2];
+              dst[i2 * 4 + 1] = src[s2 + 1];
+              dst[i2 * 4 + 2] = src[s2 + 2];
             }
+            app.device.queue.writeBuffer(buf, 0, dst);
           }
         }
         this._syncToObjects();
@@ -53122,13 +53090,19 @@ async function GPUIndirectDraws() {
       this._lastCanvasTex = canvasTexture;
       this._canvasView = canvasTexture.createView();
     }
-    if (this.bloomPass.enabled === true) this.bloomPass.render(commandEncoder, this.bloomOutputTex.createView());
+    if (this.bloomPass.enabled === true) this.bloomPass.render(commandEncoder, this._bloomOutputView);
     this.finalPS.colorAttachments[0].view = this._canvasView;
-    pass = commandEncoder.beginRenderPass(this.finalPS);
-    pass.setPipeline(this.presentPipeline);
-    pass.setBindGroup(0, this._activeBindGroup);
-    pass.draw(6);
-    pass.end();
+    if (this.fxaaPass.enabled === true) {
+      const hdrView = this.bloomPass.enabled ? this._bloomOutputView : this.sceneTextureView;
+      const ssrView = this.ssrPass.enabled ? this.ssrPass.ssrOutputView : this._dummySSRView;
+      this.fxaaPass.render(commandEncoder, hdrView, ssrView, this._canvasView);
+    } else {
+      pass = commandEncoder.beginRenderPass(this.finalPS);
+      pass.setPipeline(this.presentPipeline);
+      pass.setBindGroup(0, this._activeBindGroup);
+      pass.draw(6);
+      pass.end();
+    }
     this.device.queue.submit([commandEncoder.finish()]);
     if (this.collisionSystem) this.collisionSystem.update();
   } catch (err) {
@@ -62328,6 +62302,22 @@ var testCannonES = function() {
         },
         raycast: { enabled: true, radius: 1 }
       });
+      const jelly = physicsPlayground2.addMeshObj({
+        material: { type: "standard" },
+        position: { x: 0, y: 8, z: -10 },
+        scale: [1.5, 1.5, 1.5],
+        texturesPaths: ["./res/textures/floor1.webp"],
+        name: "jelly",
+        mesh: m2.ball,
+        physics: {
+          enabled: true,
+          geometry: "SoftBody",
+          mass: 2,
+          vertices: m2.ball.vertices,
+          indices: m2.ball.indices
+        }
+      });
+      setTimeout(() => jelly.vertexAnim.enableCloth(1), 500);
       app.activateBloomEffect();
       app.activateVolumetricEffect();
       physicsPlayground2.lightContainer[0].setPosY(65);

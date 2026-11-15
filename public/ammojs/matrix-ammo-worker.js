@@ -26,6 +26,8 @@ class MatrixAmmoWorker {
     this.lastCollisionState = new Set();
     this._currentCollisions = new Set();
     this._keyColl = '';
+    this.cloths = [];
+    this.clothDataPackets = [];
   }
 
   async init(options = {}) {
@@ -49,12 +51,23 @@ class MatrixAmmoWorker {
 
   _initPhysics(GROUND_Y) {
     const Ammo = this.Ammo;
-    const cc = new Ammo.btDefaultCollisionConfiguration();
+    // const cc = new Ammo.btDefaultCollisionConfiguration();
+    // const dispatcher = new Ammo.btCollisionDispatcher(cc);
+    // const broadphase = new Ammo.btDbvtBroadphase();
+    // const solver = new Ammo.btSequentialImpulseConstraintSolver();
+    // this.dynamicsWorld = new Ammo.btDiscreteDynamicsWorld(dispatcher, broadphase, solver, cc);
+    const cc = new Ammo.btSoftBodyRigidBodyCollisionConfiguration();
     const dispatcher = new Ammo.btCollisionDispatcher(cc);
     const broadphase = new Ammo.btDbvtBroadphase();
     const solver = new Ammo.btSequentialImpulseConstraintSolver();
-    this.dynamicsWorld = new Ammo.btDiscreteDynamicsWorld(dispatcher, broadphase, solver, cc);
+    this.softSolver = new Ammo.btDefaultSoftBodySolver();
+    this.dynamicsWorld = new Ammo.btSoftRigidDynamicsWorld(dispatcher, broadphase, solver, cc, this.softSolver);
+    const g = new Ammo.btVector3(0, this.options.gravity, 0);
+    this.dynamicsWorld.setGravity(g);
+    this.dynamicsWorld.getWorldInfo().set_m_gravity(g);
+    this.softHelpers = new Ammo.btSoftBodyHelpers();
     this.dynamicsWorld.setGravity(new Ammo.btVector3(0, this.options.gravity, 0));
+    this.dynamicsWorld.getWorldInfo().set_m_gravity(this._origin2);
     // Ground
     const groundShape = new Ammo.btBoxShape(
       new Ammo.btVector3(this.options.roundDimensionX, 1, this.options.roundDimensionY)
@@ -96,6 +109,7 @@ class MatrixAmmoWorker {
     const Ammo = this.Ammo;
     let body = null;
     switch(pOptions.geometry) {
+      case 'Cloth': return this._addCloth(pOptions);
       case 'Sphere': body = this._addSphere(pOptions); break;
       case 'Cube': body = this._addBox(pOptions); break;
       case 'Capsule':
@@ -470,6 +484,7 @@ class MatrixAmmoWorker {
   applyImpulse(idx, x, y, z) {
     const body = this.rigidBodies[idx];
     if(!body) return;
+    if(body.isSoft) {this._softNodeImpulse(body, x, y, z); return;}
     const v = new this.Ammo.btVector3(x, y, z);
     body.activate(true);
     body.applyCentralImpulse(v);
@@ -545,6 +560,61 @@ class MatrixAmmoWorker {
     this.rigidBodies[idx]?.activate(true);
   }
 
+  _addCloth(pOptions) {
+    const Ammo = this.Ammo;
+    const nx = pOptions.nx || 10, ny = pOptions.ny || 10;
+    const w = pOptions.width || 5, h = pOptions.height || 5;
+    const p = pOptions.position || {x: 0, y: 0, z: 0};
+    const c00 = new Ammo.btVector3(p.x - w / 2, p.y + h / 2, p.z);
+    const c10 = new Ammo.btVector3(p.x + w / 2, p.y + h / 2, p.z);
+    const c01 = new Ammo.btVector3(p.x - w / 2, p.y - h / 2, p.z);
+    const c11 = new Ammo.btVector3(p.x + w / 2, p.y - h / 2, p.z);
+    const sb = this.softHelpers.CreatePatch(this.dynamicsWorld.getWorldInfo(), c00, c10, c01, c11, nx + 1, ny + 1, 0, true);
+    [c00, c10, c01, c11].forEach(v => Ammo.destroy(v));
+
+    const cfg = sb.get_m_cfg();
+    cfg.set_viterations(pOptions.iterations ?? 10);
+    cfg.set_piterations(pOptions.iterations ?? 10);
+    cfg.set_kDP(pOptions.damping ?? 0.01);
+    cfg.set_kDF(pOptions.friction ?? 0.5);
+    cfg.set_collisions(0x11);
+    const mat = sb.get_m_materials().at(0);
+    mat.set_m_kLST(pOptions.stiffness ?? 0.9);
+    mat.set_m_kAST(pOptions.stiffness ?? 0.9);
+    sb.setTotalMass(pOptions.mass || 1, false);
+    sb.getCollisionShape().setMargin(pOptions.margin ?? 0.05);
+
+    const count = (nx + 1) * (ny + 1);
+    const pinned = new Set(pOptions.pinnedIndices || []);
+    if(pOptions.pinTop !== false) for(let x = 0;x <= nx;x++) pinned.add(x);
+    pinned.forEach(i => sb.setMass(i, 0));
+
+    this.dynamicsWorld.addSoftBody(sb, pOptions.group ?? 1, pOptions.mask ?? -1);
+    sb.setActivationState(4);
+
+    const startIndex = this.rigidBodies.length;
+    for(let i = 0;i < count;i++) {
+      this.rigidBodies.push({isSoft: true, soft: sb, node: i, name: `${pOptions.name}_${i}`});
+    }
+    this._allocBuffer(this.rigidBodies.length);
+    this.cloths.push({startIndex, nx, ny, count, sb});
+    return startIndex;
+  }
+
+  _softNodeImpulse(b, x, y, z) {
+    const node = b.soft.get_m_nodes().at(b.node);
+    const im = node.get_m_im();
+    if(im <= 0) return;
+    const v = node.get_m_v();
+    v.setValue(v.x() + x * im, v.y() + y * im, v.z() + z * im);
+  }
+
+  applyClothForce(startIndex, x, y, z) {
+    const c = this.cloths.find(c => c.startIndex === startIndex);
+    if(!c) return;
+    for(let i = 0;i < c.count;i++) this._softNodeImpulse(this.rigidBodies[startIndex + i], x, y, z);
+  }
+
   step() {
     if(!this.dynamicsWorld) return;
     const deltaTime = 1 / 30;
@@ -558,6 +628,7 @@ class MatrixAmmoWorker {
     for(let i = 0;i < numBodies;i++) {
       const body = bodies[i];
       const base = i * FLOATS_PER_BODY;
+      if(body.isSoft) {snap[base + 7] = 0; continue;}
       if(body.isKinematic) {
         body.getWorldTransform(this._trans);
       } else {
@@ -576,6 +647,18 @@ class MatrixAmmoWorker {
       snap[base + 6] = rot.w();
       snap[base + 7] = 1;
     }
+
+    this.clothDataPackets.length = 0;
+    for(const c of this.cloths) {
+      const nodes = c.sb.get_m_nodes();
+      const positions = new Float32Array(c.count * 3);
+      for(let i = 0;i < c.count;i++) {
+        const p = nodes.at(i).get_m_x();
+        positions[i * 3] = p.x(); positions[i * 3 + 1] = p.y(); positions[i * 3 + 2] = p.z();
+      }
+      this.clothDataPackets.push({startIndex: c.startIndex, positions});
+    }
+
     this._detectCollision();
   }
 
@@ -690,17 +773,22 @@ self.onmessage = async ({data}) => {
     }
     case 'addBody': {
       const idx = ammo.addBody(data.pOptions);
-      self.postMessage({cmd: 'bodyAdded', id, idx, sab: ammo._sab});
+      const meta = ammo.cloths.find(c => c.startIndex === idx);
+      self.postMessage({
+        cmd: 'bodyAdded', id, idx, sab: ammo._sab,
+        count: meta ? meta.count : 1, nx: meta?.nx, ny: meta?.ny
+      });
       break;
     }
     case 'step': {
       ammo.step();
       if(!ammo._useSAB && ammo._snapshot) {
         const copy = ammo._snapshot.slice();
-        self.postMessage({cmd: 'snapshot', snap: copy}, [copy.buffer]);
+        self.postMessage({cmd: 'snapshot', snap: copy, clothPackets: ammo.clothDataPackets}, [copy.buffer]);
       }
       break;
     }
+    case 'applyClothForce': ammo.applyClothForce(data.startIndex, data.x, data.y, data.z); break;
     case 'applyImpulse': ammo.applyImpulse(data.idx, data.x, data.y, data.z); break;
     case 'shootBody': ammo.shootBody(data.idx, data.lx, data.ly, data.lz, data.ax, data.ay, data.az); break;
     case 'setActivationState': ammo.setActivationState(data.idx, data.s); break;

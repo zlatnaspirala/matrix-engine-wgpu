@@ -39452,6 +39452,9 @@ var PhysicsBridge = class {
   createSphereBoundary(idxs, pos2 = { x: 0, y: 0, z: 0 }, radius = 20) {
     this._worker.postMessage({ cmd: "createSphereBoundary", idxs, pos: pos2, radius });
   }
+  applyClothForce(startIndex, x2, y2, z) {
+    this._worker.postMessage({ cmd: "applyClothForce", startIndex, x: x2, y: y2, z });
+  }
   _syncToObjects() {
     const snap = this._snapshot;
     if (!snap) return;
@@ -39471,24 +39474,6 @@ var PhysicsBridge = class {
       meObj.position.x = pos2[0];
       meObj.position.y = pos2[1];
       meObj.position.z = pos2[2];
-    }
-    if (this._clothMap) {
-      for (const [startIndex, clothData] of this._clothMap) {
-        const meObj = clothData.mesh;
-        const count = clothData.count;
-        try {
-          const clothPositions = new Float32Array(count * 4);
-          for (let i = 0; i < count; i++) {
-            const base = (startIndex + i) * STRIDE;
-            clothPositions[i * 4 + 0] = snap[base + 0];
-            clothPositions[i * 4 + 1] = snap[base + 1];
-            clothPositions[i * 4 + 2] = snap[base + 2];
-            clothPositions[i * 4 + 3] = 0;
-          }
-          app.device.queue.writeBuffer(meObj.vertexAnim.clothBuffer, 0, clothPositions);
-        } catch (err) {
-        }
-      }
     }
   }
   _send(cmd, extra = {}) {
@@ -39524,19 +39509,18 @@ var PhysicsBridge = class {
         this._snapshot = data.snap;
         if (data.clothPackets) {
           for (const packet of data.clothPackets) {
-            const clothMeta = this._clothMap.get(packet.startIndex);
-            if (clothMeta && clothMeta.mesh && clothMeta.mesh.vertexAnim?.clothBuffer) {
-              const count = clothMeta.count;
-              const src = packet.positions;
-              const clothPositions = new Float32Array(count * 4);
-              for (let i = 0; i < count; i++) {
-                clothPositions[i * 4 + 0] = src[i * 3 + 0];
-                clothPositions[i * 4 + 1] = src[i * 3 + 1];
-                clothPositions[i * 4 + 2] = src[i * 3 + 2];
-                clothPositions[i * 4 + 3] = 0;
-              }
-              app.device.queue.writeBuffer(clothMeta.mesh.vertexAnim.clothBuffer, 0, clothPositions);
+            const meta = this._clothMap.get(packet.startIndex);
+            const buf = meta?.mesh?.vertexAnim?.clothBuffer;
+            if (!buf) continue;
+            const count = meta.count, src = packet.positions;
+            if (!meta._scratch) meta._scratch = new Float32Array(count * 4);
+            const dst = meta._scratch;
+            for (let i = 0; i < count; i++) {
+              dst[i * 4] = src[i * 3];
+              dst[i * 4 + 1] = src[i * 3 + 1];
+              dst[i * 4 + 2] = src[i * 3 + 2];
             }
+            app.device.queue.writeBuffer(buf, 0, dst);
           }
         }
         this._syncToObjects();

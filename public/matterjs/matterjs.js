@@ -1,10 +1,10 @@
 try {
   importScripts('matter.min.js');
-} catch (e) {
+} catch(e) {
   importScripts('https://unpkg.com/matrix-engine-wgpu@1.18.8/public/matterjs/matter.min.js');
 }
 // [x, y, z, qx, qy, qz, qw, active]
-const FLOATS_PER_BODY = 8; 
+const FLOATS_PER_BODY = 8;
 class MatterPhysicsWorker {
   constructor() {
     this.rigidBodies = [];
@@ -24,6 +24,8 @@ class MatterPhysicsWorker {
     this._arr = [0, 0, 0];
     this.TUNE = 0.005;
     this.kinematicTargets = new Map();
+    this.cloths = [];
+    this.clothDataPackets = [];
   }
 
   async init(options = {}) {
@@ -119,18 +121,15 @@ class MatterPhysicsWorker {
 
   addBody(pOptions) {
     const {geometry, position = {}, scale = [1, 1, 1], mass = 1, name = 'body', ...rest} = pOptions;
-
+    if(pOptions.geometry === 'Cloth') return this._addCloth(pOptions);
     // convert beast world units → Matter pixel space
     const mx = (position.x || 0) / this.TUNE;
-    const my = -(position.y || 0) / this.TUNE;  // flip Y
+    const my = -(position.y || 0) / this.TUNE;
+    // flip Y
     const sw = (scale[0]) / this.TUNE * 2;
     const sh = (scale[1]) / this.TUNE * 2;
-
     let body = null;
-
-
-    console.log('matter sw', scale[0] / this.TUNE, 'sh', scale[1] / this.TUNE);
-
+    // console.log('matter sw', scale[0] / this.TUNE, 'sh', scale[1] / this.TUNE);
     try {
       switch(geometry) {
         case 'Sphere':
@@ -165,7 +164,7 @@ class MatterPhysicsWorker {
           body = this.Bodies.rectangle(mx, my, sw, sh, {...rest, name});
       }
     } catch(e) {
-      console.error(`Failed to create body ${geometry}:`, e);
+      console.warn(`Failed to create body ${geometry}:`, e);
       return -1;
     }
 
@@ -202,6 +201,62 @@ class MatterPhysicsWorker {
     }
 
     return idx;
+  }
+
+  _addCloth(pOptions) {
+    const T = this.TUNE;
+    const nx = pOptions.nx || 10, ny = pOptions.ny || 10;
+    const w = pOptions.width || 5, h = pOptions.height || 5;
+    const p = pOptions.position || {x: 0, y: 0, z: 0};
+    const sx = w / nx, sy = h / ny;
+    const radius = (pOptions.radius || 0.05) / T;
+    const pm = (pOptions.mass || 1) / ((nx + 1) * (ny + 1));
+    const group = this.Body.nextGroup(true); // negative group: no self-collision
+    const pinned = new Set(pOptions.pinnedIndices || []);
+    if(pOptions.pinTop !== false) for(let x = 0;x <= nx;x++) pinned.add(x);
+
+    const startIndex = this.rigidBodies.length;
+    const parts = [];
+    for(let y = 0;y <= ny;y++) {
+      for(let x = 0;x <= nx;x++) {
+        const px = (p.x + (x - nx / 2) * sx) / T;
+        const py = -(p.y + (ny / 2 - y) * sy) / T;
+        const b = this.Bodies.circle(px, py, radius, {
+          isStatic: pinned.has(y * (nx + 1) + x),
+          frictionAir: pOptions.damping ?? 0.02,
+          collisionFilter: {group},
+          name: `${pOptions.name}_${x}_${y}`
+        });
+        this.Body.setMass(b, pm);
+        this.World.add(this.engine.world, b);
+        this.rigidBodies.push(b);
+        parts.push(b);
+      }
+    }
+    const link = (a, b, len) => this.World.add(this.engine.world, this.Constraint.create({
+      bodyA: a, bodyB: b, length: len / T,
+      stiffness: pOptions.stiffness ?? 0.9, damping: pOptions.constraintDamping ?? 0.05
+    }));
+    for(let y = 0;y <= ny;y++) {
+      for(let x = 0;x <= nx;x++) {
+        const a = parts[y * (nx + 1) + x];
+        if(x < nx) link(a, parts[y * (nx + 1) + x + 1], sx);
+        if(y < ny) link(a, parts[(y + 1) * (nx + 1) + x], sy);
+        if(pOptions.shear && x < nx && y < ny) link(a, parts[(y + 1) * (nx + 1) + x + 1], Math.hypot(sx, sy));
+      }
+    }
+    this._allocBuffer(this.rigidBodies.length);
+    this.cloths.push({startIndex, nx, ny, count: parts.length, z: p.z});
+    return startIndex;
+  }
+
+  applyClothForce(startIndex, x, y, z) {
+    const c = this.cloths.find(c => c.startIndex === startIndex);
+    if(!c) return;
+    for(let i = 0;i < c.count;i++) {
+      const b = this.rigidBodies[c.startIndex + i];
+      if(!b.isStatic) this.Body.applyForce(b, b.position, {x, y: -y});
+    }
   }
 
   tickKinematic() {
@@ -399,6 +454,17 @@ class MatterPhysicsWorker {
       snap[base + 6] = quat[3];
       snap[base + 7] = body.isStatic ? 0 : 1;
     }
+    this.clothDataPackets.length = 0;
+    for(const c of this.cloths) {
+      const positions = new Float32Array(c.count * 3);
+      for(let i = 0;i < c.count;i++) {
+        const b = this.rigidBodies[c.startIndex + i];
+        positions[i * 3] = b.position.x * this.TUNE;
+        positions[i * 3 + 1] = -b.position.y * this.TUNE;
+        positions[i * 3 + 2] = c.z;
+      }
+      this.clothDataPackets.push({startIndex: c.startIndex, positions});
+    }
   }
 
   getPosition(idx, msgID) {
@@ -501,17 +567,21 @@ self.onmessage = async ({data}) => {
       self.postMessage({cmd: 'ready', id});
       break;
     }
-    case 'addBody':
-      console.log('m add body');
+    case 'addBody': {
       const idx = m.addBody(data.pOptions);
-      self.postMessage({cmd: 'bodyAdded', id, idx, sab: m._sab});
+      const meta = m.cloths.find(c => c.startIndex === idx);
+      self.postMessage({cmd: 'bodyAdded', id, idx, sab: m._sab, count: meta ? meta.count : 1, nx: meta?.nx, ny: meta?.ny});
       break;
+    }
     case 'step':
       m.step();
       if(!m._useSAB && m._snapshot) {
         const copy = m._snapshot.slice();
-        self.postMessage({cmd: 'snapshot', snap: copy}, [copy.buffer]);
+        self.postMessage({cmd: 'snapshot', snap: copy, clothPackets: m.clothDataPackets}, [copy.buffer]);
       }
+      break;
+    case 'applyClothForce':
+      m.applyClothForce(data.startIndex, data.x, data.y, data.z);
       break;
     case 'setKinematicTransform':
       m.setKinematicTransform(data.idx, data.x, data.y, data.z);

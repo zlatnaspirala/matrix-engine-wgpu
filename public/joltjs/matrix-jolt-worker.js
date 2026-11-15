@@ -55,6 +55,8 @@ class MatrixJolt {
     this._sab = null;
     this._snapshot = null;
     this._useSAB = false;
+    this.cloths = [];
+    this.clothDataPackets = [];
   }
 
   _allocBuffer(bodyCount) {
@@ -187,6 +189,7 @@ class MatrixJolt {
   addBody(pOptions) {
     let body = null;
     switch(pOptions.geometry) {
+      case 'Cloth': return this._addCloth(pOptions);
       case 'Sphere': body = this._addSphere(pOptions); break;
       case 'Cube': body = this._addBox(pOptions); break;
       case 'Capsule': body = this._addCapsule(pOptions); break;
@@ -202,7 +205,10 @@ class MatrixJolt {
   _registerBody(body, pOptions) {
     body.name = pOptions.name;
     this.rigidBodies.push(body);
-    this.bodyIDs = this.rigidBodies.map(b => b.GetID());
+
+    // this.bodyIDs = this.rigidBodies.map(b => b.GetID());
+    this.bodyIDs = this.rigidBodies.map(b => b.isSoft ? null : b.GetID());
+
     this._allocBuffer(this.rigidBodies.length);
     const idx = this.rigidBodies.length - 1;
     if(this._snapshot) {
@@ -365,6 +371,79 @@ class MatrixJolt {
     });
   }
 
+  _addCloth(pOptions) {
+    const Jolt = this.Jolt;
+    const nx = pOptions.nx || 10, ny = pOptions.ny || 10;
+    const w = pOptions.width || 5, h = pOptions.height || 5;
+    const p = pOptions.position || {x: 0, y: 0, z: 0};
+    const cols = nx + 1, count = cols * (ny + 1);
+    const sx = w / nx, sy = h / ny;
+    const invMass = count / (pOptions.mass || 1);
+    const pinned = new Set(pOptions.pinnedIndices || []);
+    if(pOptions.pinTop !== false) for(let x = 0;x <= nx;x++) pinned.add(x);
+
+    const shared = new Jolt.SoftBodySharedSettings();
+    for(let y = 0;y <= ny;y++) {
+      for(let x = 0;x <= nx;x++) {
+        const v = new Jolt.SoftBodySharedSettingsVertex();
+        v.mPosition = new Jolt.Float3((x - nx / 2) * sx, (ny / 2 - y) * sy, 0); // relative to body
+        v.mInvMass = pinned.has(y * cols + x) ? 0 : invMass;
+        shared.mVertices.push_back(v);
+        Jolt.destroy(v);
+      }
+    }
+    for(let y = 0;y < ny;y++) {
+      for(let x = 0;x < nx;x++) {
+        const a = y * cols + x, b = a + 1, c = a + cols, d = c + 1;
+        shared.mFaces.push_back(new Jolt.SoftBodySharedSettingsFace(a, c, b, 0));
+        shared.mFaces.push_back(new Jolt.SoftBodySharedSettingsFace(b, c, d, 0));
+      }
+    }
+    const attr = new Jolt.SoftBodySharedSettingsVertexAttributes(
+      pOptions.compliance ?? 1e-4, pOptions.compliance ?? 1e-4, pOptions.bendCompliance ?? 1e-2);
+    shared.CreateConstraints(attr, 1, Jolt.SoftBodySharedSettingsEBendType_Distance);
+    shared.Optimize();
+
+    const cs = new Jolt.SoftBodyCreationSettings(
+      shared, new Jolt.RVec3(p.x, p.y, p.z), Jolt.Quat.prototype.sIdentity(), LAYER_MOVING);
+    cs.mNumIterations = pOptions.iterations ?? 5;
+    cs.mLinearDamping = pOptions.damping ?? 0.1;
+    cs.mFriction = pOptions.friction ?? 0.4;
+    cs.mVertexRadius = pOptions.radius ?? 0.05;
+    const sb = this.bodyInterface.CreateSoftBody(cs);
+    Jolt.destroy(cs);
+    this.bodyInterface.AddBody(sb.GetID(), Jolt.EActivation_Activate);
+
+    const startIndex = this.rigidBodies.length;
+    for(let i = 0;i < count;i++) {
+      this.rigidBodies.push({isSoft: true, soft: sb, node: i, name: `${pOptions.name}_${i}`});
+    }
+    this.bodyIDs = this.rigidBodies.map(b => b.isSoft ? null : b.GetID());
+    this._allocBuffer(this.rigidBodies.length);
+    this.cloths.push({startIndex, nx, ny, count, sb});
+    return startIndex;
+  }
+
+  _softVerts(sb) {
+    return this.Jolt.castObject(sb.GetMotionProperties(), this.Jolt.SoftBodyMotionProperties).GetVertices();
+  }
+
+  _softNodeImpulse(b, x, y, z, verts = this._softVerts(b.soft)) {
+    const v = verts.at(b.node);
+    if(v.mInvMass <= 0) return;
+    const vel = v.mVelocity;
+    this._vector0.Set(vel.GetX() + x * v.mInvMass, vel.GetY() + y * v.mInvMass, vel.GetZ() + z * v.mInvMass);
+    v.mVelocity = this._vector0;
+  }
+
+  applyClothForce(startIndex, x, y, z) {
+    const c = this.cloths.find(c => c.startIndex === startIndex);
+    if(!c) return;
+    this.bodyInterface.ActivateBody(c.sb.GetID());
+    const verts = this._softVerts(c.sb);
+    for(let i = 0;i < c.count;i++) this._softNodeImpulse(this.rigidBodies[startIndex + i], x, y, z, verts);
+  }
+
   setKinematicRotation(idx, qx, qy, qz, qw) {
     const b = this.rigidBodies[idx];
     if(!b) return;
@@ -403,6 +482,8 @@ class MatrixJolt {
   }
 
   applyImpulse(idx, x, y, z) {
+    const sb = this.rigidBodies[idx];
+    if(sb?.isSoft) {this.bodyInterface.ActivateBody(sb.soft.GetID()); this._softNodeImpulse(sb, x, y, z); return;}
     const b = this.rigidBodies[idx];
     this._vector0.Set(x, y, z);
     if(b) this.bodyInterface.AddImpulse(b.GetID(), this._vector0);
@@ -663,6 +744,8 @@ class MatrixJolt {
   }
 
   step() {
+
+
     if(!this.joltInterface) return;
     for(let i = 0;i < this.speedUp;i++) {
       this.joltInterface.Step(1 / 30, 1);
@@ -675,8 +758,12 @@ class MatrixJolt {
     const count = ids.length;
     for(let i = 0;i < count;i++) {
       const base = i * FLOATS_PER_BODY;
+      // const id = ids[i];
+      // const body = this.rigidBodies[i];
       const id = ids[i];
+      if(id === null) {snap[base + 7] = 0; continue;}
       const body = this.rigidBodies[i];
+
       if(!bi.IsActive(id) && !body.isKinematic) {
         snap[base + 7] = 0;
         continue;
@@ -692,6 +779,20 @@ class MatrixJolt {
       snap[base + 6] = rot.GetW();
       snap[base + 7] = 1;
     }
+
+    this.clothDataPackets.length = 0;
+    for(const c of this.cloths) {
+      const verts = this._softVerts(c.sb);
+      const o = c.sb.GetPosition();
+      const positions = new Float32Array(c.count * 3);
+      for(let i = 0;i < c.count;i++) {
+        const p = verts.at(i).mPosition;
+        positions[i * 3] = o.GetX() + p.GetX();
+        positions[i * 3 + 1] = o.GetY() + p.GetY();
+        positions[i * 3 + 2] = o.GetZ() + p.GetZ();
+      }
+      this.clothDataPackets.push({startIndex: c.startIndex, positions});
+    }
   }
 }
 
@@ -705,8 +806,14 @@ self.onmessage = async ({data}) => {
       self.postMessage({cmd: 'ready', id});
       break;
     }
-    case 'addBody': const idx = jolt.addBody(data.pOptions); self.postMessage({cmd: 'bodyAdded', id, idx, sab: jolt._sab}); break;
-    case 'step': jolt.step(); if(!jolt._useSAB && jolt._snapshot) {const copy = jolt._snapshot.slice(); self.postMessage({cmd: 'snapshot', snap: copy}, [copy.buffer]);} break;
+    case 'addBody': {
+      const idx = jolt.addBody(data.pOptions);
+      const meta = jolt.cloths.find(c => c.startIndex === idx);
+      self.postMessage({cmd: 'bodyAdded', id, idx, sab: jolt._sab, count: meta ? meta.count : 1, nx: meta?.nx, ny: meta?.ny});
+      break;
+    }
+    case 'step': jolt.step(); if(!jolt._useSAB && jolt._snapshot) {const copy = jolt._snapshot.slice(); self.postMessage({cmd: 'snapshot', snap: copy, clothPackets: jolt.clothDataPackets}, [copy.buffer]);} break;
+    case 'applyClothForce': jolt.applyClothForce(data.startIndex, data.x, data.y, data.z); break;
     case 'applyImpulse': jolt.applyImpulse(data.idx, data.x, data.y, data.z); break;
     case 'shootBody': jolt.shootBody(data.idx, data.lx, data.ly, data.lz, data.ax, data.ay, data.az); break;
     case 'setActivationState': jolt.setActivationState(data.idx, data.s); break;
