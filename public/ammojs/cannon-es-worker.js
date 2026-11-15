@@ -644,10 +644,12 @@ class MatrixCannon {
   _addSoftBody(pOptions) {
     const CANNON = this.CANNON;
     if(!pOptions.vertices) {console.warn('[cannon] SoftBody needs vertices'); return -1;}
-    const w = weldMesh(pOptions.vertices, pOptions.indices, pOptions.scale, pOptions.position);
+    const w = weldMesh(pOptions.vertices, pOptions.indices, pOptions.scale, pOptions.position, pOptions.nodeSpacing || 0);
+    // ...
     const count = w.count;
     const mass = (pOptions.mass || 1) / count;
-    const radius = pOptions.radius ?? 0.05;
+    // const radius = pOptions.radius ?? 0.05;?
+    const radius = pOptions.radius ?? (pOptions.nodeSpacing ? pOptions.nodeSpacing * 0.4 : 0.05);
     const bit = this._nextSoftBit();
     const startIndex = this.rigidBodies.length;
     const P = w.nodePos;
@@ -662,7 +664,7 @@ class MatrixCannon {
         mass, shape: new CANNON.Sphere(radius),
         collisionFilterGroup: bit, collisionFilterMask: ~bit,
         linearDamping: pOptions.linearDamping ?? 0.3,
-        angularDamping: 0.4, allowSleep: true
+        angularDamping: 0.4, allowSleep: false
         // allowSleep: true, 
         // // sleepSpeedLimit: 0.15, sleepTimeLimit: 1
       });
@@ -698,7 +700,8 @@ class MatrixCannon {
     this._allocBuffer(this.rigidBodies.length);
     this.world.broadphase.dirty = true;
     this.world.broadphase.needsUpdate = true;
-    this.cloths.push({startIndex, nx: 0, ny: 0, count, v2n: w.v2n});
+    // this.cloths.push({startIndex, nx: 0, ny: 0, count, v2n: w.v2n});
+    this.cloths.push({startIndex, nx: 0, ny: 0, count, v2n: w.v2n, offsets: w.offsets});
     return startIndex;
   }
 
@@ -1015,7 +1018,8 @@ self.onmessage = async ({data}) => {
         count: clothMeta ? clothMeta.count : 1,
         nx: clothMeta ? clothMeta.nx : undefined,
         ny: clothMeta ? clothMeta.ny : undefined,
-        vertexToNode: clothMeta ? clothMeta.v2n : undefined
+        vertexToNode: clothMeta ? clothMeta.v2n : undefined,
+        vertexOffsets: clothMeta ? clothMeta.offsets : undefined
       });
 
       break;

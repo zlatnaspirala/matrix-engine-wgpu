@@ -90,7 +90,8 @@ export class PhysicsBridge {
         this._clothMap.set(startIndex, {
           mesh: MEObject, startIndex,
           count: response?.count ?? 0,
-          v2n: response?.vertexToNode || null
+          v2n: response?.vertexToNode || null,
+          off: response?.vertexOffsets || null
         });
         return;
       }
@@ -386,7 +387,11 @@ export class PhysicsBridge {
         if(resolveFn) {
           if(data.count && data.count > 1) {
             // resolveFn({idx: data.idx, count: data.count, nx: data.nx, ny: data.ny});
-            resolveFn({idx: data.idx, count: data.count, nx: data.nx, ny: data.ny, vertexToNode: data.vertexToNode});
+            // resolveFn({idx: data.idx, count: data.count, nx: data.nx, ny: data.ny, vertexToNode: data.vertexToNode});
+            resolveFn({
+              idx: data.idx, count: data.count, nx: data.nx, ny: data.ny,
+              vertexToNode: data.vertexToNode, vertexOffsets: data.vertexOffsets
+            });
           } else {
             resolveFn(data.idx);
           }
@@ -396,20 +401,6 @@ export class PhysicsBridge {
       case 'snapshot':
         this._snapshot = data.snap;
         if(data.clothPackets) {
-          // for(const packet of data.clothPackets) {
-          //   const meta = this._clothMap.get(packet.startIndex);
-          //   const buf = meta?.mesh?.vertexAnim?.clothBuffer;
-          //   if(!buf) continue;
-          //   const count = meta.count, src = packet.positions;
-          //   if(!meta._scratch) meta._scratch = new Float32Array(count * 4); // reused, no per-frame alloc
-          //   const dst = meta._scratch;
-          //   for(let i = 0;i < count;i++) {
-          //     dst[i * 4] = src[i * 3];
-          //     dst[i * 4 + 1] = src[i * 3 + 1];
-          //     dst[i * 4 + 2] = src[i * 3 + 2];
-          //   }
-          //   app.device.queue.writeBuffer(buf, 0, dst);
-          // }
           for(const packet of data.clothPackets) {
             const meta = this._clothMap.get(packet.startIndex);
             const buf = meta?.mesh?.vertexAnim?.clothBuffer;
@@ -418,9 +409,16 @@ export class PhysicsBridge {
             const n = v2n ? v2n.length : meta.count;
             if(!meta._scratch || meta._scratch.length !== n * 4) meta._scratch = new Float32Array(n * 4);
             const dst = meta._scratch;
+            // for(let i = 0;i < n;i++) {
+            //   const s = (v2n ? v2n[i] : i) * 3;
+            //   dst[i * 4] = src[s]; dst[i * 4 + 1] = src[s + 1]; dst[i * 4 + 2] = src[s + 2];
+            // }
+            const o = meta.off; // per-vertex offset from its node (null for cloth)
             for(let i = 0;i < n;i++) {
               const s = (v2n ? v2n[i] : i) * 3;
-              dst[i * 4] = src[s]; dst[i * 4 + 1] = src[s + 1]; dst[i * 4 + 2] = src[s + 2];
+              dst[i * 4] = src[s] + (o ? o[i * 3] : 0);
+              dst[i * 4 + 1] = src[s + 1] + (o ? o[i * 3 + 1] : 0);
+              dst[i * 4 + 2] = src[s + 2] + (o ? o[i * 3 + 2] : 0);
             }
             app.device.queue.writeBuffer(buf, 0, dst);
           }

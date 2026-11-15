@@ -51022,7 +51022,8 @@ var PhysicsBridge = class {
           mesh: MEObject,
           startIndex,
           count: response?.count ?? 0,
-          v2n: response?.vertexToNode || null
+          v2n: response?.vertexToNode || null,
+          off: response?.vertexOffsets || null
         });
         return;
       }
@@ -51252,7 +51253,14 @@ var PhysicsBridge = class {
         const resolveFn = this._pending.get(data.id);
         if (resolveFn) {
           if (data.count && data.count > 1) {
-            resolveFn({ idx: data.idx, count: data.count, nx: data.nx, ny: data.ny, vertexToNode: data.vertexToNode });
+            resolveFn({
+              idx: data.idx,
+              count: data.count,
+              nx: data.nx,
+              ny: data.ny,
+              vertexToNode: data.vertexToNode,
+              vertexOffsets: data.vertexOffsets
+            });
           } else {
             resolveFn(data.idx);
           }
@@ -51270,11 +51278,12 @@ var PhysicsBridge = class {
             const n3 = v2n ? v2n.length : meta.count;
             if (!meta._scratch || meta._scratch.length !== n3 * 4) meta._scratch = new Float32Array(n3 * 4);
             const dst = meta._scratch;
+            const o3 = meta.off;
             for (let i2 = 0; i2 < n3; i2++) {
               const s2 = (v2n ? v2n[i2] : i2) * 3;
-              dst[i2 * 4] = src[s2];
-              dst[i2 * 4 + 1] = src[s2 + 1];
-              dst[i2 * 4 + 2] = src[s2 + 2];
+              dst[i2 * 4] = src[s2] + (o3 ? o3[i2 * 3] : 0);
+              dst[i2 * 4 + 1] = src[s2 + 1] + (o3 ? o3[i2 * 3 + 1] : 0);
+              dst[i2 * 4 + 2] = src[s2 + 2] + (o3 ? o3[i2 * 3 + 2] : 0);
             }
             app.device.queue.writeBuffer(buf, 0, dst);
           }
