@@ -62313,6 +62313,7 @@ var testCannonES = function() {
           enabled: true,
           geometry: "SoftBody",
           mass: 2,
+          nodeSpacing: 0.5,
           vertices: m2.ball.vertices,
           indices: m2.ball.indices
         }

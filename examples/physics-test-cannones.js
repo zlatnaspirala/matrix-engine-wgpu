@@ -179,6 +179,7 @@ export var testCannonES = function() {
         name: 'jelly', mesh: m.ball,
         physics: {
           enabled: true, geometry: 'SoftBody', mass: 2,
+          nodeSpacing: 0.5,
           vertices: m.ball.vertices, indices: m.ball.indices
         }
       });
