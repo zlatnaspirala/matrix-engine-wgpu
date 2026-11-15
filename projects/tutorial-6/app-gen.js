@@ -61,46 +61,25 @@ app.addLight();
 
   
 
-       // ME START nikola addCube
- downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, (m) => { 
-   let texturesPaths = ['./res/textures/cube-g1-extra_low.png']; 
-   app.addMeshObj({
-     position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},
-     texturesPaths: [texturesPaths],
-     name: 'nikola',
-     mesh: m.cube,
-     raycast: {enabled: true, radius: 1},
-     physics: {enabled: false, geometry: "Cube"}
-   }); 
- }, {scale: [1, 1, 1]});  
- // ME END nikola addCube
- 
-
-       // ME START FLOOR updatePosy
+       // ME START FLOOR updatePosx
  setTimeout(() => {
- try { app.getSceneObjectByName('FLOOR').position.SetY(-0.7000000000000007); } catch(e) {}
+ try { app.getSceneObjectByName('FLOOR').position.SetX(-0.8750000000000018); } catch(e) {}
+ }, 800);
+ // ME END FLOOR updatePosx
+ 
+  // ME START FLOOR updatePosz
+ setTimeout(() => {
+ try { app.getSceneObjectByName('FLOOR').position.SetZ(-20.455000000000002); } catch(e) {}
+ }, 800);
+ // ME END FLOOR updatePosz
+ 
+  // ME START FLOOR updatePosy
+ setTimeout(() => {
+ try { app.getSceneObjectByName('FLOOR').position.SetY(-0.8400000000000005); } catch(e) {}
  }, 800);
  // ME END FLOOR updatePosy
  
-  // ME START nikola updatePosz
- setTimeout(() => {
- try { app.getSceneObjectByName('nikola').position.SetZ(-19.649999999999945); } catch(e) {}
- }, 800);
- // ME END nikola updatePosz
- 
-  // ME START nikola updatePosy
- setTimeout(() => {
- try { app.getSceneObjectByName('nikola').position.SetY(3.989999999999993); } catch(e) {}
- }, 800);
- // ME END nikola updatePosy
- 
-    // ME START nikola updatePosx
- setTimeout(() => {
- try { app.getSceneObjectByName('nikola').position.SetX(-3.8850000000000047); } catch(e) {}
- }, 800);
- // ME END nikola updatePosx
- 
- // [MAIN_REPLACE2]
+              // [MAIN_REPLACE2]
  })
 })
 window.app = app;

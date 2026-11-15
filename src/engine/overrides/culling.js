@@ -102,17 +102,6 @@ export let cullingPass = function() {
         mesh.drawElements(pass);
       }
     }
-    // for(let meshIndex = 0;meshIndex < this.mainRenderBundle.length;meshIndex++) {
-    //   const mesh = this.mainRenderBundle[meshIndex];
-    //   if(mesh.effects) {
-    //     for(const effectName in mesh.effects) {
-    //       const effect = mesh.effects[effectName];
-    //       if(effect === null || effect.enabled === false) continue;
-    //       if(effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
-    //       effect.render(pass, mesh, camera.VP);
-    //     }
-    //   }
-    // }
     for(const pile of this.effectsByType.values()) {
       if(pile.length === 0) continue;
       if(pile[0].effect.constructor.managesRenderPipeline === true) {
@@ -166,13 +155,19 @@ export let cullingPass = function() {
       this._lastCanvasTex = canvasTexture;
       this._canvasView = canvasTexture.createView();
     }
-    if(this.bloomPass.enabled === true) this.bloomPass.render(commandEncoder, this.bloomOutputTex.createView());
+    if(this.bloomPass.enabled === true) this.bloomPass.render(commandEncoder, this._bloomOutputView);
     this.finalPS.colorAttachments[0].view = this._canvasView;
-    pass = commandEncoder.beginRenderPass(this.finalPS);
-    pass.setPipeline(this.presentPipeline);
-    pass.setBindGroup(0, this._activeBindGroup);
-    pass.draw(6);
-    pass.end();
+    if(this.fxaaPass.enabled === true) {
+      const hdrView = this.bloomPass.enabled ? this._bloomOutputView : this.sceneTextureView;
+      const ssrView = this.ssrPass.enabled ? this.ssrPass.ssrOutputView : this._dummySSRView;
+      this.fxaaPass.render(commandEncoder, hdrView, ssrView, this._canvasView);
+    } else {
+      pass = commandEncoder.beginRenderPass(this.finalPS);
+      pass.setPipeline(this.presentPipeline);
+      pass.setBindGroup(0, this._activeBindGroup);
+      pass.draw(6);
+      pass.end();
+    }
 
     this.submitQueue[0] = commandEncoder.finish();
     this.device.queue.submit(this.submitQueue);
@@ -317,13 +312,21 @@ export let noShadowPass = function() {
       this._lastCanvasTex = canvasTexture;
       this._canvasView = canvasTexture.createView();
     }
-    if(this.bloomPass.enabled === true) this.bloomPass.render(commandEncoder, this.bloomOutputTex.createView());
+    // cached view, no per-frame createView()
+    if(this.bloomPass.enabled === true) this.bloomPass.render(commandEncoder, this._bloomOutputView);
+
     this.finalPS.colorAttachments[0].view = this._canvasView;
-    pass = commandEncoder.beginRenderPass(this.finalPS);
-    pass.setPipeline(this.presentPipeline);
-    pass.setBindGroup(0, this._activeBindGroup);
-    pass.draw(6);
-    pass.end();
+    if(this.fxaaPass.enabled === true) {
+      const hdrView = this.bloomPass.enabled ? this._bloomOutputView : this.sceneTextureView;
+      const ssrView = this.ssrPass.enabled ? this.ssrPass.ssrOutputView : this._dummySSRView;
+      this.fxaaPass.render(commandEncoder, hdrView, ssrView, this._canvasView);
+    } else {
+      pass = commandEncoder.beginRenderPass(this.finalPS);
+      pass.setPipeline(this.presentPipeline);
+      pass.setBindGroup(0, this._activeBindGroup);
+      pass.draw(6);
+      pass.end();
+    }
 
     this.submitQueue[0] = commandEncoder.finish();
     this.device.queue.submit(this.submitQueue);

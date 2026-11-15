@@ -42,7 +42,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 }
 `;
 
-const RENDER_SHADER = /* wgsl */ `
+const RENDER_SHADER =  `
 struct SceneUniforms {
   viewProj: mat4x4<f32>,
   baseModel: mat4x4<f32>,

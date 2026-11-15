@@ -199,19 +199,37 @@ export async function GPUIndirectDraws() {
       }
     }
 
+    // const canvasTexture = this.context.getCurrentTexture();
+    // if(this._lastCanvasTex !== canvasTexture) {
+    //   this._lastCanvasTex = canvasTexture;
+    //   this._canvasView = canvasTexture.createView();
+    // }
+    // if(this.bloomPass.enabled === true) this.bloomPass.render(commandEncoder, this.bloomOutputTex.createView());
+
+    // this.finalPS.colorAttachments[0].view = this._canvasView;
+    // pass = commandEncoder.beginRenderPass(this.finalPS);
+    // pass.setPipeline(this.presentPipeline);
+    // pass.setBindGroup(0, this._activeBindGroup);
+    // pass.draw(6);
+    // pass.end();
     const canvasTexture = this.context.getCurrentTexture();
     if(this._lastCanvasTex !== canvasTexture) {
       this._lastCanvasTex = canvasTexture;
       this._canvasView = canvasTexture.createView();
     }
-    if(this.bloomPass.enabled === true) this.bloomPass.render(commandEncoder, this.bloomOutputTex.createView());
-
+    if(this.bloomPass.enabled === true) this.bloomPass.render(commandEncoder, this._bloomOutputView);
     this.finalPS.colorAttachments[0].view = this._canvasView;
-    pass = commandEncoder.beginRenderPass(this.finalPS);
-    pass.setPipeline(this.presentPipeline);
-    pass.setBindGroup(0, this._activeBindGroup);
-    pass.draw(6);
-    pass.end();
+    if(this.fxaaPass.enabled === true) {
+      const hdrView = this.bloomPass.enabled ? this._bloomOutputView : this.sceneTextureView;
+      const ssrView = this.ssrPass.enabled ? this.ssrPass.ssrOutputView : this._dummySSRView;
+      this.fxaaPass.render(commandEncoder, hdrView, ssrView, this._canvasView);
+    } else {
+      pass = commandEncoder.beginRenderPass(this.finalPS);
+      pass.setPipeline(this.presentPipeline);
+      pass.setBindGroup(0, this._activeBindGroup);
+      pass.draw(6);
+      pass.end();
+    }
     this.device.queue.submit([commandEncoder.finish()]);
     if(this.collisionSystem) this.collisionSystem.update();
     // this.graphUpdate(this.now);

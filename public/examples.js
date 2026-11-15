@@ -11598,17 +11598,6 @@ var CameraPath = class _CameraPath {
     return 1;
   }
 };
-async function loadTextureView(device2, url) {
-  const bmp = await createImageBitmap(await (await fetch(url)).blob());
-  const tex = device2.createTexture({
-    size: [bmp.width, bmp.height],
-    format: "rgba8unorm",
-    usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
-    // required by copyExternalImageToTexture
-  });
-  device2.queue.copyExternalImageToTexture({ source: bmp }, { texture: tex }, [bmp.width, bmp.height]);
-  return tex.createView();
-}
 
 // src/me-config.js
 window.urlQ = urlQuery;
@@ -11673,19 +11662,15 @@ var MEConfig = {
   construct: function(options2 = {}) {
     if (urlQ["GRAVITY_Y_AXIS"]) {
       this.GRAVITY_Y_AXIS = parseInt(urlQ["GRAVITY_Y_AXIS"]);
-      console.log(`%cGRAVITY_Y_AXIS : ${this.GRAVITY_Y_AXIS}`, LOG_FUNNY_ARCADE);
     }
     if (urlQ["PHYSICS_GROUND_BYX"]) {
       this.PHYSICS_GROUND_BYX = parseInt(urlQ["PHYSICS_GROUND_BYX"]);
-      console.log(`%cPHYSICS_GROUND_BYX : ${this.PHYSICS_GROUND_BYX}`, LOG_FUNNY_ARCADE);
     }
     if (urlQ["PHYSICS_GROUND_BYZ"]) {
       this.PHYSICS_GROUND_BYZ = parseInt(urlQ["PHYSICS_GROUND_BYZ"]);
-      console.log(`%cPHYSICS_GROUND_BYZ : ${this.PHYSICS_GROUND_BYZ}`, LOG_FUNNY_ARCADE);
     }
     if (urlQ["SHADOW_RES"]) {
       this.SHADOW_RES = parseInt(urlQ["SHADOW_RES"]);
-      console.log(`%cSHADOW_RES : ${this.SHADOW_RES}`, LOG_FUNNY_ARCADE);
     }
     if (urlQ["MAX_SPOTLIGHTS"]) {
       this.MAX_SPOTLIGHTS = parseInt(urlQ["MAX_SPOTLIGHTS"]);
@@ -11693,42 +11678,36 @@ var MEConfig = {
     if (options2.MAX_SPOTLIGHTS) {
       this.MAX_SPOTLIGHTS = options2.MAX_SPOTLIGHTS;
     }
-    console.log(`%cMAX_SPOTLIGHTS : ${this.MAX_SPOTLIGHTS}`, LOG_FUNNY_ARCADE);
     if (urlQ["MAX_BONES"]) {
       this.MAX_BONES = parseInt(urlQ["MAX_BONES"]);
     }
     if (options2.MAX_BONES) {
       this.MAX_BONES = options2.MAX_BONES;
     }
-    console.log(`%cMAX_BONES : ${this.MAX_BONES}`, LOG_FUNNY_ARCADE);
     if (urlQ["GPUCullingRad"]) {
       this.GPUCullingRad = parseInt(urlQ["GPUCullingRad"]);
     }
     if (options2.GPUCullingRad) {
       this.GPUCullingRad = options2.GPUCullingRad;
     }
-    console.log(`%cGPUCullingRad : ${this.GPUCullingRad}`, LOG_FUNNY_ARCADE);
     if (urlQ["TOUCH_SENS"]) {
       this.TOUCH_SENS = parseInt(urlQ["TOUCH_SENS"]);
     }
     if (options2.TOUCH_SENS) {
       this.TOUCH_SENS = options2.TOUCH_SENS;
     }
-    console.log(`%cTOUCH_SENS : ${this.TOUCH_SENS}`, LOG_FUNNY_ARCADE);
     if (urlQ["MOUSE_SENS"]) {
       this.MOUSE_SENS = parseInt(urlQ["MOUSE_SENS"]);
     }
     if (options2.MOUSE_SENS) {
       this.MOUSE_SENS = options2.MOUSE_SENS;
     }
-    console.log(`%cMOUSE_SENS : ${this.MOUSE_SENS}`, LOG_FUNNY_ARCADE);
     if (urlQ["CAM_SPEED"]) {
       this.CAM_SPEED = parseInt(urlQ["CAM_SPEED"]);
     }
     if (options2.CAM_SPEED) {
       this.CAM_SPEED = options2.CAM_SPEED;
     }
-    console.log(`%cCAM_SPEED : ${this.CAM_SPEED}`, LOG_FUNNY_ARCADE);
     if (urlQ["LOAD_AFTER_CLICK_MOBILE"]) {
       this.LOAD_AFTER_CLICK_MOBILE = urlQ["LOAD_AFTER_CLICK_MOBILE"];
     }
@@ -11750,7 +11729,6 @@ var MEConfig = {
     }
     if (urlQ["PHYSICS_GROUND_Y"] != null) {
       this.PHYSICS_GROUND_Y = parseFloat(urlQ["PHYSICS_GROUND_Y"]);
-      console.log(`%cPHYSICS_GROUND_Y : ${this.PHYSICS_GROUND_Y}`, LOG_FUNNY_ARCADE);
     }
   },
   checkOffScreen: function() {
@@ -16184,9 +16162,29 @@ var Rotation = class {
   getRotX = () => {
     if (this.rotationSpeed.x === 0) {
       if (this.netx !== this.x && this.emitX) {
-        app.net.send({ remoteName: this.remoteName, sceneName: this.emitX, netRotX: this.x });
+        if (this.teams.length == 0) {
+          app.net.send({
+            toRemote: this.toRemote,
+            remoteName: this.remoteName,
+            sceneName: this.emitX,
+            netRotX: this.x
+          });
+          this.netx = this.x;
+        } else {
+          if (this.teams[0].length > 0) app.net.send({
+            toRemote: this.teams[0],
+            sceneName: this.emitX,
+            netRotX: this.x
+          });
+          if (this.teams[1].length > 0) app.net.send({
+            toRemote: this.teams[1],
+            remoteName: this.remoteName,
+            sceneName: this.emitX,
+            netRotX: this.x
+          });
+          this.netx = this.x;
+        }
       }
-      this.netx = this.x;
       if (this._lastX !== this.x) {
         this._cachedRadX = degToRad(this.x);
         this._lastX = this.x;
@@ -16243,12 +16241,28 @@ var Rotation = class {
   getRotZ = () => {
     if (this.rotationSpeed.z === 0) {
       if (this.netz !== this.z && this.emitZ) {
-        app.net.send({
-          remoteName: this.remoteName,
-          sceneName: this.emitZ,
-          netRotZ: this.z
-        });
-        this.netz = this.z;
+        if (this.teams.length == 0) {
+          app.net.send({
+            toRemote: this.toRemote,
+            remoteName: this.remoteName,
+            sceneName: this.emitZ,
+            netRotZ: this.z
+          });
+          this.netz = this.z;
+        } else {
+          if (this.teams[0].length > 0) app.net.send({
+            toRemote: this.teams[0],
+            sceneName: this.emitZ,
+            netRotZ: this.z
+          });
+          if (this.teams[1].length > 0) app.net.send({
+            toRemote: this.teams[1],
+            remoteName: this.remoteName,
+            sceneName: this.emitZ,
+            netRotZ: this.z
+          });
+          this.netz = this.z;
+        }
       }
       if (this._lastZ !== this.z) {
         this._cachedRotZ = degToRad(this.z);
@@ -22530,9 +22544,7 @@ var DestructionEffect2 = class _DestructionEffect {
 };
 
 // src/shaders/flame-effect/flameEffect.js
-var flameEffect = (
-  /* wgsl */
-  `
+var flameEffect = `
 
 struct Camera {
   viewProj : mat4x4<f32>
@@ -22701,8 +22713,7 @@ fn fsMain(input : VSOut) -> FragOut {
     vec4f(input.fragPos, 1.0)
   );
 }
-`
-);
+`;
 
 // src/engine/geometry-factory.js
 var GeometryFactory = class _GeometryFactory {
@@ -24567,7 +24578,7 @@ fn fsMain(input : VSOut) -> FragOut {
 // src/engine/effects/flame-emmiter.js
 var FlameEmitter = class _FlameEmitter {
   static _pipelineCache = /* @__PURE__ */ new WeakMap();
-  constructor(device2, format, maxParticles = 20, cameraBuffer) {
+  constructor(device2, format, maxParticles = 10, cameraBuffer) {
     this.device = device2;
     this.format = format;
     this.time = 0;
@@ -41536,7 +41547,17 @@ var FluxCodexVertex = class {
         if (field.key === "objectPreview") {
           spec.objectPreviewEl = input;
         }
-        fieldsWrap.appendChild(input);
+        const fieldWrap = document.createElement("div");
+        fieldWrap.className = "node-field";
+        fieldWrap.style.cssText = "display:flex;flex-direction:column;gap:2px;margin:3px 4px;min-width:0;";
+        const label = document.createElement("span");
+        label.className = "field-label";
+        label.textContent = field.key;
+        label.style.cssText = "font-size:9px;line-height:1;opacity:0.9;margin-top:-5px;text-align: left;";
+        input.style.width = "100%";
+        label.title = field.key + ":";
+        fieldWrap.append(label, input);
+        fieldsWrap.appendChild(fieldWrap);
       });
       body.appendChild(fieldsWrap);
     }
@@ -53142,8 +53163,7 @@ var AdvancedVolumetricPass = class {
     this.device = device2;
     this.width = width;
     this.height = height;
-    this.isMobile = this._detectMobileDevice();
-    this.qualityScale = Math.max(0.25, Math.min(1, options2.qualityScale ?? (this.isMobile ? 0.5 : 1)));
+    this.qualityScale = Math.max(0.25, Math.min(1, options2.qualityScale ?? (isMobile() ? 0.5 : 1)));
     this._computeEffectiveSize();
     this._time = 0;
     this._timeScratch = new Float32Array(1);
@@ -53169,13 +53189,13 @@ var AdvancedVolumetricPass = class {
     });
     this.params = {
       density: options2.density ?? 0.02,
-      steps: this.isMobile ? options2.steps ?? 16 : options2.steps ?? 32,
+      steps: isMobile() ? options2.steps ?? 16 : options2.steps ?? 32,
       scatterStrength: options2.scatterStrength ?? 1,
       heightFalloff: options2.heightFalloff ?? 0.08,
       range: options2.range ?? 50,
       temporalBlend: options2.temporalBlend ?? 0.8,
       useTemporalReprojection: options2.useTemporalReprojection ?? true,
-      mobileOptimizations: options2.mobileOptimizations ?? this.isMobile,
+      mobileOptimizations: options2.mobileOptimizations ?? isMobile(),
       useTextureProjection: options2.useTextureProjection ?? false,
       textureProjectionIntensity: options2.textureProjectionIntensity ?? 1
     };
@@ -53239,12 +53259,6 @@ var AdvancedVolumetricPass = class {
     this._updateLightColor();
     this._buildBindGroups(sceneView);
   }
-  // ───────────────────────── setup helpers ─────────────────────────
-  _detectMobileDevice() {
-    if (typeof navigator === "undefined") return false;
-    const ua2 = navigator.userAgent || "";
-    return /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(ua2);
-  }
   _computeEffectiveSize() {
     this.effectiveWidth = Math.max(1, Math.ceil(this.width * this.qualityScale));
     this.effectiveHeight = Math.max(1, Math.ceil(this.height * this.qualityScale));
@@ -53300,7 +53314,6 @@ var AdvancedVolumetricPass = class {
       mk(cl, sceneView, this.volumetricTexView)
     ];
   }
-  // ───────────────────────── public API ─────────────────────────
   init() {
     return this;
   }
@@ -53583,9 +53596,7 @@ var AdvancedVolumetricPass = class {
   }
 };
 function fullscreenVertWGSL2() {
-  return (
-    /* wgsl */
-    `
+  return `
     @vertex
     fn vert(@builtin(vertex_index) i: u32) -> @builtin(position) vec4<f32> {
       var pos = array<vec2<f32>, 6>(
@@ -53594,13 +53605,10 @@ function fullscreenVertWGSL2() {
       );
       return vec4(pos[i], 0.0, 1.0);
     }
-  `
-  );
+  `;
 }
 function advancedMarchFragWGSL() {
-  return (
-    /* wgsl */
-    `
+  return `
   ${PARAMS_WGSL}
 
   @group(0) @binding(0)  var depthTex:   texture_depth_2d;
@@ -53716,13 +53724,10 @@ fn sampleProjection(wp: vec3<f32>) -> vec3<f32> {
 
     return vec4<f32>(accum, 1.0 - trans);
   }
-  `
-  );
+  `;
 }
 function temporalBlendFragWGSL() {
-  return (
-    /* wgsl */
-    `
+  return `
   ${PARAMS_WGSL}
 
   @group(0) @binding(0) var currentTex: texture_2d<f32>;
@@ -53737,13 +53742,10 @@ function temporalBlendFragWGSL() {
     let history = textureSample(historyTex, samp, uv);
     return max(mix(current, history, params.temporalBlend), vec4(0.0));
   }
-  `
-  );
+  `;
 }
 function advancedCompositeFragWGSL() {
-  return (
-    /* wgsl */
-    `
+  return `
   ${PARAMS_WGSL}
 
   @group(0) @binding(0) var sceneTex: texture_2d<f32>;
@@ -53759,6 +53761,1871 @@ function advancedCompositeFragWGSL() {
     let vol = textureSample(volTex, samp, uv);
     // vol.rgb = scattered light | vol.a = fog opacity
     return vec4<f32>(scene.rgb * (1.0 - vol.a) + vol.rgb, scene.a);
+  }
+  `;
+}
+
+// src/engine/postprocessing/clouds-volumetric.js
+var CLOUD_PARAMS_WGSL = `
+struct CloudParams {
+  // coverage, density, cloudBase, cloudTop
+  shape: vec4<f32>,
+  // noiseScale, windSpeed, time, raySteps
+  motion: vec4<f32>,
+  // sunDirection.xyz, scattering strength
+  lighting: vec4<f32>,
+  // targetWidth, targetHeight, qualityScale, phase
+  render: vec4<f32>,
+};
+`;
+var CloudsVolumetric = class {
+  constructor(width, height, device2, options2 = {}, sceneView = null) {
+    this.device = device2;
+    this.width = width;
+    this.height = height;
+    this.enabled = options2.enabled ?? true;
+    this.isMobile = this._detectMobile();
+    this.qualityScale = Math.max(0.2, Math.min(1, options2.qualityScale ?? (this.isMobile ? 0.25 : 0.35)));
+    this.params = {
+      coverage: options2.coverage ?? 0.58,
+      density: options2.density ?? 1.15,
+      cloudBase: options2.cloudBase ?? 24,
+      cloudTop: options2.cloudTop ?? 58,
+      noiseScale: options2.noiseScale ?? 0.018,
+      windSpeed: options2.windSpeed ?? 0.8,
+      steps: Math.max(8, Math.min(64, Math.round(options2.steps ?? (this.isMobile ? 16 : 24)))),
+      scattering: options2.scattering ?? 1.25
+    };
+    this.sunDirection = new Float32Array(options2.sunDirection ?? [-0.45, 0.8, -0.3]);
+    this.sunColor = new Float32Array(options2.sunColor ?? [1, 0.91, 0.76]);
+    this._time = 0;
+    this._manualTime = null;
+    this._scratch = new Float32Array(16);
+    this._computeSize();
+    this.sampler = device2.createSampler({
+      label: "CloudsVolumetric.linearSampler",
+      magFilter: "linear",
+      minFilter: "linear",
+      addressModeU: "clamp-to-edge",
+      addressModeV: "clamp-to-edge"
+    });
+    this.paramsBuffer = device2.createBuffer({
+      label: "CloudsVolumetric.params",
+      size: 64,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.invViewProjBuffer = device2.createBuffer({
+      label: "CloudsVolumetric.invViewProjection",
+      size: 64,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.sunColorBuffer = device2.createBuffer({
+      label: "CloudsVolumetric.sunColor",
+      size: 16,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this._passDesc = {
+      label: "CloudsVolumetric.pass",
+      colorAttachments: [{
+        view: null,
+        loadOp: "clear",
+        storeOp: "store",
+        clearValue: { r: 0, g: 0, b: 0, a: 0 }
+      }]
+    };
+    this._allocTextures();
+    this.marchPipeline = this._createMarchPipeline();
+    this.compositePipeline = this._createCompositePipeline();
+    this._sceneView = null;
+    this._depthView = null;
+    this._marchBG = null;
+    this._compositeBG = null;
+    this._updateParams();
+    this._updateSunColor();
+    if (sceneView) this.setCompositeInput(sceneView);
+  }
+  _detectMobile() {
+    if (typeof navigator === "undefined") return false;
+    return /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent || "");
+  }
+  _computeSize() {
+    this.renderWidth = Math.max(1, Math.ceil(this.width * this.qualityScale));
+    this.renderHeight = Math.max(1, Math.ceil(this.height * this.qualityScale));
+  }
+  _createTexture(width, height, label) {
+    return this.device.createTexture({
+      label,
+      size: [width, height],
+      format: "rgba16float",
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
+    });
+  }
+  _allocTextures() {
+    this.cloudTexture = this._createTexture(this.renderWidth, this.renderHeight, "CloudsVolumetric.lowRes");
+    this.cloudView = this.cloudTexture.createView();
+    this.outputTexture = this._createTexture(this.width, this.height, "CloudsVolumetric.composite");
+    this.outputView = this.outputTexture.createView();
+  }
+  _freeTextures() {
+    this.cloudTexture?.destroy();
+    this.outputTexture?.destroy();
+  }
+  _createFullscreenPipeline(label, fragmentCode, entries) {
+    const bgl = this.device.createBindGroupLayout({ label: `CloudsVolumetric.${label}.BGL`, entries });
+    return this.device.createRenderPipeline({
+      label: `CloudsVolumetric.${label}`,
+      layout: this.device.createPipelineLayout({ bindGroupLayouts: [bgl] }),
+      vertex: {
+        module: this.device.createShaderModule({ code: cloudsFullscreenVertexWGSL() }),
+        entryPoint: "vert"
+      },
+      fragment: {
+        module: this.device.createShaderModule({ code: fragmentCode }),
+        entryPoint: "main",
+        targets: [{ format: "rgba16float" }]
+      },
+      primitive: { topology: "triangle-list" }
+    });
+  }
+  _createMarchPipeline() {
+    const F2 = GPUShaderStage.FRAGMENT;
+    return this._createFullscreenPipeline("marchPipeline", cloudsMarchFragmentWGSL(), [
+      { binding: 0, visibility: F2, texture: { sampleType: "depth" } },
+      { binding: 1, visibility: F2, buffer: { type: "uniform" } },
+      { binding: 2, visibility: F2, buffer: { type: "uniform" } },
+      { binding: 3, visibility: F2, buffer: { type: "uniform" } }
+    ]);
+  }
+  _createCompositePipeline() {
+    const F2 = GPUShaderStage.FRAGMENT;
+    return this._createFullscreenPipeline("compositePipeline", cloudsCompositeFragmentWGSL(), [
+      { binding: 0, visibility: F2, texture: { sampleType: "float" } },
+      { binding: 1, visibility: F2, texture: { sampleType: "float" } },
+      { binding: 2, visibility: F2, sampler: { type: "filtering" } }
+    ]);
+  }
+  _updateParams() {
+    const p2 = this._scratch;
+    p2[0] = this.params.coverage;
+    p2[1] = this.params.density;
+    p2[2] = this.params.cloudBase;
+    p2[3] = Math.max(this.params.cloudBase + 0.1, this.params.cloudTop);
+    p2[4] = this.params.noiseScale;
+    p2[5] = this.params.windSpeed;
+    p2[6] = this._time;
+    p2[7] = this.params.steps;
+    p2[8] = this.sunDirection[0];
+    p2[9] = this.sunDirection[1];
+    p2[10] = this.sunDirection[2];
+    p2[11] = this.params.scattering;
+    p2[12] = this.renderWidth;
+    p2[13] = this.renderHeight;
+    p2[14] = this.qualityScale;
+    p2[15] = 0;
+    this.device.queue.writeBuffer(this.paramsBuffer, 0, p2);
+  }
+  _updateSunColor() {
+    this.device.queue.writeBuffer(
+      this.sunColorBuffer,
+      0,
+      new Float32Array([this.sunColor[0], this.sunColor[1], this.sunColor[2], 0])
+    );
+  }
+  _buildBindGroups(sceneView, depthView) {
+    if (depthView && (depthView !== this._depthView || !this._marchBG)) {
+      this._depthView = depthView;
+      this._marchBG = this.device.createBindGroup({
+        layout: this.marchPipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: depthView },
+          { binding: 1, resource: { buffer: this.invViewProjBuffer } },
+          { binding: 2, resource: { buffer: this.paramsBuffer } },
+          { binding: 3, resource: { buffer: this.sunColorBuffer } }
+        ]
+      });
+    }
+    if (sceneView && (sceneView !== this._sceneView || !this._compositeBG)) {
+      this._sceneView = sceneView;
+      this._compositeBG = this.device.createBindGroup({
+        layout: this.compositePipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: sceneView },
+          { binding: 1, resource: this.cloudView },
+          { binding: 2, resource: this.sampler }
+        ]
+      });
+    }
+  }
+  setCompositeInput(sceneView) {
+    this._buildBindGroups(sceneView, null);
+    return this;
+  }
+  setCoverage(value) {
+    this.params.coverage = Math.max(0, Math.min(1, value));
+    this._updateParams();
+    return this;
+  }
+  setDensity(value) {
+    this.params.density = Math.max(0, value);
+    this._updateParams();
+    return this;
+  }
+  setCloudLayer(base, top) {
+    this.params.cloudBase = base;
+    this.params.cloudTop = Math.max(base + 0.1, top);
+    this._updateParams();
+    return this;
+  }
+  setNoiseScale(value) {
+    this.params.noiseScale = Math.max(1e-3, value);
+    this._updateParams();
+    return this;
+  }
+  setWindSpeed(value) {
+    this.params.windSpeed = value;
+    this._updateParams();
+    return this;
+  }
+  setSteps(value) {
+    this.params.steps = Math.max(8, Math.min(64, Math.round(value)));
+    this._updateParams();
+    return this;
+  }
+  setScattering(value) {
+    this.params.scattering = Math.max(0, value);
+    this._updateParams();
+    return this;
+  }
+  setSunDirection(x3, y3, z2) {
+    const len2 = Math.hypot(x3, y3, z2) || 1;
+    this.sunDirection[0] = x3 / len2;
+    this.sunDirection[1] = y3 / len2;
+    this.sunDirection[2] = z2 / len2;
+    this._updateParams();
+    return this;
+  }
+  setSunColor(r3, g2, b2) {
+    this.sunColor.set([r3, g2, b2]);
+    this._updateSunColor();
+    return this;
+  }
+  setTime(seconds) {
+    this._manualTime = seconds;
+    this._time = seconds;
+    this._updateParams();
+    return this;
+  }
+  setQualityScale(scale4) {
+    this.qualityScale = Math.max(0.2, Math.min(1, scale4));
+    this.resize(this.width, this.height);
+    return this;
+  }
+  getOutputView() {
+    return this.outputView;
+  }
+  //   render(encoder, sceneView, depthView, shadowArrayView, camera, light) {
+  render(encoder, sceneView, depthView, shadowArrayView = null, camera, light = null) {
+    if (!this.enabled) return this.outputView;
+    if (!camera?.invViewProjectionMatrix) {
+      throw new Error("CloudsVolumetric.render requires camera.invViewProjectionMatrix");
+    }
+    if (sceneView) this._buildBindGroups(sceneView, null);
+    this._buildBindGroups(null, depthView);
+    this.device.queue.writeBuffer(this.invViewProjBuffer, 0, camera.invViewProjectionMatrix);
+    if (light?.direction) this.setSunDirection(...light.direction);
+    if (light?.color) this.setSunColor(...light.color);
+    if (this._manualTime === null) {
+      this._time = (typeof performance !== "undefined" ? performance.now() : Date.now()) * 1e-3;
+    } else {
+      this._time = this._manualTime;
+    }
+    this._updateParams();
+    if (!this._marchBG || !this._compositeBG) {
+      throw new Error("CloudsVolumetric needs sceneView and depthView bind groups before rendering");
+    }
+    this._passDesc.label = "CloudsVolumetric.march";
+    this._passDesc.colorAttachments[0].view = this.cloudView;
+    let pass = encoder.beginRenderPass(this._passDesc);
+    pass.setPipeline(this.marchPipeline);
+    pass.setBindGroup(0, this._marchBG);
+    pass.draw(6);
+    pass.end();
+    this._passDesc.label = "CloudsVolumetric.composite";
+    this._passDesc.colorAttachments[0].view = this.outputView;
+    pass = encoder.beginRenderPass(this._passDesc);
+    pass.setPipeline(this.compositePipeline);
+    pass.setBindGroup(0, this._compositeBG);
+    pass.draw(6);
+    pass.end();
+    return this.outputView;
+  }
+  resize(width, height) {
+    this.width = width;
+    this.height = height;
+    this._computeSize();
+    this._freeTextures();
+    this._allocTextures();
+    this._sceneView = null;
+    this._depthView = null;
+    this._marchBG = null;
+    this._compositeBG = null;
+    this._updateParams();
+    return this;
+  }
+  destroy() {
+    this._freeTextures();
+    this.paramsBuffer?.destroy();
+    this.invViewProjBuffer?.destroy();
+    this.sunColorBuffer?.destroy();
+  }
+};
+function cloudsFullscreenVertexWGSL() {
+  return `
+    @vertex
+    fn vert(@builtin(vertex_index) i: u32) -> @builtin(position) vec4<f32> {
+      var pos = array<vec2<f32>, 6>(
+        vec2(-1.0, -1.0), vec2(1.0, -1.0), vec2(-1.0, 1.0),
+        vec2(-1.0, 1.0), vec2(1.0, -1.0), vec2(1.0, 1.0)
+      );
+      return vec4(pos[i], 0.0, 1.0);
+    }
+  `;
+}
+function cloudsMarchFragmentWGSL() {
+  return `
+  ${CLOUD_PARAMS_WGSL}
+  @group(0) @binding(0) var depthTex: texture_depth_2d;
+  @group(0) @binding(1) var<uniform> invViewProj: mat4x4<f32>;
+  @group(0) @binding(2) var<uniform> params: CloudParams;
+  @group(0) @binding(3) var<uniform> sunColor: vec4<f32>;
+
+  fn worldFromDepth(uv: vec2<f32>, depth: f32) -> vec3<f32> {
+    let ndc = vec4<f32>(uv.x * 2.0 - 1.0, (1.0 - uv.y) * 2.0 - 1.0, depth, 1.0);
+    let world = invViewProj * ndc;
+    return world.xyz / max(abs(world.w), 0.000001) * sign(world.w);
+  }
+
+  fn hash31(p: vec3<f32>) -> f32 {
+    var q = fract(p * 0.1031);
+    q = q + vec3<f32>(dot(q, q.yzx + vec3<f32>(33.33)));
+    return fract((q.x + q.y) * q.z);
+  }
+
+  fn noise3(p: vec3<f32>) -> f32 {
+    let i = floor(p);
+    let f = fract(p);
+    let u = f * f * (vec3<f32>(3.0) - 2.0 * f);
+    let a = hash31(i);
+    let b = hash31(i + vec3<f32>(1.0, 0.0, 0.0));
+    let c = hash31(i + vec3<f32>(0.0, 1.0, 0.0));
+    let d = hash31(i + vec3<f32>(1.0, 1.0, 0.0));
+    let e = hash31(i + vec3<f32>(0.0, 0.0, 1.0));
+    let f1 = hash31(i + vec3<f32>(1.0, 0.0, 1.0));
+    let g = hash31(i + vec3<f32>(0.0, 1.0, 1.0));
+    let h = hash31(i + vec3<f32>(1.0, 1.0, 1.0));
+    let x00 = mix(a, b, u.x);
+    let x10 = mix(c, d, u.x);
+    let x01 = mix(e, f1, u.x);
+    let x11 = mix(g, h, u.x);
+    return mix(mix(x00, x10, u.y), mix(x01, x11, u.y), u.z);
+  }
+
+  fn cloudNoise(p: vec3<f32>) -> f32 {
+    let coarse = noise3(p) * 0.68;
+    let detail = noise3(p * 2.03 + vec3<f32>(17.1, 9.2, 13.7)) * 0.32;
+    return coarse + detail;
+  }
+
+  fn cloudWindOffset() -> vec3<f32> {
+    return vec3<f32>(params.motion.y * params.motion.z, 0.0, params.motion.y * params.motion.z * 0.37);
+  }
+
+  fn cloudVerticalProfile(worldPos: vec3<f32>) -> f32 {
+    let layerHeight = params.shape.w - params.shape.z;
+    let h = clamp((worldPos.y - params.shape.z) / max(layerHeight, 0.001), 0.0, 1.0);
+    return smoothstep(0.0, 0.13, h) * (1.0 - smoothstep(0.72, 1.0, h));
+  }
+
+  fn densityAt(worldPos: vec3<f32>) -> f32 {
+    let p = worldPos * params.motion.x + cloudWindOffset();
+    let n = cloudNoise(p);
+    let broad = smoothstep(0.46 - params.shape.x * 0.34, 0.80, n);
+    return max(0.0, broad * cloudVerticalProfile(worldPos) * params.shape.y);
+  }
+
+  // fn densityAt(worldPos: vec3<f32>) -> f32 {
+  //   let h = clamp(
+  //       (worldPos.y - params.shape.z) /
+  //       max(params.shape.w - params.shape.z, 0.001),
+  //       0.0,
+  //       1.0
+  //   );
+
+//     return smoothstep(0.0, 0.2, h) *
+//            (1.0 - smoothstep(0.7, 1.0, h));
+// }
+
+  // Lower-cost coarse density for the two-point light transmittance estimate.
+  fn shadowDensityAt(worldPos: vec3<f32>) -> f32 {
+    let p = worldPos * (params.motion.x * 0.72) + cloudWindOffset();
+    let n = noise3(p);
+    let broad = smoothstep(0.43 - params.shape.x * 0.28, 0.78, n);
+    return broad * cloudVerticalProfile(worldPos) * params.shape.y;
+  }
+
+  fn intersectCloudLayer(ro: vec3<f32>, rd: vec3<f32>, maxDistance: f32) -> vec2<f32> {
+    if(abs(rd.y) < 0.0001) {
+      if(ro.y < params.shape.z || ro.y > params.shape.w) { return vec2<f32>(1.0, 0.0); }
+      return vec2<f32>(0.0, maxDistance);
+    }
+    let a = (params.shape.z - ro.y) / rd.y;
+    let b = (params.shape.w - ro.y) / rd.y;
+    let nearT = max(0.0, min(a, b));
+    let farT = min(maxDistance, max(a, b));
+    return vec2<f32>(nearT, max(0.0, farT - nearT));
+  }
+
+  @fragment
+  fn main(@builtin(position) pixel: vec4<f32>) -> @location(0) vec4<f32> {
+    let uv = pixel.xy / params.render.xy;
+    let depthSize = vec2<f32>(textureDimensions(depthTex));
+    let depthPx = vec2<i32>(clamp(uv * depthSize, vec2<f32>(0.0), depthSize - vec2<f32>(1.0)));
+    let sceneDepth = textureLoad(depthTex, depthPx, 0);
+
+    // Match CloudsVolumetric2: derive the ray from the near and far clip
+    // planes, and only use scene depth as a limit when opaque geometry exists.
+    let nearPos = worldFromDepth(uv, 0.0);
+    let farPos = worldFromDepth(uv, 1.0);
+    let rayDir = normalize(farPos - nearPos);
+
+    var sceneDistance = 1e9;
+    if(sceneDepth < 1.0) {
+      sceneDistance = length(worldFromDepth(uv, sceneDepth) - nearPos);
+    }
+
+    let hit = intersectCloudLayer(nearPos, rayDir, sceneDistance);
+    if(hit.y <= 0.001) { return vec4<f32>(0.0); }
+
+
+    // Volumetric front-to-back integration using the verified 3D density field.
+    let stepLength = hit.y / max(params.motion.w, 8.0);
+    let jitter = fract(sin(dot(pixel.xy, vec2<f32>(12.9898, 78.233))) * 43758.5453);
+    var transmittance = 1.0;
+    var radiance = vec3<f32>(0.0);
+
+    for(var i = 0; i < i32(params.motion.w); i++) {
+      let t = hit.x + (f32(i) + jitter) * stepLength;
+      let p = nearPos + rayDir * t;
+      let density = densityAt(p);
+
+      if(density > 0.001) {
+        // The previous 0.035 extinction was too weak for this world-space step length.
+        let opticalDepth = density * stepLength * 0.35;
+        let attenuation = exp(-opticalDepth);
+        let sunDir = normalize(params.lighting.xyz);
+        let lightP = p + sunDir * 4.5;
+        let lightTrans = exp(-shadowDensityAt(lightP) * 0.22);
+        let phase = 0.35 + 0.65 * pow(max(dot(rayDir, sunDir), 0.0), 4.0);
+        let powder = 1.0 - exp(-opticalDepth * 2.0);
+        let light = sunColor.rgb * params.lighting.w * lightTrans * phase;
+
+        radiance += transmittance * (1.0 - attenuation) *
+          (light + vec3<f32>(0.34, 0.39, 0.48) * powder);
+        transmittance *= attenuation;
+      }
+
+      if(transmittance < 0.025) { break; }
+    }
+
+    return vec4<f32>(radiance, 1.0 - transmittance);
+  }
+  `;
+}
+function cloudsCompositeFragmentWGSL() {
+  return `
+  @group(0) @binding(0) var sceneTex: texture_2d<f32>;
+  @group(0) @binding(1) var cloudTex: texture_2d<f32>;
+  @group(0) @binding(2) var samp: sampler;
+
+  @fragment
+  fn main(@builtin(position) pixel: vec4<f32>) -> @location(0) vec4<f32> {
+    let uv = pixel.xy / vec2<f32>(textureDimensions(sceneTex));
+    let scene = textureSample(sceneTex, samp, uv);
+    let clouds = textureSample(cloudTex, samp, uv);
+    let color = scene.rgb * (1.0 - clouds.a) + clouds.rgb;
+    return vec4<f32>(color, scene.a);
+  }
+  `;
+}
+
+// src/engine/postprocessing/cloudes-volumetric-2.js
+var CloudsVolumetric2 = class {
+  constructor(width, height, device2, options2 = {}, sceneView) {
+    this.enabled = false;
+    this.device = device2;
+    this.width = width;
+    this.height = height;
+    this.isMobile = this._detectMobileDevice();
+    this.qualityScale = options2.qualityScale ?? (this.isMobile ? 0.4 : 0.5);
+    this.params = {
+      cloudBase: options2.cloudBase ?? 120,
+      cloudThickness: options2.cloudThickness ?? 60,
+      coverage: options2.coverage ?? 0.55,
+      density: options2.density ?? 0.04,
+      shapeScale: options2.shapeScale ?? 1 / 900,
+      detailScale: options2.detailScale ?? 1 / 180,
+      detailAmount: options2.detailAmount ?? 0.35,
+      viewSteps: options2.viewSteps ?? (this.isMobile ? 16 : 32),
+      lightSteps: options2.lightSteps ?? (this.isMobile ? 3 : 4),
+      maxDistance: options2.maxDistance ?? 2e3,
+      phaseG: options2.phaseG ?? 0.55,
+      temporal: options2.temporal ?? true,
+      temporalBlend: options2.temporalBlend ?? 0.9,
+      windSpeed: options2.windSpeed ?? 8,
+      windDir: options2.windDir ?? [1, 0.3]
+    };
+    const sd = options2.sunDirection ?? [0.4, 0.6, 0.3];
+    const sdl = Math.hypot(sd[0], sd[1], sd[2]) || 1;
+    this.sunDirection = [sd[0] / sdl, sd[1] / sdl, sd[2] / sdl];
+    this.sunColor = options2.sunColor ?? [1, 0.95, 0.85];
+    this.sunIntensity = options2.sunIntensity ?? 2.2;
+    this.ambientColor = options2.ambientColor ?? [0.45, 0.55, 0.75];
+    this.ambientIntensity = options2.ambientIntensity ?? 0.6;
+    this._u = new Float32Array(68);
+    this._prevVP = new Float32Array(16);
+    this._hasPrev = false;
+    this._wind = [0, 0];
+    this._frame = 0;
+    this._lastTime = performance.now();
+    this._historyIdx = 0;
+    this._depthView = null;
+    this._marchBG = null;
+    this.sampler = device2.createSampler({
+      label: "CloudsVolumetric.sampler",
+      magFilter: "linear",
+      minFilter: "linear",
+      addressModeU: "repeat",
+      addressModeV: "repeat",
+      addressModeW: "repeat"
+    });
+    this.uniformBuffer = device2.createBuffer({
+      label: "CloudsVolumetric.uniform",
+      size: 272,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this._marchPassDesc = {
+      label: "clouds-march",
+      colorAttachments: [{ view: null, loadOp: "clear", storeOp: "store", clearValue: { r: 0, g: 0, b: 0, a: 0 } }]
+    };
+    this._temporalPassDesc = {
+      label: "clouds-temporal",
+      colorAttachments: [{ view: null, loadOp: "clear", storeOp: "store", clearValue: { r: 0, g: 0, b: 0, a: 0 } }]
+    };
+    this._compositePassDesc = {
+      label: "clouds-composite",
+      colorAttachments: [{ view: null, loadOp: "clear", storeOp: "store", clearValue: { r: 0, g: 0, b: 0, a: 0 } }]
+    };
+    this._createNoiseTextures();
+    this._createTargets();
+    this._createPipelines();
+    this._buildStaticBindGroups();
+    this.setCompositeInput(sceneView);
+  }
+  init() {
+    return this;
+  }
+  // ───────────────────────── setters ─────────────────────────
+  setCoverage = (v2) => {
+    this.params.coverage = Math.max(0, Math.min(0.98, v2));
+  };
+  setDensity = (v2) => {
+    this.params.density = v2;
+  };
+  setCloudLayer = (base, thickness) => {
+    this.params.cloudBase = base;
+    this.params.cloudThickness = Math.max(1, thickness);
+  };
+  setSunDirection = (x3, y3, z2) => {
+    const l2 = Math.hypot(x3, y3, z2) || 1;
+    this.sunDirection = [x3 / l2, y3 / l2, z2 / l2];
+  };
+  setSunColor = (r3, g2, b2, intensity) => {
+    this.sunColor = [r3, g2, b2];
+    if (intensity !== void 0) this.sunIntensity = intensity;
+  };
+  setAmbientColor = (r3, g2, b2, intensity) => {
+    this.ambientColor = [r3, g2, b2];
+    if (intensity !== void 0) this.ambientIntensity = intensity;
+  };
+  setWind = (speed, dx, dz) => {
+    this.params.windSpeed = speed;
+    if (dx !== void 0) this.params.windDir = [dx, dz ?? 0];
+  };
+  setSteps = (view, light) => {
+    this.params.viewSteps = Math.max(4, view | 0);
+    if (light !== void 0) this.params.lightSteps = Math.max(1, light | 0);
+  };
+  setMaxDistance = (v2) => {
+    this.params.maxDistance = Math.max(10, v2);
+  };
+  setNoiseScale = (shape, detail) => {
+    this.params.shapeScale = shape;
+    if (detail !== void 0) this.params.detailScale = detail;
+  };
+  setDetailAmount = (v2) => {
+    this.params.detailAmount = Math.max(0, Math.min(1, v2));
+  };
+  setPhaseG = (v2) => {
+    this.params.phaseG = Math.max(0, Math.min(0.95, v2));
+  };
+  setTemporal = (v2) => {
+    this.params.temporal = !!v2;
+    this._hasPrev = false;
+  };
+  setTemporalBlend = (v2) => {
+    this.params.temporalBlend = Math.max(0, Math.min(0.98, v2));
+  };
+  setQualityScale(scale4) {
+    this.qualityScale = Math.max(0.25, Math.min(1, scale4));
+    this.resize(this.width, this.height);
+  }
+  getOutputView() {
+    return this.compositeOutputTexView;
+  }
+  _detectMobileDevice() {
+    if (typeof navigator === "undefined") return false;
+    return /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test((navigator.userAgent || "").toLowerCase());
+  }
+  // ───────────────────────── resources ─────────────────────────
+  _createNoiseTextures() {
+    const d2 = this.device;
+    this.shapeTex = d2.createTexture({
+      label: "CloudsVolumetric.shape64",
+      dimension: "3d",
+      size: [64, 64, 64],
+      format: "rgba8unorm",
+      usage: GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING
+    });
+    this.detailTex = d2.createTexture({
+      label: "CloudsVolumetric.detail32",
+      dimension: "3d",
+      size: [32, 32, 32],
+      format: "rgba8unorm",
+      usage: GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING
+    });
+    this.shapeView = this.shapeTex.createView({ dimension: "3d" });
+    this.detailView = this.detailTex.createView({ dimension: "3d" });
+    const module = d2.createShaderModule({ label: "CloudsVolumetric.noiseGen", code: noiseGenWGSL() });
+    const mk = (entryPoint) => d2.createComputePipeline({
+      label: "CloudsVolumetric." + entryPoint,
+      layout: "auto",
+      compute: { module, entryPoint }
+    });
+    const shapePipe = mk("shape");
+    const detailPipe = mk("detail");
+    const shapeBG = d2.createBindGroup({ layout: shapePipe.getBindGroupLayout(0), entries: [{ binding: 0, resource: this.shapeView }] });
+    const detailBG = d2.createBindGroup({ layout: detailPipe.getBindGroupLayout(0), entries: [{ binding: 0, resource: this.detailView }] });
+    const enc = d2.createCommandEncoder({ label: "CloudsVolumetric.noiseGenEncoder" });
+    const pass = enc.beginComputePass({ label: "clouds-noise-gen" });
+    pass.setPipeline(shapePipe);
+    pass.setBindGroup(0, shapeBG);
+    pass.dispatchWorkgroups(16, 16, 16);
+    pass.setPipeline(detailPipe);
+    pass.setBindGroup(0, detailBG);
+    pass.dispatchWorkgroups(8, 8, 8);
+    pass.end();
+    d2.queue.submit([enc.finish()]);
+  }
+  _tex(w2, h2, label) {
+    return this.device.createTexture({
+      label,
+      size: [w2, h2],
+      format: "rgba16float",
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
+    });
+  }
+  _createTargets() {
+    this.lowW = Math.max(1, Math.ceil(this.width * this.qualityScale));
+    this.lowH = Math.max(1, Math.ceil(this.height * this.qualityScale));
+    this.marchTex = this._tex(this.lowW, this.lowH, "CloudsVolumetric.march");
+    this.marchView = this.marchTex.createView();
+    this.accumTex = [
+      this._tex(this.lowW, this.lowH, "CloudsVolumetric.accumA"),
+      this._tex(this.lowW, this.lowH, "CloudsVolumetric.accumB")
+    ];
+    this.accumView = [this.accumTex[0].createView(), this.accumTex[1].createView()];
+    this.compositeOutputTex = this._tex(this.width, this.height, "CloudsVolumetric.compositeOut");
+    this.compositeOutputTexView = this.compositeOutputTex.createView();
+    this._hasPrev = false;
+  }
+  _createPipelines() {
+    const d2 = this.device;
+    const F2 = GPUShaderStage.FRAGMENT;
+    const marchBGL = d2.createBindGroupLayout({
+      label: "CloudsVolumetric.marchBGL",
+      entries: [
+        { binding: 0, visibility: F2, buffer: { type: "uniform" } },
+        { binding: 1, visibility: F2, texture: { sampleType: "depth" } },
+        { binding: 2, visibility: F2, texture: { sampleType: "float", viewDimension: "3d" } },
+        { binding: 3, visibility: F2, texture: { sampleType: "float", viewDimension: "3d" } },
+        { binding: 4, visibility: F2, sampler: { type: "filtering" } }
+      ]
+    });
+    const postBGL = d2.createBindGroupLayout({
+      label: "CloudsVolumetric.postBGL",
+      entries: [
+        { binding: 0, visibility: F2, buffer: { type: "uniform" } },
+        { binding: 1, visibility: F2, texture: { sampleType: "float" } },
+        { binding: 2, visibility: F2, texture: { sampleType: "float" } },
+        { binding: 3, visibility: F2, sampler: { type: "filtering" } }
+      ]
+    });
+    this._marchBGL = marchBGL;
+    this._postBGL = postBGL;
+    const vertModule = d2.createShaderModule({ label: "CloudsVolumetric.vert", code: fullscreenVertWGSL3() });
+    const make = (label, bgl, code) => d2.createRenderPipeline({
+      label,
+      layout: d2.createPipelineLayout({ bindGroupLayouts: [bgl] }),
+      vertex: { module: vertModule, entryPoint: "vert" },
+      fragment: {
+        module: d2.createShaderModule({ label: label + ".frag", code }),
+        entryPoint: "main",
+        targets: [{ format: "rgba16float" }]
+      },
+      primitive: { topology: "triangle-list" }
+    });
+    this.marchPipeline = make("CloudsVolumetric.march", marchBGL, marchFragWGSL2());
+    this.temporalPipeline = make("CloudsVolumetric.temporal", postBGL, temporalFragWGSL());
+    this.compositePipeline = make("CloudsVolumetric.composite", postBGL, compositeFragWGSL2());
+  }
+  _buildStaticBindGroups() {
+    const d2 = this.device;
+    const ub = { buffer: this.uniformBuffer };
+    this._temporalBG = [0, 1].map((i2) => d2.createBindGroup({
+      label: "CloudsVolumetric.temporalBG" + i2,
+      layout: this._postBGL,
+      entries: [
+        { binding: 0, resource: ub },
+        { binding: 1, resource: this.marchView },
+        { binding: 2, resource: this.accumView[i2] },
+        { binding: 3, resource: this.sampler }
+      ]
+    }));
+    this._marchBG = null;
+  }
+  /** Scene color that the clouds are composited over (sceneTextureView or volumetric output). */
+  setCompositeInput(sceneView) {
+    this._sceneView = sceneView;
+    const d2 = this.device;
+    const ub = { buffer: this.uniformBuffer };
+    this._compositeBG = [
+      d2.createBindGroup({ layout: this._postBGL, entries: [
+        { binding: 0, resource: ub },
+        { binding: 1, resource: sceneView },
+        { binding: 2, resource: this.accumView[0] },
+        { binding: 3, resource: this.sampler }
+      ] }),
+      d2.createBindGroup({ layout: this._postBGL, entries: [
+        { binding: 0, resource: ub },
+        { binding: 1, resource: sceneView },
+        { binding: 2, resource: this.accumView[1] },
+        { binding: 3, resource: this.sampler }
+      ] }),
+      d2.createBindGroup({ layout: this._postBGL, entries: [
+        { binding: 0, resource: ub },
+        { binding: 1, resource: sceneView },
+        { binding: 2, resource: this.marchView },
+        { binding: 3, resource: this.sampler }
+      ] })
+    ];
+  }
+  _setMarchInputs(depthView) {
+    if (this._depthView === depthView && this._marchBG) return;
+    this._depthView = depthView;
+    this._marchBG = this.device.createBindGroup({
+      label: "CloudsVolumetric.marchBG",
+      layout: this._marchBGL,
+      entries: [
+        { binding: 0, resource: { buffer: this.uniformBuffer } },
+        { binding: 1, resource: depthView },
+        { binding: 2, resource: this.shapeView },
+        { binding: 3, resource: this.detailView },
+        { binding: 4, resource: this.sampler }
+      ]
+    });
+  }
+  _writeUniforms(light, camera) {
+    const u2 = this._u, p2 = this.params;
+    const now = performance.now();
+    const dt2 = Math.min(0.1, (now - this._lastTime) * 1e-3);
+    this._lastTime = now;
+    const wl = Math.hypot(p2.windDir[0], p2.windDir[1]) || 1;
+    this._wind[0] += p2.windDir[0] / wl * p2.windSpeed * dt2;
+    this._wind[1] += p2.windDir[1] / wl * p2.windSpeed * dt2;
+    u2.set(camera.invViewProjectionMatrix, 0);
+    u2.set(this._hasPrev ? this._prevVP : light.viewProjectionMatrix, 16);
+    u2[32] = this.sunDirection[0];
+    u2[33] = this.sunDirection[1];
+    u2[34] = this.sunDirection[2];
+    u2[35] = 0;
+    u2[36] = this.sunColor[0] * this.sunIntensity;
+    u2[37] = this.sunColor[1] * this.sunIntensity;
+    u2[38] = this.sunColor[2] * this.sunIntensity;
+    u2[39] = p2.phaseG;
+    u2[40] = this.ambientColor[0] * this.ambientIntensity;
+    u2[41] = this.ambientColor[1] * this.ambientIntensity;
+    u2[42] = this.ambientColor[2] * this.ambientIntensity;
+    u2[43] = 0;
+    u2[44] = p2.cloudBase;
+    u2[45] = p2.cloudThickness;
+    u2[46] = p2.coverage;
+    u2[47] = p2.density;
+    u2[48] = p2.shapeScale;
+    u2[49] = p2.detailScale;
+    u2[50] = p2.detailAmount;
+    u2[51] = now * 1e-3;
+    u2[52] = this._wind[0];
+    u2[53] = 0;
+    u2[54] = this._wind[1];
+    u2[55] = 0;
+    u2[56] = p2.viewSteps;
+    u2[57] = p2.lightSteps;
+    u2[58] = p2.maxDistance;
+    u2[59] = this._frame % 64;
+    u2[60] = p2.temporalBlend;
+    u2[61] = p2.temporal ? 1 : 0;
+    u2[62] = this._hasPrev ? 1 : 0;
+    u2[63] = 0;
+    u2[64] = this.width;
+    u2[65] = this.height;
+    u2[66] = this.lowW;
+    u2[67] = this.lowH;
+    this.device.queue.writeBuffer(this.uniformBuffer, 0, u2);
+    this._prevVP.set(light.viewProjectionMatrix);
+  }
+  /**
+   * @param {GPUCommandEncoder} encoder
+   * @param {GPUTextureView} depthView  main depth view (depth24plus)
+   * @param {{invViewProjectionMatrix: Float32Array, viewProjectionMatrix: Float32Array}} camera
+   */
+  render(encoder, sceneView = null, depthView, shadowArrayView = null, camera, light) {
+    this._setMarchInputs(depthView);
+    this._writeUniforms(light, camera);
+    {
+      this._marchPassDesc.colorAttachments[0].view = this.marchView;
+      const pass = encoder.beginRenderPass(this._marchPassDesc);
+      pass.setPipeline(this.marchPipeline);
+      pass.setBindGroup(0, this._marchBG);
+      pass.draw(6);
+      pass.end();
+    }
+    let compositeBG;
+    if (this.params.temporal) {
+      const r3 = this._historyIdx, w2 = 1 - r3;
+      this._temporalPassDesc.colorAttachments[0].view = this.accumView[w2];
+      const pass = encoder.beginRenderPass(this._temporalPassDesc);
+      pass.setPipeline(this.temporalPipeline);
+      pass.setBindGroup(0, this._temporalBG[r3]);
+      pass.draw(6);
+      pass.end();
+      compositeBG = this._compositeBG[w2];
+      this._historyIdx = w2;
+    } else {
+      compositeBG = this._compositeBG[2];
+    }
+    {
+      this._compositePassDesc.colorAttachments[0].view = this.compositeOutputTexView;
+      const pass = encoder.beginRenderPass(this._compositePassDesc);
+      pass.setPipeline(this.compositePipeline);
+      pass.setBindGroup(0, compositeBG);
+      pass.draw(6);
+      pass.end();
+    }
+    this._hasPrev = true;
+    this._frame++;
+  }
+  resize(width, height) {
+    this.width = width;
+    this.height = height;
+    this._createTargets();
+    this._buildStaticBindGroups();
+    this.setCompositeInput(this._sceneView);
+    this._historyIdx = 0;
+  }
+};
+function fullscreenVertWGSL3() {
+  return `
+    @vertex
+    fn vert(@builtin(vertex_index) i: u32) -> @builtin(position) vec4<f32> {
+      var pos = array<vec2<f32>, 6>(
+        vec2(-1.0, -1.0), vec2(1.0, -1.0), vec2(-1.0, 1.0),
+        vec2(-1.0, 1.0), vec2(1.0, -1.0), vec2(1.0, 1.0)
+      );
+      return vec4(pos[i], 0.0, 1.0);
+    }
+  `;
+}
+var PARAMS_WGSL2 = `
+struct P {
+  invViewProj: mat4x4<f32>,
+  prevViewProj: mat4x4<f32>,
+  sunDir: vec4<f32>,     // xyz toward sun
+  sunColor: vec4<f32>,   // rgb * intensity, w = phase g
+  ambient: vec4<f32>,    // rgb * intensity
+  cloud: vec4<f32>,      // base, thickness, coverage, density
+  noise: vec4<f32>,      // shapeScale, detailScale, detailAmount, time(s)
+  wind: vec4<f32>,       // offset x, 0, offset z, _
+  march: vec4<f32>,      // viewSteps, lightSteps, maxDist, frame
+  misc: vec4<f32>,       // temporalBlend, useTemporal, hasHistory, _
+  res: vec4<f32>,        // fullW, fullH, lowW, lowH
+};
+@group(0) @binding(0) var<uniform> u: P;
+
+fn worldPos(uv: vec2<f32>, depth: f32) -> vec3<f32> {
+  let ndc = vec4(uv.x * 2.0 - 1.0, (1.0 - uv.y) * 2.0 - 1.0, depth, 1.0);
+  let w = u.invViewProj * ndc;
+  return w.xyz / w.w;
+}
+`;
+function noiseGenWGSL() {
+  return `
+@group(0) @binding(0) var outTex: texture_storage_3d<rgba8unorm, write>;
+
+fn pcg3d(vin: vec3<u32>) -> vec3<u32> {
+  var v = vin * 1664525u + vec3<u32>(1013904223u);
+  v.x += v.y * v.z; v.y += v.z * v.x; v.z += v.x * v.y;
+  v = v ^ (v >> vec3<u32>(16u));
+  v.x += v.y * v.z; v.y += v.z * v.x; v.z += v.x * v.y;
+  return v;
+}
+
+fn hash3(c: vec3<i32>, seed: u32) -> vec3<f32> {
+  let h = pcg3d(vec3<u32>(c) + vec3<u32>(seed * 977u, seed * 7919u, seed * 104729u));
+  return vec3<f32>(h) * (1.0 / 4294967295.0);
+}
+
+fn wrapi(c: vec3<i32>, f: i32) -> vec3<i32> {
+  let ff = vec3<i32>(f);
+  return ((c % ff) + ff) % ff;
+}
+
+// tileable Worley, returns 1 - nearestDistance (billowy cells)
+fn worley(p: vec3<f32>, freq: i32, seed: u32) -> f32 {
+  let q = p * f32(freq);
+  let ic = vec3<i32>(floor(q));
+  let fc = fract(q);
+  var d = 1e9;
+  for (var z = -1; z <= 1; z++) {
+    for (var y = -1; y <= 1; y++) {
+      for (var x = -1; x <= 1; x++) {
+        let n = vec3<i32>(x, y, z);
+        let feat = hash3(wrapi(ic + n, freq), seed);
+        let diff = vec3<f32>(n) + feat - fc;
+        d = min(d, dot(diff, diff));
+      }
+    }
+  }
+  return 1.0 - clamp(sqrt(d), 0.0, 1.0);
+}
+
+fn corner(i: vec3<i32>, o: vec3<i32>, freq: i32, seed: u32) -> f32 {
+  return hash3(wrapi(i + o, freq), seed).x;
+}
+
+// tileable value noise
+fn vnoise(p: vec3<f32>, freq: i32, seed: u32) -> f32 {
+  let q = p * f32(freq);
+  let i = vec3<i32>(floor(q));
+  let f = fract(q);
+  let s = f * f * (3.0 - 2.0 * f);
+  let c000 = corner(i, vec3<i32>(0, 0, 0), freq, seed);
+  let c100 = corner(i, vec3<i32>(1, 0, 0), freq, seed);
+  let c010 = corner(i, vec3<i32>(0, 1, 0), freq, seed);
+  let c110 = corner(i, vec3<i32>(1, 1, 0), freq, seed);
+  let c001 = corner(i, vec3<i32>(0, 0, 1), freq, seed);
+  let c101 = corner(i, vec3<i32>(1, 0, 1), freq, seed);
+  let c011 = corner(i, vec3<i32>(0, 1, 1), freq, seed);
+  let c111 = corner(i, vec3<i32>(1, 1, 1), freq, seed);
+  let x00 = mix(c000, c100, s.x);
+  let x10 = mix(c010, c110, s.x);
+  let x01 = mix(c001, c101, s.x);
+  let x11 = mix(c011, c111, s.x);
+  return mix(mix(x00, x10, s.y), mix(x01, x11, s.y), s.z);
+}
+
+// R: value-noise dilated by Worley fbm ("Perlin-Worley" style), GBA: Worley fbm octaves
+@compute @workgroup_size(4, 4, 4)
+fn shape(@builtin(global_invocation_id) id: vec3<u32>) {
+  let dim = textureDimensions(outTex);
+  if (any(id >= dim)) { return; }
+  let p = (vec3<f32>(id) + 0.5) / vec3<f32>(dim);
+  let g = worley(p, 4, 1u);
+  let b = worley(p, 8, 2u);
+  let a = worley(p, 16, 3u);
+  let wf = g * 0.625 + b * 0.25 + a * 0.125;
+  let vn = vnoise(p, 4, 11u) * 0.65 + vnoise(p, 8, 12u) * 0.35;
+  let r = wf + vn * (1.0 - wf);
+  textureStore(outTex, id, vec4<f32>(r, g, b, a));
+}
+
+// RGB: Worley octaves used to erode the base shape
+@compute @workgroup_size(4, 4, 4)
+fn detail(@builtin(global_invocation_id) id: vec3<u32>) {
+  let dim = textureDimensions(outTex);
+  if (any(id >= dim)) { return; }
+  let p = (vec3<f32>(id) + 0.5) / vec3<f32>(dim);
+  let r = worley(p, 4, 21u);
+  let g = worley(p, 8, 22u);
+  let b = worley(p, 16, 23u);
+  textureStore(outTex, id, vec4<f32>(r, g, b, 1.0));
+}
+`;
+}
+function marchFragWGSL2() {
+  return `
+${PARAMS_WGSL2}
+@group(0) @binding(1) var depthTex: texture_depth_2d;
+@group(0) @binding(2) var shapeTex: texture_3d<f32>;
+@group(0) @binding(3) var detailTex: texture_3d<f32>;
+@group(0) @binding(4) var samp: sampler;
+
+const PI = 3.14159265;
+
+fn remap(v: f32, a: f32, b: f32, c: f32, d: f32) -> f32 {
+  return c + (v - a) / (b - a) * (d - c);
+}
+
+fn hg(c: f32, g: f32) -> f32 {
+  let g2 = g * g;
+  return (1.0 - g2) / (4.0 * PI * pow(max(1.0 + g2 - 2.0 * g * c, 1e-3), 1.5));
+}
+
+fn cloudDensity(p: vec3<f32>, h: f32, withDetail: bool) -> f32 {
+  let pos = p + u.wind.xyz;
+  let sh = textureSampleLevel(shapeTex, samp, pos * u.noise.x, 0.0);
+  let lowFbm = sh.g * 0.625 + sh.b * 0.25 + sh.a * 0.125;
+  var d = remap(sh.r, -(1.0 - lowFbm), 1.0, 0.0, 1.0);
+  // rounded bottom, tapering top
+  let grad = clamp(remap(h, 0.0, 0.12, 0.0, 1.0), 0.0, 1.0) * clamp(remap(h, 0.55, 1.0, 1.0, 0.0), 0.0, 1.0);
+  d = d * grad;
+  let cov = clamp(u.cloud.z, 0.0, 0.98);
+  d = clamp(remap(d, 1.0 - cov, 1.0, 0.0, 1.0), 0.0, 1.0) * cov;
+  if (withDetail && d > 0.0) {
+    let dt = textureSampleLevel(detailTex, samp, pos * u.noise.y, 0.0);
+    let dfbm = dt.r * 0.625 + dt.g * 0.25 + dt.b * 0.125;
+    let erode = mix(dfbm, 1.0 - dfbm, clamp(h * 10.0, 0.0, 1.0));
+    d = clamp(remap(d, erode * u.noise.z, 1.0, 0.0, 1.0), 0.0, 1.0);
+  }
+  return d * u.cloud.w;
+}
+
+fn lightOpticalDepth(p: vec3<f32>) -> f32 {
+  let n = max(i32(u.march.y), 1);
+  let sd = u.sunDir.xyz;
+  let top = u.cloud.x + u.cloud.y;
+  var len = u.cloud.y * 1.5;
+  if (sd.y > 0.05) { len = min(len, (top - p.y) / sd.y); }
+  let stepL = len / f32(n);
+  var tau = 0.0;
+  for (var i = 0; i < n; i++) {
+    let q = p + sd * ((f32(i) + 0.5) * stepL);
+    let h = (q.y - u.cloud.x) / u.cloud.y;
+    if (h < 0.0 || h > 1.0) { continue; }
+    tau += cloudDensity(q, h, false) * stepL;
+  }
+  return tau;
+}
+
+fn ign(px: vec2<f32>, frame: f32) -> f32 {
+  let q = px + frame * 5.588238;
+  return fract(52.9829189 * fract(dot(q, vec2<f32>(0.06711056, 0.00583715))));
+}
+
+@fragment
+fn main(@builtin(position) fc: vec4<f32>) -> @location(0) vec4<f32> {
+  let uv = fc.xy / u.res.zw;
+  let fullDim = vec2<i32>(u.res.xy);
+  let dpx = clamp(vec2<i32>(uv * u.res.xy), vec2<i32>(0), fullDim - vec2<i32>(1));
+  let depth = textureLoad(depthTex, dpx, 0);
+
+  let ro = worldPos(uv, 0.0);
+  let dir = normalize(worldPos(uv, 1.0) - ro);
+
+  var sceneDist = 1e9;
+  if (depth < 1.0) { sceneDist = length(worldPos(uv, depth) - ro); }
+
+  let base = u.cloud.x;
+  let top = u.cloud.x + u.cloud.y;
+  if (abs(dir.y) < 1e-4) { return vec4<f32>(0.0); }
+  let t0 = (base - ro.y) / dir.y;
+  let t1 = (top - ro.y) / dir.y;
+  let tmin = max(min(t0, t1), 0.0);
+  let tmax = min(min(max(t0, t1), sceneDist), u.march.z);
+  if (tmax <= tmin) { return vec4<f32>(0.0); }
+
+  let steps = max(i32(u.march.x), 4);
+  let stepLen = (tmax - tmin) / f32(steps);
+  let jitter = ign(fc.xy, u.march.w);
+
+  let cosA = dot(dir, u.sunDir.xyz);
+  // three scattering octaves (Wrenninge): extinction a^i, contribution b^i, anisotropy g*c^i
+  let g0 = u.sunColor.w;
+  let ph0 = 4.0 * PI * hg(cosA, g0);
+  let ph1 = 4.0 * PI * hg(cosA, g0 * 0.5);
+  let ph2 = 4.0 * PI * hg(cosA, g0 * 0.25);
+
+  var T = 1.0;
+  var L = vec3<f32>(0.0);
+  for (var i = 0; i < steps; i++) {
+    let t = tmin + (f32(i) + jitter) * stepLen;
+    let p = ro + dir * t;
+    let h = (p.y - base) / u.cloud.y;
+    let dens = cloudDensity(p, h, true);
+    if (dens > 0.0005) {
+      let tau = lightOpticalDepth(p);
+      let e = (exp(-tau) * ph0 + 0.5 * exp(-tau * 0.5) * ph1 + 0.25 * exp(-tau * 0.25) * ph2) * 0.5714;
+      let lighting = u.sunColor.rgb * e + u.ambient.rgb * mix(0.4, 1.0, clamp(h, 0.0, 1.0));
+      let ext = exp(-dens * stepLen);
+      L += T * lighting * (1.0 - ext);
+      T *= ext;
+      if (T < 0.02) { break; }
+    }
+  }
+
+  let fade = 1.0 - smoothstep(0.5 * u.march.z, u.march.z, tmin);
+  return vec4<f32>(L * fade, (1.0 - T) * fade);
+}
+`;
+}
+function temporalFragWGSL() {
+  return `
+${PARAMS_WGSL2}
+@group(0) @binding(1) var curTex: texture_2d<f32>;
+@group(0) @binding(2) var histTex: texture_2d<f32>;
+@group(0) @binding(3) var samp: sampler;
+
+@fragment
+fn main(@builtin(position) fc: vec4<f32>) -> @location(0) vec4<f32> {
+  let ip = vec2<i32>(fc.xy);
+  let dim = vec2<i32>(textureDimensions(curTex));
+  let cur = textureLoad(curTex, ip, 0);
+  if (u.misc.y < 0.5 || u.misc.z < 0.5) { return cur; }
+
+  var mn = cur;
+  var mx = cur;
+  for (var dy = -1; dy <= 1; dy++) {
+    for (var dx = -1; dx <= 1; dx++) {
+      let c = textureLoad(curTex, clamp(ip + vec2<i32>(dx, dy), vec2<i32>(0), dim - vec2<i32>(1)), 0);
+      mn = min(mn, c);
+      mx = max(mx, c);
+    }
+  }
+
+  let uv = fc.xy / vec2<f32>(dim);
+  let dir = normalize(worldPos(uv, 1.0) - worldPos(uv, 0.0));
+  // clouds are far away: reproject by rotation only (w = 0), ignore camera translation
+  let pc = u.prevViewProj * vec4<f32>(dir, 0.0);
+  if (pc.w <= 0.0) { return cur; }
+  let nd = pc.xy / pc.w;
+  let puv = vec2<f32>(nd.x * 0.5 + 0.5, 0.5 - nd.y * 0.5);
+  if (puv.x < 0.0 || puv.y < 0.0 || puv.x > 1.0 || puv.y > 1.0) { return cur; }
+
+  let hist = clamp(textureSampleLevel(histTex, samp, puv, 0.0), mn, mx);
+  return mix(cur, hist, u.misc.x);
+}
+`;
+}
+function compositeFragWGSL2() {
+  return `
+${PARAMS_WGSL2}
+@group(0) @binding(1) var sceneTex: texture_2d<f32>;
+@group(0) @binding(2) var cloudTex: texture_2d<f32>;
+@group(0) @binding(3) var samp: sampler;
+
+@fragment
+fn main(@builtin(position) fc: vec4<f32>) -> @location(0) vec4<f32> {
+  let uv = fc.xy / vec2<f32>(textureDimensions(sceneTex));
+  let scene = textureSampleLevel(sceneTex, samp, uv, 0.0);
+  let cl = textureSampleLevel(cloudTex, samp, uv, 0.0);
+  // cl.rgb = in-scattered light (already weighted by transmittance), cl.a = opacity
+  return vec4<f32>(scene.rgb * (1.0 - cl.a) + cl.rgb, scene.a);
+}
+`;
+}
+
+// src/engine/postprocessing/fxaa.js
+var FXAAPass = class {
+  constructor(device2, targetFormat) {
+    this.enabled = false;
+    this.device = device2;
+    this.params = {
+      edgeMin: 0.0312,
+      // skip very dark edges
+      edgeRel: 0.125,
+      // relative contrast threshold (lower = more AA, softer)
+      spanMax: 8,
+      // max search distance in texels
+      reduceMul: 1 / 8,
+      reduceMin: 1 / 128
+    };
+    this._scratch = new Float32Array(8);
+    this.paramBuffer = device2.createBuffer({
+      label: "FXAA params",
+      size: 32,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.ldr = false;
+    this._updateParams();
+    this.sampler = device2.createSampler({ magFilter: "linear", minFilter: "linear", addressModeU: "clamp-to-edge", addressModeV: "clamp-to-edge" });
+    this.pipeline = device2.createRenderPipeline({
+      label: "FXAA pipeline",
+      layout: "auto",
+      vertex: {
+        module: device2.createShaderModule({ code: fullscreenQuadWGSL() }),
+        entryPoint: "vert"
+      },
+      fragment: {
+        module: device2.createShaderModule({ code: fxaaWGSL() }),
+        entryPoint: "main",
+        targets: [{ format: targetFormat }]
+      },
+      primitive: { topology: "triangle-list" }
+    });
+    this._passDesc = {
+      label: "FXAA pass",
+      colorAttachments: [{ view: null, loadOp: "clear", storeOp: "store", clearValue: { r: 0, g: 0, b: 0, a: 1 } }]
+    };
+    this._bg = null;
+    this._lastHdr = null;
+    this._lastSSR = null;
+  }
+  _updateParams() {
+    const p2 = this.params, s2 = this._scratch;
+    s2[0] = p2.edgeMin;
+    s2[1] = p2.edgeRel;
+    s2[2] = p2.spanMax;
+    s2[3] = p2.reduceMul;
+    s2[4] = p2.reduceMin;
+    s2[5] = this.ldr ? 1 : 0;
+    this.device.queue.writeBuffer(this.paramBuffer, 0, s2);
+  }
+  setEdgeThresholdMin = (v2) => {
+    this.params.edgeMin = v2;
+    this._updateParams();
+  };
+  setEdgeThreshold = (v2) => {
+    this.params.edgeRel = v2;
+    this._updateParams();
+  };
+  setSpanMax = (v2) => {
+    this.params.spanMax = v2;
+    this._updateParams();
+  };
+  setReduceMul = (v2) => {
+    this.params.reduceMul = v2;
+    this._updateParams();
+  };
+  setReduceMin = (v2) => {
+    this.params.reduceMin = v2;
+    this._updateParams();
+  };
+  /**
+   * @param {GPUCommandEncoder} encoder
+   * @param {GPUTextureView} hdrView    bloomOutput view if bloom enabled, else sceneTextureView
+   * @param {GPUTextureView} ssrView    ssrOutputView or the dummy 1x1 view
+   * @param {GPUTextureView} targetView canvas view
+   */
+  render(encoder, hdrView, ssrView, targetView, ldr = false) {
+    if (ldr !== this.ldr) {
+      this.ldr = ldr;
+      this._updateParams();
+    }
+    if (this._lastHdr !== hdrView || this._lastSSR !== ssrView || !this._bg) {
+      this._bg = this.device.createBindGroup({
+        label: "FXAA bindgroup",
+        layout: this.pipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: hdrView },
+          { binding: 1, resource: this.sampler },
+          { binding: 2, resource: ssrView },
+          { binding: 3, resource: { buffer: this.paramBuffer } }
+        ]
+      });
+      this._lastHdr = hdrView;
+      this._lastSSR = ssrView;
+    }
+    this._passDesc.colorAttachments[0].view = targetView;
+    const pass = encoder.beginRenderPass(this._passDesc);
+    pass.setPipeline(this.pipeline);
+    pass.setBindGroup(0, this._bg);
+    pass.draw(6);
+    pass.end();
+  }
+};
+function fxaaWGSL() {
+  return `
+  struct FXAAParams {
+    edgeMin: f32,
+    edgeRel: f32,
+    spanMax: f32,
+    reduceMul: f32,
+    reduceMin: f32,
+    ldr: f32, _b: f32, _c: f32,
+  };
+
+  @group(0) @binding(0) var hdrTex : texture_2d<f32>;
+  @group(0) @binding(1) var samp   : sampler;
+  @group(0) @binding(2) var ssrTex : texture_2d<f32>;
+  @group(0) @binding(3) var<uniform> fx : FXAAParams;
+
+  // Same composite + tonemap as the present pass. textureSampleLevel is used
+  // everywhere because FXAA branches non-uniformly (textureSample would be invalid).
+  fn fetch(uv: vec2<f32>) -> vec3<f32> {
+    let hdr = textureSampleLevel(hdrTex, samp, uv, 0.0).rgb;
+    if (fx.ldr > 0.5) { return hdr; }
+    let ssr = textureSampleLevel(ssrTex, samp, uv, 0.0);
+    let c = mix(hdr, ssr.rgb, ssr.a);
+    return c / (c + vec3<f32>(1.0));
+  }
+
+  fn luma(c: vec3<f32>) -> f32 {
+    return dot(c, vec3<f32>(0.299, 0.587, 0.114));
+  }
+
+  @fragment
+  fn main(@builtin(position) p: vec4<f32>) -> @location(0) vec4<f32> {
+    let texel = 1.0 / vec2<f32>(textureDimensions(hdrTex));
+    let uv = p.xy * texel;
+
+    let rgbM  = fetch(uv);
+    let rgbNW = fetch(uv + vec2<f32>(-1.0, -1.0) * texel);
+    let rgbNE = fetch(uv + vec2<f32>( 1.0, -1.0) * texel);
+    let rgbSW = fetch(uv + vec2<f32>(-1.0,  1.0) * texel);
+    let rgbSE = fetch(uv + vec2<f32>( 1.0,  1.0) * texel);
+
+    let lM  = luma(rgbM);
+    let lNW = luma(rgbNW);
+    let lNE = luma(rgbNE);
+    let lSW = luma(rgbSW);
+    let lSE = luma(rgbSE);
+
+    let lMin = min(lM, min(min(lNW, lNE), min(lSW, lSE)));
+    let lMax = max(lM, max(max(lNW, lNE), max(lSW, lSE)));
+
+    // Not an edge: leave pixel untouched
+    if (lMax - lMin < max(fx.edgeMin, lMax * fx.edgeRel)) {
+      return vec4<f32>(rgbM, 1.0);
+    }
+
+    var dir = vec2<f32>(
+      -((lNW + lNE) - (lSW + lSE)),
+       ((lNW + lSW) - (lNE + lSE))
+    );
+    let dirReduce = max((lNW + lNE + lSW + lSE) * 0.25 * fx.reduceMul, fx.reduceMin);
+    let rcpDirMin = 1.0 / (min(abs(dir.x), abs(dir.y)) + dirReduce);
+    dir = clamp(dir * rcpDirMin, vec2<f32>(-fx.spanMax), vec2<f32>(fx.spanMax)) * texel;
+
+    let rgbA = 0.5 * (
+      fetch(uv + dir * (1.0 / 3.0 - 0.5)) +
+      fetch(uv + dir * (2.0 / 3.0 - 0.5))
+    );
+    let rgbB = rgbA * 0.5 + 0.25 * (
+      fetch(uv + dir * -0.5) +
+      fetch(uv + dir *  0.5)
+    );
+    let lB = luma(rgbB);
+    let outRgb = select(rgbB, rgbA, lB < lMin || lB > lMax);
+    return vec4<f32>(outRgb, 1.0);
+  }
+  `;
+}
+
+// src/engine/postprocessing/motion-blur,js
+var MotionBlurPass = class {
+  constructor(width, height, device2, options2 = {}) {
+    this.enabled = false;
+    this.device = device2;
+    this.width = width;
+    this.height = height;
+    this.params = {
+      strength: options2.strength ?? 0.6,
+      samples: options2.samples ?? 12,
+      maxBlur: options2.maxBlur ?? 0.03,
+      depthTol: options2.depthTol ?? 3e-4
+    };
+    this._u = new Float32Array(24);
+    this.debug = 0;
+    this.ranFrames = 0;
+    this.uniformBuffer = device2.createBuffer({
+      label: "MotionBlur uniforms",
+      size: 96,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this._reproj = mat4Impl.create();
+    this._prevVP = new Float32Array(16);
+    this._hasPrev = false;
+    this.sampler = device2.createSampler({ magFilter: "linear", minFilter: "linear", addressModeU: "clamp-to-edge", addressModeV: "clamp-to-edge" });
+    this.tex = this._createTex();
+    this.texView = this.tex.createView();
+    this.pipeline = device2.createRenderPipeline({
+      label: "MotionBlur pipeline",
+      layout: "auto",
+      vertex: { module: device2.createShaderModule({ code: fullscreenQuadWGSL() }), entryPoint: "vert" },
+      fragment: {
+        module: device2.createShaderModule({ code: motionBlurWGSL() }),
+        entryPoint: "main",
+        targets: [{ format: "rgba16float" }]
+      },
+      primitive: { topology: "triangle-list" }
+    });
+    this._passDesc = {
+      label: "MotionBlur pass",
+      colorAttachments: [{ view: this.texView, loadOp: "clear", storeOp: "store", clearValue: { r: 0, g: 0, b: 0, a: 1 } }]
+    };
+    this._bg = null;
+    this._lastScene = null;
+    this._lastDepth = null;
+  }
+  _createTex() {
+    return this.device.createTexture({
+      label: "MotionBlur out",
+      size: [this.width, this.height],
+      format: "rgba16float",
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_SRC
+    });
+  }
+  setStrength = (v2) => {
+    this.params.strength = v2;
+  };
+  setSamples = (v2) => {
+    this.params.samples = Math.max(2, Math.min(32, v2 | 0));
+  };
+  setMaxBlur = (v2) => {
+    this.params.maxBlur = v2;
+  };
+  setDepthTol = (v2) => {
+    this.params.depthTol = v2;
+  };
+  setDebug = (m2) => {
+    this.debug = m2;
+  };
+  resize(width, height) {
+    this.width = width;
+    this.height = height;
+    this.tex.destroy();
+    this.tex = this._createTex();
+    this.texView = this.tex.createView();
+    this._passDesc.colorAttachments[0].view = this.texView;
+    this._bg = null;
+  }
+  _same(a2, b2) {
+    for (let i2 = 0; i2 < 16; i2++) if (a2[i2] !== b2[i2]) return false;
+    return true;
+  }
+  /**
+   * @param {GPUCommandEncoder} encoder
+   * @param {GPUTexture}     sceneTexture   needs COPY_DST
+   * @param {GPUTextureView} sceneView
+   * @param {GPUTextureView} depthView      mainDepthView
+   * @param {Float32Array}   invViewProj    inverse of current VP
+   * @param {Float32Array}   viewProj       current VP
+   */
+  render(encoder, sceneTexture, sceneView, depthView, invViewProj, viewProj) {
+    if (!this._hasPrev) {
+      this._prevVP.set(viewProj);
+      this._hasPrev = true;
+      return;
+    }
+    if (this._same(viewProj, this._prevVP)) return;
+    mat4Impl.multiply(this._prevVP, invViewProj, this._reproj);
+    const u2 = this._u;
+    u2.set(this._reproj, 0);
+    u2[16] = this.params.strength;
+    u2[17] = this.params.samples;
+    u2[18] = this.params.maxBlur;
+    u2[19] = this.params.depthTol;
+    u2[20] = this.debug;
+    this.device.queue.writeBuffer(this.uniformBuffer, 0, u2);
+    if (!this._bg || this._lastScene !== sceneView || this._lastDepth !== depthView) {
+      this._bg = this.device.createBindGroup({
+        label: "MotionBlur bindgroup",
+        layout: this.pipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: sceneView },
+          { binding: 1, resource: depthView },
+          { binding: 2, resource: this.sampler },
+          { binding: 3, resource: { buffer: this.uniformBuffer } }
+        ]
+      });
+      this._lastScene = sceneView;
+      this._lastDepth = depthView;
+    }
+    const pass = encoder.beginRenderPass(this._passDesc);
+    pass.setPipeline(this.pipeline);
+    pass.setBindGroup(0, this._bg);
+    pass.draw(6);
+    pass.end();
+    encoder.copyTextureToTexture({ texture: this.tex }, { texture: sceneTexture }, [this.width, this.height]);
+    this.ranFrames++;
+    this._prevVP.set(viewProj);
+  }
+};
+function motionBlurWGSL() {
+  return (
+    /* wgsl */
+    `
+  struct MB {
+    reproj: mat4x4<f32>,
+    strength: f32,
+    samples: f32,
+    maxBlur: f32,
+    depthTol: f32,
+    debug: f32,
+    _p0: f32,
+    _p1: f32,
+    _p2: f32,
+  };
+
+  @group(0) @binding(0) var sceneTex : texture_2d<f32>;
+  @group(0) @binding(1) var depthTex : texture_depth_2d;
+  @group(0) @binding(2) var samp     : sampler;
+  @group(0) @binding(3) var<uniform> mb : MB;
+
+  fn depthAt(uv: vec2<f32>, dims: vec2<f32>) -> f32 {
+    let px = vec2<i32>(clamp(uv * dims, vec2<f32>(0.0), dims - vec2<f32>(1.0)));
+    return textureLoad(depthTex, px, 0);
+  }
+
+  @fragment
+  fn main(@builtin(position) p: vec4<f32>) -> @location(0) vec4<f32> {
+    let dims = vec2<f32>(textureDimensions(sceneTex));
+    let uv = p.xy / dims;
+    let center = textureSampleLevel(sceneTex, samp, uv, 0.0);
+    let d0 = depthAt(uv, dims);
+
+    let ndc = vec4<f32>(uv.x * 2.0 - 1.0, (1.0 - uv.y) * 2.0 - 1.0, d0, 1.0);
+    let pc = mb.reproj * ndc;
+    let prevNdc = pc.xy / pc.w;
+
+    // NDC delta -> UV delta (y flipped)
+    let raw = (ndc.xy - prevNdc) * vec2<f32>(0.5, -0.5);
+    if (mb.debug > 0.5 && mb.debug < 1.5) {
+      // velocity view: red = horizontal, green = vertical (60 = ~1% of screen per frame -> full color)
+      return vec4<f32>(center.rgb * 0.3 + vec3<f32>(abs(raw) * 60.0, 0.0), 1.0);
+    }
+    if (mb.debug > 1.5 && uv.x > 0.5) { return center; }   // right half untouched for comparison
+    var v = raw * mb.strength;
+    let len = length(v);
+    if (len * max(dims.x, dims.y) < 0.75) { return center; }   // sub-pixel: skip
+    if (len > mb.maxBlur) { v = v * (mb.maxBlur / len); }
+
+    let n = i32(mb.samples);
+    var acc = center.rgb;
+    var wsum = 1.0;
+    for (var i = 0; i < n; i++) {
+      let t = (f32(i) + 0.5) / f32(n) - 0.5;
+      let suv = uv + v * t;
+      let sd = depthAt(suv, dims);
+      // Reject taps that are nearer than the center pixel (foreground bleeding onto background)
+      let w = select(0.0, 1.0, sd >= d0 - mb.depthTol);
+      acc += textureSampleLevel(sceneTex, samp, suv, 0.0).rgb * w;
+      wsum += w;
+    }
+    return vec4<f32>(acc / wsum, center.a);
+  }
+  `
+  );
+}
+
+// src/engine/postprocessing/grade.js
+var TONEMAP = { reinhard: 0, aces: 1, agx: 2, neutral: 3 };
+var GradePass = class {
+  constructor(device2, targetFormat, options2 = {}) {
+    this.enabled = false;
+    this.device = device2;
+    this.params = {
+      exposure: 1,
+      tonemap: 0,
+      saturation: 1,
+      contrast: 1,
+      distortion: 0,
+      chromatic: 0,
+      vignette: 0,
+      vignetteRadius: 1,
+      vignetteSoft: 0.5,
+      grain: 0,
+      lutStrength: 0
+    };
+    const { tonemap, ...rest } = options2;
+    Object.assign(this.params, rest);
+    if (tonemap !== void 0) this.params.tonemap = typeof tonemap === "string" ? TONEMAP[tonemap] ?? 0 : tonemap;
+    this._scratch = new Float32Array(16);
+    this._timeScratch = new Float32Array(1);
+    this.paramBuffer = device2.createBuffer({
+      label: "Grade params",
+      size: 64,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.sampler = device2.createSampler({ magFilter: "linear", minFilter: "linear", addressModeU: "clamp-to-edge", addressModeV: "clamp-to-edge", addressModeW: "clamp-to-edge" });
+    this._lutView = createIdentityLUT(device2, 2);
+    this._updateParams();
+    this.pipeline = device2.createRenderPipeline({
+      label: "Grade pipeline",
+      layout: "auto",
+      vertex: { module: device2.createShaderModule({ code: fullscreenQuadWGSL() }), entryPoint: "vert" },
+      fragment: {
+        module: device2.createShaderModule({ code: gradeWGSL() }),
+        entryPoint: "main",
+        targets: [{ format: targetFormat }]
+      },
+      primitive: { topology: "triangle-list" }
+    });
+    this._passDesc = {
+      label: "Grade pass",
+      colorAttachments: [{ view: null, loadOp: "clear", storeOp: "store", clearValue: { r: 0, g: 0, b: 0, a: 1 } }]
+    };
+    this._bg = null;
+    this._lastHdr = null;
+    this._lastSSR = null;
+  }
+  _updateParams() {
+    const p2 = this.params, s2 = this._scratch;
+    s2[0] = p2.exposure;
+    s2[1] = p2.tonemap;
+    s2[2] = p2.saturation;
+    s2[3] = p2.contrast;
+    s2[4] = p2.distortion;
+    s2[5] = p2.chromatic;
+    s2[6] = p2.vignette;
+    s2[7] = p2.vignetteRadius;
+    s2[8] = p2.vignetteSoft;
+    s2[9] = p2.grain;
+    s2[11] = p2.lutStrength;
+    this.device.queue.writeBuffer(this.paramBuffer, 0, s2);
+  }
+  setExposure = (v2) => {
+    this.params.exposure = v2;
+    this._updateParams();
+  };
+  setTonemap = (v2) => {
+    this.params.tonemap = typeof v2 === "string" ? TONEMAP[v2] ?? 0 : v2;
+    this._updateParams();
+  };
+  setSaturation = (v2) => {
+    this.params.saturation = v2;
+    this._updateParams();
+  };
+  setContrast = (v2) => {
+    this.params.contrast = v2;
+    this._updateParams();
+  };
+  setDistortion = (v2) => {
+    this.params.distortion = Math.max(0, v2);
+    this._updateParams();
+  };
+  setChromatic = (v2) => {
+    this.params.chromatic = v2;
+    this._updateParams();
+  };
+  setGrain = (v2) => {
+    this.params.grain = v2;
+    this._updateParams();
+  };
+  setVignette = (strength, radius = this.params.vignetteRadius, soft = this.params.vignetteSoft) => {
+    this.params.vignette = strength;
+    this.params.vignetteRadius = radius;
+    this.params.vignetteSoft = soft;
+    this._updateParams();
+  };
+  /** @param {GPUTextureView|null} view 3D view from createLUTFromCube / loadLUT, null = identity */
+  setLUT = (view, strength = 1) => {
+    this._lutView = view ?? createIdentityLUT(this.device, 2);
+    this.params.lutStrength = view ? strength : 0;
+    this._bg = null;
+    this._updateParams();
+  };
+  render(encoder, hdrView, ssrView, targetView) {
+    if (this.params.grain > 0) {
+      this._timeScratch[0] = performance.now() * 1e-3 % 1e3;
+      this.device.queue.writeBuffer(this.paramBuffer, 40, this._timeScratch);
+    }
+    if (!this._bg || this._lastHdr !== hdrView || this._lastSSR !== ssrView) {
+      this._bg = this.device.createBindGroup({
+        label: "Grade bindgroup",
+        layout: this.pipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: hdrView },
+          { binding: 1, resource: this.sampler },
+          { binding: 2, resource: ssrView },
+          { binding: 3, resource: { buffer: this.paramBuffer } },
+          { binding: 4, resource: this._lutView }
+        ]
+      });
+      this._lastHdr = hdrView;
+      this._lastSSR = ssrView;
+    }
+    this._passDesc.colorAttachments[0].view = targetView;
+    const pass = encoder.beginRenderPass(this._passDesc);
+    pass.setPipeline(this.pipeline);
+    pass.setBindGroup(0, this._bg);
+    pass.draw(6);
+    pass.end();
+  }
+};
+function upload3D(device2, data, n3) {
+  const tex = device2.createTexture({
+    label: `LUT ${n3}^3`,
+    size: [n3, n3, n3],
+    dimension: "3d",
+    format: "rgba8unorm",
+    usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
+  });
+  device2.queue.writeTexture({ texture: tex }, data, { bytesPerRow: n3 * 4, rowsPerImage: n3 }, [n3, n3, n3]);
+  return tex.createView({ dimension: "3d" });
+}
+function createIdentityLUT(device2, size2 = 2) {
+  const n3 = size2;
+  const data = new Uint8Array(n3 * n3 * n3 * 4);
+  let j2 = 0;
+  for (let b2 = 0; b2 < n3; b2++) for (let g2 = 0; g2 < n3; g2++) for (let r3 = 0; r3 < n3; r3++) {
+    data[j2++] = Math.round(r3 / (n3 - 1) * 255);
+    data[j2++] = Math.round(g2 / (n3 - 1) * 255);
+    data[j2++] = Math.round(b2 / (n3 - 1) * 255);
+    data[j2++] = 255;
+  }
+  return upload3D(device2, data, n3);
+}
+function gradeWGSL() {
+  return (
+    /* wgsl */
+    `
+  struct Grade {
+    exposure: f32, tonemap: f32, saturation: f32, contrast: f32,
+    distortion: f32, chromatic: f32, vigStrength: f32, vigRadius: f32,
+    vigSoft: f32, grain: f32, time: f32, lutStrength: f32,
+    _p0: f32, _p1: f32, _p2: f32, _p3: f32,
+  };
+
+  @group(0) @binding(0) var hdrTex : texture_2d<f32>;
+  @group(0) @binding(1) var samp   : sampler;
+  @group(0) @binding(2) var ssrTex : texture_2d<f32>;
+  @group(0) @binding(3) var<uniform> g : Grade;
+  @group(0) @binding(4) var lutTex : texture_3d<f32>;
+
+  fn composite(uv: vec2<f32>) -> vec3<f32> {
+    let hdr = textureSampleLevel(hdrTex, samp, uv, 0.0).rgb;
+    let ssr = textureSampleLevel(ssrTex, samp, uv, 0.0);
+    return mix(hdr, ssr.rgb, ssr.a);
+  }
+
+  // Barrel distortion, zoom-compensated so corners stay on the frame edge (use k >= 0).
+  fn distort(uv: vec2<f32>, k: f32) -> vec2<f32> {
+    let c = uv - vec2<f32>(0.5);
+    let r2 = dot(c, c);
+    return vec2<f32>(0.5) + c * (1.0 + k * r2) / (1.0 + k * 0.5);
+  }
+
+  fn aces(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+  }
+
+  fn agxContrast(x: vec3<f32>) -> vec3<f32> {
+    let x2 = x * x;
+    let x4 = x2 * x2;
+    return 15.5 * x4 * x2 - 40.14 * x4 * x + 31.96 * x4 - 6.868 * x2 * x
+         + 0.4298 * x2 + 0.1191 * x - vec3<f32>(0.00232);
+  }
+
+  // Compact AgX approximation. Output is already display-encoded (no extra gamma).
+  fn agx(v0: vec3<f32>) -> vec3<f32> {
+    let m = mat3x3<f32>(
+      vec3<f32>(0.842479062253094, 0.0423282422610123, 0.0423756549057051),
+      vec3<f32>(0.0784335999999992, 0.878468636469772, 0.0784336),
+      vec3<f32>(0.0792237451477643, 0.0791661274605434, 0.879142973793104)
+    );
+    let minEv = -12.47393;
+    let maxEv = 4.026069;
+    var v = max(m * v0, vec3<f32>(1e-10));
+    v = clamp(log2(v), vec3<f32>(minEv), vec3<f32>(maxEv));
+    v = (v - vec3<f32>(minEv)) / (maxEv - minEv);
+    return clamp(agxContrast(v), vec3<f32>(0.0), vec3<f32>(1.0));
+  }
+
+  // Khronos PBR Neutral
+  fn neutral(c0: vec3<f32>) -> vec3<f32> {
+    let startCompression = 0.76;
+    let desaturation = 0.15;
+    var c = c0;
+    let x = min(c.r, min(c.g, c.b));
+    var offset = 0.04;
+    if (x < 0.08) { offset = x - 6.25 * x * x; }
+    c = c - vec3<f32>(offset);
+    let peak = max(c.r, max(c.g, c.b));
+    if (peak < startCompression) { return c; }
+    let d = 1.0 - startCompression;
+    let newPeak = 1.0 - d * d / (peak + d - startCompression);
+    c = c * (newPeak / peak);
+    let gg = 1.0 - 1.0 / (desaturation * (peak - newPeak) + 1.0);
+    return mix(c, vec3<f32>(newPeak), gg);
+  }
+
+  fn tonemap(c: vec3<f32>, mode: i32) -> vec3<f32> {
+    let inv = vec3<f32>(1.0 / 2.2);
+    if (mode == 1) { return pow(aces(c), inv); }
+    if (mode == 2) { return agx(c); }
+    if (mode == 3) { return pow(max(neutral(c), vec3<f32>(0.0)), inv); }
+    return c / (c + vec3<f32>(1.0));   // legacy Reinhard, same as the old present pass
+  }
+
+  fn hash21(p: vec2<f32>) -> f32 {
+    var q = fract(p * vec2<f32>(123.34, 456.21));
+    q += dot(q, q + 45.32);
+    return fract(q.x * q.y);
+  }
+
+  @fragment
+  fn main(@builtin(position) p: vec4<f32>) -> @location(0) vec4<f32> {
+    let size = vec2<f32>(textureDimensions(hdrTex));
+    let uv0 = p.xy / size;
+    let uv = distort(uv0, g.distortion);
+
+    var hdr: vec3<f32>;
+    if (g.chromatic > 0.0) {
+      let off = (uv - vec2<f32>(0.5)) * g.chromatic;
+      hdr = vec3<f32>(composite(uv + off).r, composite(uv).g, composite(uv - off).b);
+    } else {
+      hdr = composite(uv);
+    }
+
+    var c = tonemap(hdr * g.exposure, i32(g.tonemap + 0.5));
+
+    // Everything below works on display-encoded LDR values
+    c = clamp(c, vec3<f32>(0.0), vec3<f32>(1.0));
+    let l = dot(c, vec3<f32>(0.2126, 0.7152, 0.0722));
+    c = mix(vec3<f32>(l), c, g.saturation);
+    c = (c - vec3<f32>(0.5)) * g.contrast + vec3<f32>(0.5);
+    c = clamp(c, vec3<f32>(0.0), vec3<f32>(1.0));
+
+    if (g.lutStrength > 0.0) {
+      let n = f32(textureDimensions(lutTex).x);
+      let lc = c * ((n - 1.0) / n) + vec3<f32>(0.5 / n);
+      let graded = textureSampleLevel(lutTex, samp, lc, 0.0).rgb;
+      c = mix(c, graded, g.lutStrength);
+    }
+
+    if (g.vigStrength > 0.0) {
+      let d = distance(uv0, vec2<f32>(0.5)) * 1.41421356;
+      let v = 1.0 - smoothstep(g.vigRadius - g.vigSoft, g.vigRadius, d);
+      c = c * mix(1.0, v, g.vigStrength);
+    }
+
+    if (g.grain > 0.0) {
+      let n = hash21(p.xy + vec2<f32>(g.time * 91.7, g.time * 47.3));
+      c = c + vec3<f32>((n - 0.5) * g.grain);
+    }
+
+    return vec4<f32>(clamp(c, vec3<f32>(0.0), vec3<f32>(1.0)), 1.0);
   }
   `
   );
@@ -53880,9 +55747,9 @@ var MatrixEngineWGPU = class {
           for (const effectName in mesh.effects) {
             const effect = mesh.effects[effectName];
             if (effect === null) continue;
-            const effectType2 = effect.constructor;
-            if (!this.effectsByType.has(effectType2)) this.effectsByType.set(effectType2, []);
-            this.effectsByType.get(effectType2).push({ effect, mesh });
+            const effectType3 = effect.constructor;
+            if (!this.effectsByType.has(effectType3)) this.effectsByType.set(effectType3, []);
+            this.effectsByType.get(effectType3).push({ effect, mesh });
           }
         }
       }
@@ -54231,7 +56098,6 @@ var MatrixEngineWGPU = class {
         { binding: 2, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
         { binding: 3, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
         { binding: 4, visibility: GPUShaderStage.VERTEX, buffer: { type: "read-only-storage" } }
-        // {binding: 5, visibility: GPUShaderStage.VERTEX, buffer: {type: "read-only-storage"}}
       ]
     });
   }
@@ -54260,7 +56126,7 @@ var MatrixEngineWGPU = class {
     const requiredFeatures = [];
     for (const feature of GPU_FEATURES.GROUP_1) {
       if (this.adapter.features.has(feature)) {
-        console.log(`%cGPU Feature enabled: ${feature}.`, LOG_FUNNY_ARCADE);
+        console.info(`%cGPU Feature enabled: ${feature}.`, LOG_FUNNY_ARCADE);
         requiredFeatures.push(feature);
       }
     }
@@ -54277,6 +56143,7 @@ var MatrixEngineWGPU = class {
     MEConfig.gpuCapabilities = this.gpuCapabilities;
     this.context = canvas.getContext("webgpu");
     const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
+    this.presentationFormat = presentationFormat;
     this.context.configure({
       device: this.device,
       format: presentationFormat,
@@ -54298,10 +56165,10 @@ var MatrixEngineWGPU = class {
     console.log("%c ----------------------------------------------------------------------------------------------------------------- ", LOG_FUNNY);
     console.log("%c \u{1F9EC} Matrix-Engine-Wgpu \u{1F9EC} ", LOG_FUNNY_BIG_NEON);
     console.log("%c ----------------------------------------------------------------------------------------------------------------- ", LOG_FUNNY);
-    console.log("%c Version 2.0.0 [The Beast] ", LOG_FUNNY);
+    console.log("%c Version 2.1.0 [The Beast] ", LOG_FUNNY);
     console.log("%c\u{1F47D}", LOG_FUNNY_EXTRABIG);
     console.log(
-      "%cMatrix Engine WGPU - Gate is open \n - Npm ready, codepen fully supported with physics worker.\n - Optimised MediaPipe buildin library implemented (use buildin render or use the beast render).\n - Code Creator - standalone (use engine from npm) ai top level code generator.\n - Creative power with intuitive visual scripting work flow and ai graph generetor.\n - New Features: NUI-Commander Game runner, Mediapipe Face/Pose/Hand, Culling render mode CPU/GPU, Horizontal-Z-Buffer ray/reflection, sprite2DPack (effect pass) .\n   2DSprite batch manager, new game template for Jumping Cube game and PlaneCamera (3d projection but follow in 2d plane x/y).\n\u{1F525} Mobile support: chrome-android tested. \u{1F525}",
+      "%cMatrix Engine WGPU - Gate is open \n - Npm ready, codepen fully supported with physics worker.\n - Optimised MediaPipe buildin library implemented (use buildin render or use the beast render).\n - Code Creator - standalone (use engine from npm) ai top level code generator.\n - Creative power with intuitive visual scripting work flow and ai graph generetor.\n - New Features: NUI-Commander Game runner, Mediapipe Face/Pose/Hand, Culling render mode CPU/GPU, FXAA, Horizontal-Z-Buffer ray/reflection, sprite2DPack (effect pass) .\n   2DSprite batch manager, new game template for Jumping Cube game and PlaneCamera (3d projection but follow in 2d plane x/y).\n\u{1F525} Mobile support: chrome-android tested. \u{1F525}",
       LOG_FUNNY
     );
     console.log(
@@ -54386,11 +56253,12 @@ var MatrixEngineWGPU = class {
       setThreshold: (v2) => {
       }
     };
-    this.ssrPass = {
-      enabled: false
-    };
+    this.ssrPass = { enabled: false };
     this.volumetricPass = { enabled: false };
     this.volumetricPass2 = { enabled: false };
+    this.fxaaPass = { enabled: false };
+    this.motionBlurPass = { enabled: false };
+    this.gradePass = { enabled: false };
     this.bloomOutputTex = this.device.createTexture({
       size: [this.canvas.width, this.canvas.height],
       format: "rgba16float",
@@ -54400,7 +56268,7 @@ var MatrixEngineWGPU = class {
       label: "final pipeline sceneTexture",
       size: [this.canvas.width, this.canvas.height],
       format: "rgba16float",
-      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
     });
     this.sceneTextureView = this.sceneTexture.createView();
     this.presentSampler = this.device.createSampler({
@@ -54918,6 +56786,8 @@ var MatrixEngineWGPU = class {
         { binding: 2, resource: this.dummySSRTexture.createView() }
       ]
     });
+    this._dummySSRView = this.dummySSRTexture.createView();
+    this._bloomOutputView = this.bloomOutputTex.createView();
   }
   async run(callback) {
     this._lastPipeline = null;
@@ -55098,6 +56968,17 @@ var MatrixEngineWGPU = class {
         }
       }
       pass.end();
+      if (this.motionBlurPass.enabled === true) {
+        mat4Impl.invert(camera.VP, this._invViewProj);
+        this.motionBlurPass.render(
+          commandEncoder,
+          this.sceneTexture,
+          this.sceneTextureView,
+          this.mainDepthView,
+          this._invViewProj,
+          camera.VP
+        );
+      }
       if (this.ssrPass.enabled === true) {
         mat4Impl.invert(camera.VP, this._invViewProj);
         this.ssrPass.updateConfig(this._invViewProj, camera.projectionMatrix);
@@ -55131,13 +57012,26 @@ var MatrixEngineWGPU = class {
         this._lastCanvasTex = canvasTexture;
         this._canvasView = canvasTexture.createView();
       }
-      if (this.bloomPass.enabled === true) this.bloomPass.render(commandEncoder, this.bloomOutputTex.createView());
+      if (this.bloomPass.enabled === true) this.bloomPass.render(commandEncoder, this._bloomOutputView);
       this.finalPS.colorAttachments[0].view = this._canvasView;
-      pass = commandEncoder.beginRenderPass(this.finalPS);
-      pass.setPipeline(this.presentPipeline);
-      pass.setBindGroup(0, this._activeBindGroup);
-      pass.draw(6);
-      pass.end();
+      const hdrView = this.bloomPass.enabled ? this._bloomOutputView : this.sceneTextureView;
+      const ssrView = this.ssrPass.enabled ? this.ssrPass.ssrOutputView : this._dummySSRView;
+      if (this.gradePass.enabled === true) {
+        if (this.fxaaPass.enabled === true) {
+          this.gradePass.render(commandEncoder, hdrView, ssrView, this._ldrView);
+          this.fxaaPass.render(commandEncoder, this._ldrView, ssrView, this._canvasView, true);
+        } else {
+          this.gradePass.render(commandEncoder, hdrView, ssrView, this._canvasView);
+        }
+      } else if (this.fxaaPass.enabled === true) {
+        this.fxaaPass.render(commandEncoder, hdrView, ssrView, this._canvasView);
+      } else {
+        pass = commandEncoder.beginRenderPass(this.finalPS);
+        pass.setPipeline(this.presentPipeline);
+        pass.setBindGroup(0, this._activeBindGroup);
+        pass.draw(6);
+        pass.end();
+      }
       this.submitQueue[0] = commandEncoder.finish();
       this.device.queue.submit(this.submitQueue);
       this.submitQueue[0] = null;
@@ -55466,7 +57360,7 @@ var MatrixEngineWGPU = class {
       this.bloomPass._invalidateSceneBindGroups(this.volumetricPass.compositeOutputTexView);
     }
   };
-  TEST_activateVolumetricEffect = (arg) => {
+  activateVolumetricTexProj = (arg) => {
     if (this.bloomPass.enabled != true) {
       console.warn(`%cTheBeast: You must enable bloom before volumetric.`);
       return;
@@ -55487,6 +57381,74 @@ var MatrixEngineWGPU = class {
       this.volumetricPass = new AdvancedVolumetricPass(this.canvas.width, this.canvas.height, this.device, p2, this.sceneTextureView).init();
       this.volumetricPass.enabled = true;
       this.bloomPass._invalidateSceneBindGroups(this.volumetricPass.compositeOutputTexView);
+    }
+  };
+  activateVolumetricClouds = (arg) => {
+    if (this.bloomPass.enabled !== true) {
+      console.warn("%cTheBeast: You must enable bloom before volumetric clouds.");
+      return;
+    }
+    const p2 = {
+      qualityScale: 0.35,
+      steps: 24,
+      coverage: 0.58,
+      cloudBase: 24,
+      cloudTop: 58,
+      noiseScale: 0.035,
+      windSpeed: 0.8,
+      scatterStrength: 1.2,
+      // User overrides
+      ...arg || {}
+    };
+    if (this.volumetricPass?.enabled === true) {
+      return;
+    }
+    this.volumetricPass = new CloudsVolumetric(this.canvas.width, this.canvas.height, this.device, p2);
+    this.volumetricPass.enabled = true;
+    this.bloomPass._invalidateSceneBindGroups(this.volumetricPass.getOutputView());
+  };
+  activateVolumetricClouds2 = (arg) => {
+    if (this.bloomPass.enabled !== true) {
+      console.warn("%cTheBeast: You must enable bloom before volumetric clouds.");
+      return;
+    }
+    const p2 = {
+      coverage: 0.55,
+      cloudBase: 120,
+      cloudThickness: 60,
+      // User overrides
+      ...arg || {}
+    };
+    if (this.volumetricPass?.enabled === true) {
+      return;
+    }
+    this.volumetricPass = new CloudsVolumetric2(this.canvas.width, this.canvas.height, this.device, p2, this.sceneTextureView);
+    this.volumetricPass.enabled = true;
+    this.bloomPass._invalidateSceneBindGroups(this.volumetricPass.getOutputView());
+  };
+  activateFXAA = () => {
+    if (this.fxaaPass.enabled != true) {
+      this.fxaaPass = new FXAAPass(this.device, isMobile() == true ? "rgba8unorm" : "bgra8unorm");
+      this.fxaaPass.enabled = true;
+    }
+  };
+  activateMotionBlur = (opts) => {
+    if (this.motionBlurPass.enabled != true) {
+      this.motionBlurPass = new MotionBlurPass(this.canvas.width, this.canvas.height, this.device, opts);
+      this.motionBlurPass.enabled = true;
+    }
+  };
+  activateGrade = (opts) => {
+    if (this.gradePass.enabled != true) {
+      this.gradePass = new GradePass(this.device, this.presentationFormat, opts);
+      this.gradePass.enabled = true;
+      this._ldrTex = this.device.createTexture({
+        label: "grade LDR",
+        size: [this.canvas.width, this.canvas.height],
+        format: this.presentationFormat,
+        usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
+      });
+      this._ldrView = this._ldrTex.createView();
     }
   };
 };
@@ -56348,6 +58310,696 @@ function _normalize(v2) {
   v2[2] /= len2;
   return v2;
 }
+
+// src/engine/effects/fluid-.js
+var MAX_SPLATS = 8;
+var WG = 8;
+var COMMON_WGSL = (
+  /* wgsl */
+  `
+fn ci(c: vec2<i32>, d: vec2<i32>) -> vec2<i32> {
+  return clamp(c, vec2<i32>(0, 0), d - vec2<i32>(1, 1));
+}
+`
+);
+var ADVECT_WGSL = COMMON_WGSL + /* wgsl */
+`
+@group(0) @binding(0) var<uniform> u: vec4<f32>; // x: dt, y: dissipation
+@group(0) @binding(1) var velTex: texture_2d<f32>;
+@group(0) @binding(2) var srcTex: texture_2d<f32>;
+@group(0) @binding(3) var dst: texture_storage_2d<rgba16float, write>;
+@group(0) @binding(4) var samp: sampler;
+
+@compute @workgroup_size(8, 8)
+fn main(@builtin(global_invocation_id) id: vec3<u32>) {
+  let dd = textureDimensions(dst);
+  if (id.x >= dd.x || id.y >= dd.y) { return; }
+  let uv = (vec2<f32>(id.xy) + 0.5) / vec2<f32>(dd);
+  let velTexel = 1.0 / vec2<f32>(textureDimensions(velTex));
+  let v = textureSampleLevel(velTex, samp, uv, 0.0).xy;
+  let coord = uv - u.x * v * velTexel;
+  let r = textureSampleLevel(srcTex, samp, coord, 0.0) / (1.0 + u.y * u.x);
+  textureStore(dst, vec2<i32>(id.xy), r);
+}`;
+var CURL_WGSL = COMMON_WGSL + /* wgsl */
+`
+@group(0) @binding(0) var vel: texture_2d<f32>;
+@group(0) @binding(1) var dst: texture_storage_2d<rgba16float, write>;
+
+@compute @workgroup_size(8, 8)
+fn main(@builtin(global_invocation_id) id: vec3<u32>) {
+  let d = vec2<i32>(textureDimensions(vel));
+  let c = vec2<i32>(id.xy);
+  if (c.x >= d.x || c.y >= d.y) { return; }
+  let L = textureLoad(vel, ci(c + vec2<i32>(-1, 0), d), 0).y;
+  let R = textureLoad(vel, ci(c + vec2<i32>(1, 0), d), 0).y;
+  let T = textureLoad(vel, ci(c + vec2<i32>(0, 1), d), 0).x;
+  let B = textureLoad(vel, ci(c + vec2<i32>(0, -1), d), 0).x;
+  textureStore(dst, c, vec4<f32>(0.5 * (R - L - T + B), 0.0, 0.0, 1.0));
+}`;
+var VORTICITY_WGSL = COMMON_WGSL + /* wgsl */
+`
+@group(0) @binding(0) var<uniform> u: vec4<f32>; // x: curl strength, y: dt
+@group(0) @binding(1) var vel: texture_2d<f32>;
+@group(0) @binding(2) var curlTex: texture_2d<f32>;
+@group(0) @binding(3) var dst: texture_storage_2d<rgba16float, write>;
+
+@compute @workgroup_size(8, 8)
+fn main(@builtin(global_invocation_id) id: vec3<u32>) {
+  let d = vec2<i32>(textureDimensions(vel));
+  let c = vec2<i32>(id.xy);
+  if (c.x >= d.x || c.y >= d.y) { return; }
+  let L = textureLoad(curlTex, ci(c + vec2<i32>(-1, 0), d), 0).x;
+  let R = textureLoad(curlTex, ci(c + vec2<i32>(1, 0), d), 0).x;
+  let T = textureLoad(curlTex, ci(c + vec2<i32>(0, 1), d), 0).x;
+  let B = textureLoad(curlTex, ci(c + vec2<i32>(0, -1), d), 0).x;
+  let C = textureLoad(curlTex, c, 0).x;
+  var force = 0.5 * vec2<f32>(abs(T) - abs(B), abs(R) - abs(L));
+  force = force / (length(force) + 0.0001);
+  force = force * u.x * C;
+  force.y = -force.y;
+  var v = textureLoad(vel, c, 0).xy + force * u.y;
+  v = clamp(v, vec2<f32>(-1000.0), vec2<f32>(1000.0));
+  textureStore(dst, c, vec4<f32>(v, 0.0, 1.0));
+}`;
+var DIVERGENCE_WGSL = COMMON_WGSL + /* wgsl */
+`
+@group(0) @binding(0) var vel: texture_2d<f32>;
+@group(0) @binding(1) var dst: texture_storage_2d<rgba16float, write>;
+
+@compute @workgroup_size(8, 8)
+fn main(@builtin(global_invocation_id) id: vec3<u32>) {
+  let d = vec2<i32>(textureDimensions(vel));
+  let c = vec2<i32>(id.xy);
+  if (c.x >= d.x || c.y >= d.y) { return; }
+  let C = textureLoad(vel, c, 0).xy;
+  var L = textureLoad(vel, ci(c + vec2<i32>(-1, 0), d), 0).x;
+  var R = textureLoad(vel, ci(c + vec2<i32>(1, 0), d), 0).x;
+  var T = textureLoad(vel, ci(c + vec2<i32>(0, 1), d), 0).y;
+  var B = textureLoad(vel, ci(c + vec2<i32>(0, -1), d), 0).y;
+  // reflective walls
+  if (c.x - 1 < 0)   { L = -C.x; }
+  if (c.x + 1 >= d.x) { R = -C.x; }
+  if (c.y + 1 >= d.y) { T = -C.y; }
+  if (c.y - 1 < 0)   { B = -C.y; }
+  textureStore(dst, c, vec4<f32>(0.5 * (R - L + T - B), 0.0, 0.0, 1.0));
+}`;
+var SCALE_WGSL = (
+  /* wgsl */
+  `
+@group(0) @binding(0) var<uniform> u: vec4<f32>; // x: factor
+@group(0) @binding(1) var src: texture_2d<f32>;
+@group(0) @binding(2) var dst: texture_storage_2d<rgba16float, write>;
+
+@compute @workgroup_size(8, 8)
+fn main(@builtin(global_invocation_id) id: vec3<u32>) {
+  let d = textureDimensions(src);
+  if (id.x >= d.x || id.y >= d.y) { return; }
+  let c = vec2<i32>(id.xy);
+  textureStore(dst, c, textureLoad(src, c, 0) * u.x);
+}`
+);
+var PRESSURE_WGSL = COMMON_WGSL + /* wgsl */
+`
+@group(0) @binding(0) var pres: texture_2d<f32>;
+@group(0) @binding(1) var divTex: texture_2d<f32>;
+@group(0) @binding(2) var dst: texture_storage_2d<rgba16float, write>;
+
+@compute @workgroup_size(8, 8)
+fn main(@builtin(global_invocation_id) id: vec3<u32>) {
+  let d = vec2<i32>(textureDimensions(pres));
+  let c = vec2<i32>(id.xy);
+  if (c.x >= d.x || c.y >= d.y) { return; }
+  let L = textureLoad(pres, ci(c + vec2<i32>(-1, 0), d), 0).x;
+  let R = textureLoad(pres, ci(c + vec2<i32>(1, 0), d), 0).x;
+  let T = textureLoad(pres, ci(c + vec2<i32>(0, 1), d), 0).x;
+  let B = textureLoad(pres, ci(c + vec2<i32>(0, -1), d), 0).x;
+  let div = textureLoad(divTex, c, 0).x;
+  textureStore(dst, c, vec4<f32>((L + R + B + T - div) * 0.25, 0.0, 0.0, 1.0));
+}`;
+var GRADIENT_WGSL = COMMON_WGSL + /* wgsl */
+`
+@group(0) @binding(0) var pres: texture_2d<f32>;
+@group(0) @binding(1) var vel: texture_2d<f32>;
+@group(0) @binding(2) var dst: texture_storage_2d<rgba16float, write>;
+
+@compute @workgroup_size(8, 8)
+fn main(@builtin(global_invocation_id) id: vec3<u32>) {
+  let d = vec2<i32>(textureDimensions(vel));
+  let c = vec2<i32>(id.xy);
+  if (c.x >= d.x || c.y >= d.y) { return; }
+  let L = textureLoad(pres, ci(c + vec2<i32>(-1, 0), d), 0).x;
+  let R = textureLoad(pres, ci(c + vec2<i32>(1, 0), d), 0).x;
+  let T = textureLoad(pres, ci(c + vec2<i32>(0, 1), d), 0).x;
+  let B = textureLoad(pres, ci(c + vec2<i32>(0, -1), d), 0).x;
+  let v = textureLoad(vel, c, 0).xy - vec2<f32>(R - L, T - B);
+  textureStore(dst, c, vec4<f32>(v, 0.0, 1.0));
+}`;
+var SPLAT_WGSL = (
+  /* wgsl */
+  `
+struct Splat {
+  point: vec2<f32>,
+  aspect: f32,
+  radius: f32,
+  color: vec4<f32>,
+};
+@group(0) @binding(0) var<uniform> s: Splat;
+@group(0) @binding(1) var src: texture_2d<f32>;
+@group(0) @binding(2) var dst: texture_storage_2d<rgba16float, write>;
+
+@compute @workgroup_size(8, 8)
+fn main(@builtin(global_invocation_id) id: vec3<u32>) {
+  let d = textureDimensions(dst);
+  if (id.x >= d.x || id.y >= d.y) { return; }
+  let c = vec2<i32>(id.xy);
+  let uv = (vec2<f32>(id.xy) + 0.5) / vec2<f32>(d);
+  var p = uv - s.point;
+  p.x = p.x * s.aspect;
+  let g = exp(-dot(p, p) / s.radius) * s.color.rgb;
+  let base = textureLoad(src, c, 0).rgb;
+  textureStore(dst, c, vec4<f32>(base + g, 1.0));
+}`
+);
+var DISPLAY_WGSL = (
+  /* wgsl */
+  `
+@group(0) @binding(0) var<uniform> mvp: mat4x4<f32>;
+@group(0) @binding(1) var dye: texture_2d<f32>;
+@group(0) @binding(2) var samp: sampler;
+
+struct VOut {
+  @builtin(position) pos: vec4<f32>,
+  @location(0) uv: vec2<f32>,
+};
+
+@vertex
+fn vs(@builtin(vertex_index) i: u32) -> VOut {
+  var q = array<vec2<f32>, 6>(
+    vec2(-1.0, -1.0), vec2(1.0, -1.0), vec2(-1.0, 1.0),
+    vec2(-1.0, 1.0), vec2(1.0, -1.0), vec2(1.0, 1.0));
+  var o: VOut;
+  o.pos = mvp * vec4<f32>(q[i], 0.0, 1.0);
+  o.uv = q[i] * 0.5 + 0.5;   // texture row 0 == bottom, no flip needed
+  return o;
+}
+
+struct FOut {
+  @location(0) color: vec4<f32>,
+  @location(1) normal: vec4<f32>,
+  @location(2) wpos: vec4<f32>,
+};
+
+@fragment
+fn fs(in: VOut) -> FOut {
+  let c = max(textureSample(dye, samp, in.uv).rgb, vec3<f32>(0.0));
+  let a = clamp(max(c.r, max(c.g, c.b)), 0.0, 1.0);
+  var o: FOut;
+  o.color = vec4<f32>(c, a);          // premultiplied-style
+  o.normal = vec4<f32>(0.0);
+  o.wpos = vec4<f32>(0.0);
+  return o;
+}`
+);
+var FluidEffect = class _FluidEffect {
+  // world.js checks this on the constructor: we draw with our own pipeline.
+  static managesRenderPipeline = true;
+  constructor(device2, options2 = {}) {
+    this.device = device2;
+    this.enabled = true;
+    const mobile = typeof navigator !== "undefined" && /android|iphone|ipad|ipod/i.test(navigator.userAgent);
+    this.opt = {
+      simRes: options2.simRes ?? (mobile ? 96 : 128),
+      dyeRes: options2.dyeRes ?? (mobile ? 384 : 512),
+      aspect: options2.aspect ?? 1,
+      densityDissipation: options2.densityDissipation ?? 1,
+      velocityDissipation: options2.velocityDissipation ?? 0.2,
+      pressure: options2.pressure ?? 0.8,
+      pressureIterations: options2.pressureIterations ?? (mobile ? 12 : 20),
+      curl: options2.curl ?? 30,
+      splatRadius: options2.splatRadius ?? 0.25,
+      splatForce: options2.splatForce ?? 6e3,
+      colorFormatDepth: options2.depthFormat ?? "depth24plus",
+      colorTargets: options2.colorTargets ?? 3
+      // main pass has 3 color attachments
+    };
+    this.simW = this.opt.simRes;
+    this.simH = this.opt.simRes;
+    this.dyeW = this.opt.dyeRes;
+    this.dyeH = this.opt.dyeRes;
+    this._vi = 0;
+    this._di = 0;
+    this._pi = 0;
+    this._last = performance.now();
+    this._pending = [];
+    this._emitters = [];
+    this._mvpScratch = mat4Impl.create();
+    this._model = mat4Impl.identity();
+    this._localMatrix = mat4Impl.create();
+    this._finalMatrix = mat4Impl.identity();
+    this.localOffset = options2.localOffset ?? [0, 0, 0];
+    this.localRotation = options2.localRotation ?? [0, 0, 0];
+    this.activeRotate = options2.activeRotate ?? [0, 0, 0];
+    const sc2 = options2.scale ?? 1;
+    this.scale = Array.isArray(sc2) ? sc2 : [sc2, sc2, sc2];
+    this._f4 = new Float32Array(4);
+    this._splatScratch = new Float32Array(8);
+    this._time = 0;
+    this._createResources();
+    this._createPipelines();
+    this._createBindGroups();
+  }
+  // ---------------------------------------------------------------- public API
+  /** x,y in 0..1 (y up). dx,dy = movement delta (roughly -1..1). color = [r,g,b] */
+  splat(x3, y3, dx, dy, color) {
+    if (this._pending.length >= MAX_SPLATS) return;
+    this._pending.push({ x: x3, y: y3, dx, dy, color });
+  }
+  /**
+   * Continuous code-driven source. Returns the emitter object (pass it to removeEmitter).
+   * cfg: {
+   *   x, y            position 0..1 (y up)
+   *   dx, dy          splat velocity (pointer drag gives roughly 30-300)
+   *   color           [r,g,b] or null for a new random color each splat
+   *   colorScale      multiplier for random colors (default 1)
+   *   interval        seconds between splats (default 0 = every frame)
+   *   jitter          random velocity spread 0..1 (default 0)
+   *   orbit           {cx, cy, r, speed, strength}  moves x,y on a circle and pushes tangentially
+   * }
+   */
+  addEmitter(cfg = {}) {
+    const e2 = {
+      x: 0.5,
+      y: 0.5,
+      dx: 0,
+      dy: 100,
+      color: null,
+      colorScale: 1,
+      interval: 0,
+      jitter: 0,
+      orbit: null,
+      _t: 0,
+      ...cfg
+    };
+    this._emitters.push(e2);
+    return e2;
+  }
+  /** Spiral / galaxy preset. Outward by default; rStart > rEnd for inward; arms for multiple arms. */
+  addSpiral(cfg = {}) {
+    return this.addEmitter({
+      color: cfg.color ?? null,
+      colorScale: cfg.colorScale ?? 1,
+      interval: cfg.interval ?? 0.016,
+      spiral: {
+        cx: cfg.x ?? 0.5,
+        cy: cfg.y ?? 0.5,
+        rStart: cfg.rStart ?? 0.02,
+        rEnd: cfg.rEnd ?? 0.35,
+        speed: cfg.speed ?? 3,
+        duration: cfg.duration ?? 3,
+        pause: cfg.pause ?? 0,
+        strength: cfg.strength ?? 400,
+        radial: cfg.radial ?? 0.3,
+        arms: cfg.arms ?? 2,
+        reverse: cfg.reverse ?? false
+      }
+    });
+  }
+  /** Fire preset: repeated gentle bottom-to-top drags with pauses. */
+  addFire(cfg = {}) {
+    const x3 = cfg.x ?? 0.5, y3 = cfg.y ?? 0.05, h2 = cfg.height ?? 0.5;
+    return this.addEmitter({
+      color: cfg.color ?? [1.6, 0.45, 0.08],
+      interval: cfg.interval ?? 0.016,
+      jitter: cfg.jitter ?? 0.25,
+      sweep: {
+        from: [x3, y3],
+        to: [x3, y3 + h2],
+        duration: cfg.duration ?? 0.6,
+        pause: cfg.pause ?? 0.3,
+        strength: cfg.strength ?? 120,
+        spread: cfg.spread ?? 0.03
+      }
+    });
+  }
+  removeEmitter(e2) {
+    const i2 = this._emitters.indexOf(e2);
+    if (i2 !== -1) this._emitters.splice(i2, 1);
+  }
+  clearEmitters() {
+    this._emitters.length = 0;
+  }
+  /** One-shot radial burst from a point. */
+  burst(x3 = 0.5, y3 = 0.5, count = 6, strength = 400, color = null) {
+    for (let i2 = 0; i2 < count; i2++) {
+      const a2 = i2 / count * Math.PI * 2;
+      const c2 = color ?? _FluidEffect.generateColor().map((v2) => v2 * 8);
+      this.splat(x3, y3, Math.cos(a2) * strength, Math.sin(a2) * strength, c2);
+    }
+  }
+  _runEmitters(dt2) {
+    for (const e2 of this._emitters) {
+      e2._t += dt2;
+      if (e2._t < e2.interval) continue;
+      e2._t = 0;
+      let x3 = e2.x, y3 = e2.y, dx = e2.dx, dy = e2.dy;
+      if (e2.sweep) {
+        const s2 = e2.sweep;
+        const dur = s2.duration ?? 0.6;
+        const cycle = dur + (s2.pause ?? 0.3);
+        if (e2._t0 === void 0) e2._t0 = this._time - Math.random() * cycle;
+        const st2 = this._time - e2._t0;
+        const ci2 = Math.floor(st2 / cycle);
+        if (ci2 !== e2._ci) {
+          e2._ci = ci2;
+          e2._ox = (Math.random() - 0.5) * 2 * (s2.spread ?? 0);
+        }
+        const phase = st2 - ci2 * cycle;
+        if (phase > dur) continue;
+        const t3 = phase / dur;
+        const vx = s2.to[0] - s2.from[0], vy = s2.to[1] - s2.from[1];
+        const len2 = Math.hypot(vx, vy) || 1;
+        const str2 = s2.strength ?? 120;
+        x3 = s2.from[0] + vx * t3 + e2._ox;
+        y3 = s2.from[1] + vy * t3;
+        dx = vx / len2 * str2;
+        dy = vy / len2 * str2;
+      } else if (e2.spiral) {
+        const s2 = e2.spiral;
+        const dur = s2.duration ?? 3;
+        const cycle = dur + (s2.pause ?? 0);
+        if (e2._t0 === void 0) e2._t0 = this._time;
+        const st2 = this._time - e2._t0;
+        const ci2 = Math.floor(st2 / cycle);
+        const phase = st2 - ci2 * cycle;
+        if (phase > dur) continue;
+        const t3 = phase / dur;
+        const r0 = s2.rStart ?? 0.02, r1 = s2.rEnd ?? 0.35;
+        const r3 = r0 + (r1 - r0) * t3;
+        const dir = s2.reverse ? -1 : 1;
+        const base = (s2.speed ?? 3) * phase * dir + (s2.angle ?? 0);
+        const str2 = s2.strength ?? 400;
+        const rad = s2.radial ?? 0.3;
+        const arms = Math.max(1, s2.arms ?? 1);
+        let col2 = e2.color ?? _FluidEffect.generateColor().map((v2) => v2 * 8 * e2.colorScale);
+        for (let k2 = 0; k2 < arms; k2++) {
+          const a2 = base + k2 / arms * Math.PI * 2;
+          const ca2 = Math.cos(a2), sa2 = Math.sin(a2);
+          const ax = (s2.cx ?? 0.5) + ca2 * r3, ay = (s2.cy ?? 0.5) + sa2 * r3;
+          const adx = (-sa2 * dir + ca2 * rad) * str2;
+          const ady = (ca2 * dir + sa2 * rad) * str2;
+          if (k2 === 0) {
+            x3 = ax;
+            y3 = ay;
+            dx = adx;
+            dy = ady;
+          } else this.splat(ax, ay, adx, ady, col2);
+        }
+        e2._colTmp = col2;
+      } else if (e2.orbit) {
+        const o3 = e2.orbit;
+        const a2 = this._time * (o3.speed ?? 1);
+        const s2 = o3.strength ?? 400;
+        x3 = o3.cx + Math.cos(a2) * o3.r;
+        y3 = o3.cy + Math.sin(a2) * o3.r;
+        dx = -Math.sin(a2) * s2;
+        dy = Math.cos(a2) * s2;
+      }
+      if (e2.jitter > 0) {
+        dx += (Math.random() - 0.5) * 2 * e2.jitter * Math.abs(dx || dy);
+        dy += (Math.random() - 0.5) * 2 * e2.jitter * Math.abs(dy || dx);
+      }
+      const col = e2._colTmp ?? e2.color ?? _FluidEffect.generateColor().map((v2) => v2 * 8 * e2.colorScale);
+      e2._colTmp = void 0;
+      this.splat(x3, y3, dx, dy, col);
+    }
+  }
+  randomSplats(n3 = 5) {
+    for (let i2 = 0; i2 < n3; i2++) {
+      const c2 = _FluidEffect.generateColor();
+      c2[0] *= 10;
+      c2[1] *= 10;
+      c2[2] *= 10;
+      this.splat(
+        Math.random(),
+        Math.random(),
+        1e3 * (Math.random() - 0.5) / this.opt.splatForce * 6,
+        1e3 * (Math.random() - 0.5) / this.opt.splatForce * 6,
+        c2
+      );
+    }
+  }
+  /** Mouse / touch over a canvas that fully covers the fluid plane (fullscreen use). */
+  attachPointer(canvas) {
+    let lx = 0, ly = 0, down = false;
+    const pos2 = (e2) => {
+      const r3 = canvas.getBoundingClientRect();
+      return [(e2.clientX - r3.left) / r3.width, 1 - (e2.clientY - r3.top) / r3.height];
+    };
+    canvas.addEventListener("pointerdown", (e2) => {
+      down = true;
+      [lx, ly] = pos2(e2);
+    });
+    addEventListener("pointerup", () => {
+      down = false;
+    });
+    canvas.addEventListener("pointermove", (e2) => {
+      if (!down) return;
+      const [x3, y3] = pos2(e2);
+      const c2 = _FluidEffect.generateColor();
+      this.splat(x3, y3, (x3 - lx) * this.opt.splatForce, (y3 - ly) * this.opt.splatForce, c2);
+      lx = x3;
+      ly = y3;
+    });
+  }
+  static generateColor() {
+    const h2 = Math.random(), s2 = 1, v2 = 1;
+    const i2 = Math.floor(h2 * 6), f2 = h2 * 6 - i2;
+    const p2 = v2 * (1 - s2), q2 = v2 * (1 - f2 * s2), t3 = v2 * (1 - (1 - f2) * s2);
+    let r3, g2, b2;
+    switch (i2 % 6) {
+      case 0:
+        r3 = v2;
+        g2 = t3;
+        b2 = p2;
+        break;
+      case 1:
+        r3 = q2;
+        g2 = v2;
+        b2 = p2;
+        break;
+      case 2:
+        r3 = p2;
+        g2 = v2;
+        b2 = t3;
+        break;
+      case 3:
+        r3 = p2;
+        g2 = q2;
+        b2 = v2;
+        break;
+      case 4:
+        r3 = t3;
+        g2 = p2;
+        b2 = v2;
+        break;
+      default:
+        r3 = v2;
+        g2 = p2;
+        b2 = q2;
+    }
+    return [r3 * 0.15, g2 * 0.15, b2 * 0.15];
+  }
+  // ---------------------------------------------------------------- engine hooks
+  updateInstanceData(baseModelMatrix) {
+    const local2 = this._localMatrix;
+    const finalMat = this._finalMatrix;
+    mat4Impl.identity(local2);
+    mat4Impl.identity(finalMat);
+    mat4Impl.translate(local2, this.localOffset, local2);
+    mat4Impl.rotateX(local2, this.localRotation[0], local2);
+    mat4Impl.rotateY(local2, this.localRotation[1], local2);
+    mat4Impl.rotateZ(local2, this.localRotation[2], local2);
+    if (this.activeRotate[0] !== 0) mat4Impl.rotateX(local2, this.activeRotate[0] * this._time, local2);
+    if (this.activeRotate[1] !== 0) mat4Impl.rotateY(local2, this.activeRotate[1] * this._time, local2);
+    if (this.activeRotate[2] !== 0) mat4Impl.rotateZ(local2, this.activeRotate[2] * this._time, local2);
+    mat4Impl.scale(local2, this.scale, local2);
+    mat4Impl.multiply(baseModelMatrix, local2, finalMat);
+  }
+  setScale(s2) {
+    this.scale = Array.isArray(s2) ? s2 : [s2, s2, s2];
+  }
+  /** Called by world.js frame loop on the command encoder before the main pass. */
+  simulate(encoder) {
+    if (!this.enabled) return;
+    const now = performance.now();
+    const dt2 = Math.min((now - this._last) / 1e3, 0.016666);
+    this._last = now;
+    this._time += dt2;
+    if (this._emitters.length) this._runEmitters(dt2);
+    const o3 = this.opt;
+    const q2 = this.device.queue;
+    this._f4.set([dt2, o3.velocityDissipation, 0, 0]);
+    q2.writeBuffer(this.uAdvVel, 0, this._f4);
+    this._f4.set([dt2, o3.densityDissipation, 0, 0]);
+    q2.writeBuffer(this.uAdvDye, 0, this._f4);
+    this._f4.set([o3.curl, dt2, 0, 0]);
+    q2.writeBuffer(this.uVort, 0, this._f4);
+    this._f4.set([o3.pressure, 0, 0, 0]);
+    q2.writeBuffer(this.uScale, 0, this._f4);
+    const pass = encoder.beginComputePass({ label: "fluid" });
+    for (let s2 = 0; s2 < this._pending.length; s2++) {
+      const sp = this._pending[s2];
+      const a2 = this._splatScratch;
+      a2[0] = sp.x;
+      a2[1] = sp.y;
+      a2[2] = o3.aspect;
+      a2[3] = (o3.aspect > 1 ? o3.splatRadius * o3.aspect : o3.splatRadius) / 100;
+      a2[4] = sp.dx;
+      a2[5] = sp.dy;
+      a2[6] = 0;
+      a2[7] = 1;
+      q2.writeBuffer(this.splatVelU[s2], 0, a2);
+      a2[4] = sp.color[0];
+      a2[5] = sp.color[1];
+      a2[6] = sp.color[2];
+      q2.writeBuffer(this.splatDyeU[s2], 0, a2);
+      this._dispatch(pass, this.pSplat, this.bgSplatVel[s2][this._vi], this.simW, this.simH);
+      this._vi ^= 1;
+      this._dispatch(pass, this.pSplat, this.bgSplatDye[s2][this._di], this.dyeW, this.dyeH);
+      this._di ^= 1;
+    }
+    this._pending.length = 0;
+    this._dispatch(pass, this.pCurl, this.bgCurl[this._vi], this.simW, this.simH);
+    this._dispatch(pass, this.pVort, this.bgVort[this._vi], this.simW, this.simH);
+    this._vi ^= 1;
+    this._dispatch(pass, this.pDiv, this.bgDiv[this._vi], this.simW, this.simH);
+    this._dispatch(pass, this.pScale, this.bgScale[this._pi], this.simW, this.simH);
+    this._pi ^= 1;
+    for (let i2 = 0; i2 < o3.pressureIterations; i2++) {
+      this._dispatch(pass, this.pPressure, this.bgPressure[this._pi], this.simW, this.simH);
+      this._pi ^= 1;
+    }
+    this._dispatch(pass, this.pGrad, this.bgGrad[this._pi * 2 + this._vi], this.simW, this.simH);
+    this._vi ^= 1;
+    this._dispatch(pass, this.pAdvect, this.bgAdvVel[this._vi], this.simW, this.simH);
+    this._vi ^= 1;
+    this._dispatch(pass, this.pAdvect, this.bgAdvDye[this._vi * 2 + this._di], this.dyeW, this.dyeH);
+    this._di ^= 1;
+    pass.end();
+  }
+  /** Called inside the main render pass. */
+  render(pass, mesh, VP) {
+    if (!this.enabled) return;
+    mat4Impl.multiply(VP, this._finalMatrix, this._mvpScratch);
+    this.device.queue.writeBuffer(this.mvpBuffer, 0, this._mvpScratch);
+    pass.setPipeline(this.displayPipeline);
+    pass.setBindGroup(0, this.bgDisplay[this._di]);
+    pass.draw(6);
+  }
+  destroy() {
+    for (const t3 of [...this.vel, ...this.dye, ...this.pres, this.divT, this.curlT]) t3.destroy();
+    this.enabled = false;
+  }
+  // ---------------------------------------------------------------- internals
+  _tex(w2, h2, label) {
+    return this.device.createTexture({
+      label,
+      size: [w2, h2],
+      format: "rgba16float",
+      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.STORAGE_BINDING
+    });
+  }
+  _ubuf(size2, label) {
+    return this.device.createBuffer({ label, size: size2, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+  }
+  _createResources() {
+    const d2 = this.device;
+    this.vel = [this._tex(this.simW, this.simH, "fluid vel0"), this._tex(this.simW, this.simH, "fluid vel1")];
+    this.pres = [this._tex(this.simW, this.simH, "fluid p0"), this._tex(this.simW, this.simH, "fluid p1")];
+    this.divT = this._tex(this.simW, this.simH, "fluid div");
+    this.curlT = this._tex(this.simW, this.simH, "fluid curl");
+    this.dye = [this._tex(this.dyeW, this.dyeH, "fluid dye0"), this._tex(this.dyeW, this.dyeH, "fluid dye1")];
+    this.velV = this.vel.map((t3) => t3.createView());
+    this.presV = this.pres.map((t3) => t3.createView());
+    this.dyeV = this.dye.map((t3) => t3.createView());
+    this.divV = this.divT.createView();
+    this.curlV = this.curlT.createView();
+    this.linear = d2.createSampler({ magFilter: "linear", minFilter: "linear", addressModeU: "clamp-to-edge", addressModeV: "clamp-to-edge" });
+    this.uAdvVel = this._ubuf(16, "fluid advVel");
+    this.uAdvDye = this._ubuf(16, "fluid advDye");
+    this.uVort = this._ubuf(16, "fluid vort");
+    this.uScale = this._ubuf(16, "fluid scale");
+    this.mvpBuffer = this._ubuf(64, "fluid mvp");
+    this.splatVelU = Array.from({ length: MAX_SPLATS }, (_2, i2) => this._ubuf(32, "fluid splatVel" + i2));
+    this.splatDyeU = Array.from({ length: MAX_SPLATS }, (_2, i2) => this._ubuf(32, "fluid splatDye" + i2));
+  }
+  _compute(code, label) {
+    return this.device.createComputePipeline({
+      label,
+      layout: "auto",
+      compute: { module: this.device.createShaderModule({ label, code }), entryPoint: "main" }
+    });
+  }
+  _createPipelines() {
+    this.pAdvect = this._compute(ADVECT_WGSL, "fluid advect");
+    this.pCurl = this._compute(CURL_WGSL, "fluid curl");
+    this.pVort = this._compute(VORTICITY_WGSL, "fluid vorticity");
+    this.pDiv = this._compute(DIVERGENCE_WGSL, "fluid divergence");
+    this.pScale = this._compute(SCALE_WGSL, "fluid scale");
+    this.pPressure = this._compute(PRESSURE_WGSL, "fluid pressure");
+    this.pGrad = this._compute(GRADIENT_WGSL, "fluid gradient");
+    this.pSplat = this._compute(SPLAT_WGSL, "fluid splat");
+    const module = this.device.createShaderModule({ label: "fluid display", code: DISPLAY_WGSL });
+    const blend = {
+      color: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" },
+      alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }
+    };
+    const targets = [{ format: "rgba16float", blend }];
+    for (let i2 = 1; i2 < this.opt.colorTargets; i2++) targets.push({ format: "rgba16float", writeMask: 0 });
+    this.displayPipeline = this.device.createRenderPipeline({
+      label: "fluid display",
+      layout: "auto",
+      vertex: { module, entryPoint: "vs" },
+      fragment: { module, entryPoint: "fs", targets },
+      primitive: { topology: "triangle-list", cullMode: "none" },
+      depthStencil: { format: this.opt.colorFormatDepth, depthWriteEnabled: false, depthCompare: "less" }
+    });
+  }
+  _bg(pipeline, entries, label) {
+    return this.device.createBindGroup({
+      label,
+      layout: pipeline.getBindGroupLayout(0),
+      entries: entries.map((resource, binding) => ({ binding, resource }))
+    });
+  }
+  _createBindGroups() {
+    const V2 = this.velV, D2 = this.dyeV, P2 = this.presV, buf = (b2) => ({ buffer: b2 });
+    const two = (fn2) => [fn2(0), fn2(1)];
+    this.bgCurl = two((v2) => this._bg(this.pCurl, [V2[v2], this.curlV]));
+    this.bgVort = two((v2) => this._bg(this.pVort, [buf(this.uVort), V2[v2], this.curlV, V2[1 - v2]]));
+    this.bgDiv = two((v2) => this._bg(this.pDiv, [V2[v2], this.divV]));
+    this.bgScale = two((p2) => this._bg(this.pScale, [buf(this.uScale), P2[p2], P2[1 - p2]]));
+    this.bgPressure = two((p2) => this._bg(this.pPressure, [P2[p2], this.divV, P2[1 - p2]]));
+    this.bgGrad = [0, 1, 2, 3].map((i2) => {
+      const p2 = i2 >> 1, v2 = i2 & 1;
+      return this._bg(this.pGrad, [P2[p2], V2[v2], V2[1 - v2]]);
+    });
+    this.bgAdvVel = two((v2) => this._bg(this.pAdvect, [buf(this.uAdvVel), V2[v2], V2[v2], V2[1 - v2], this.linear]));
+    this.bgAdvDye = [0, 1, 2, 3].map((i2) => {
+      const v2 = i2 >> 1, d2 = i2 & 1;
+      return this._bg(this.pAdvect, [buf(this.uAdvDye), V2[v2], D2[d2], D2[1 - d2], this.linear]);
+    });
+    this.bgSplatVel = this.splatVelU.map((u2) => two((v2) => this._bg(this.pSplat, [buf(u2), V2[v2], V2[1 - v2]])));
+    this.bgSplatDye = this.splatDyeU.map((u2) => two((d2) => this._bg(this.pSplat, [buf(u2), D2[d2], D2[1 - d2]])));
+    this.bgDisplay = two((d2) => this._bg(this.displayPipeline, [buf(this.mvpBuffer), D2[d2], this.linear]));
+  }
+  _dispatch(pass, pipeline, bindGroup, w2, h2) {
+    pass.setPipeline(pipeline);
+    pass.setBindGroup(0, bindGroup);
+    pass.dispatchWorkgroups(Math.ceil(w2 / WG), Math.ceil(h2 / WG));
+  }
+};
 
 // examples/load-obj-file.js
 var loadObjFile = function() {
@@ -67895,13 +70547,6 @@ var loadHang3d = function() {
     addRaycastsAABBListener(void 0, "mousedown");
     app2.activateHZB();
     app2.activateBloomEffect();
-    app2.activateVolumetricEffect({
-      density: 21,
-      steps: 24,
-      scatterStrength: 0.5,
-      heightFalloff: 10,
-      lightColor: [0.3, 1, 2]
-    });
     app2.matrixSounds.createAudio("shot", "res/audios/gun/gunshot.mp3", 3);
     app2.matrixSounds.createAudio("zombie1", "res/audios/zombie/zombie-1.mp3", 2);
     app2.matrixSounds.createAudio("zombie2", "res/audios/zombie/zombie-2.mp3", 2);
@@ -75497,9 +78142,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   cells[idx] = mix(targetF, prev, params.smoothing);
 }
 `;
-var RENDER_SHADER = (
-  /* wgsl */
-  `
+var RENDER_SHADER = `
 struct SceneUniforms {
   viewProj: mat4x4<f32>,
   baseModel: mat4x4<f32>,
@@ -75585,8 +78228,7 @@ fn fs_main(vin: VertexOut) -> FragOut {
   out.worldPos = vec4<f32>(vin.worldPos, 1.0);
   return out;
 }
-`
-);
+`;
 var DepthWebcamVoxelEffect = class _DepthWebcamVoxelEffect {
   // This effect manages its own render pipeline; do not bind the shared effect pipeline.
   static managesRenderPipeline = true;
@@ -80101,6 +82743,22 @@ var loadPoseToGLB = function() {
     downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, onGround, { scale: [30, 0.5, 30] });
     addRaycastsAABBListener("canvas1", "click");
     async function onGround(m2) {
+      let arg12 = isMobile() && getOrientation() === "portrait" ? { left: "5" } : { left: "53" };
+      MobileDOM.addButton(
+        "Enable camera",
+        function() {
+          if (byId2("auto-video").style.zIndex === "-1") {
+            byId2("auto-video").style.zIndex = 1;
+            byId2("auto-video").style.opacity = 0.4;
+          } else {
+            byId2("auto-video").style.zIndex = -1;
+            byId2("auto-video").style.opacity = 0.4;
+          }
+        },
+        () => {
+        },
+        arg12
+      );
       loadPose.floor = loadPose.addMeshObj({
         material: { type: "dark", share: true },
         position: { x: 0, y: -1, z: -10 },
@@ -80148,7 +82806,7 @@ var loadPoseToGLB = function() {
       let beast = loadPose.addGlbObjInctance({
         material: { type: "standard", useTextureFromGlb: true },
         useScale: true,
-        scale: [2, 2, 2],
+        scale: [4, 4, 4],
         position: { x: 0, y: 1.5, z: -15 },
         name: "player",
         physics: {
@@ -80184,22 +82842,6 @@ var loadPoseToGLB = function() {
           mask: -1
         },
         raycast: { enabled: true, radius: 1 }
-      });
-      MYCUBE = loadPose.addMeshObj({
-        material: { type: "standard", share: true },
-        position: { x: 0, y: 5, z: -10 },
-        rotation: { x: 0, y: 0, z: 0 },
-        rotationSpeed: { x: 0, y: 0, z: 0 },
-        scale: [1, 1, 1],
-        texturesPaths: ["./res/textures/white-metal.png"],
-        name: "MYCUBE",
-        mesh: m2.cube,
-        physics: {
-          enabled: false,
-          mass: 0,
-          geometry: "Cube"
-        },
-        pointerEffect: { enabled: true }
       });
       loadPose.SAVE_CUBE = m2.cube;
       const pillar1 = createPillar(loadPose, m2, -20, 6, -30, "pil1");
@@ -80376,8 +83018,6 @@ var loadPoseToGLB = function() {
     loadPose.canvas.addEventListener("ray.hit.event", (e2) => {
       console.log("ray.hit.event detected");
       if (isRunning === false) {
-        runnerSet = spawnRunners(loadPose, loadPose.SAVE_CUBE, { count: 8, minX: -22, maxX: 22, minY: 0.5, maxY: 3, startZ: 60, endZ: -50, speedMin: 0.55, speedMax: 1.5 });
-        isRunning = true;
       }
     });
   });
@@ -80385,11 +83025,11 @@ var loadPoseToGLB = function() {
 };
 
 // examples/games/slot-machine/networking.js
-async function fetchSlotConfig(baseUrl2, machineId2) {
+async function fetchSlotConfig(baseUrl3, machineId3) {
   const token2 = SLOT_SIMULATOR_CONFIG_TOKEN;
   const headers = token2 ? { "X-Local-Config-Token": token2 } : {};
   const res = await fetch(
-    `${baseUrl2}/slot-api/machines/${machineId2}/slot-config`,
+    `${baseUrl3}/slot-api/machines/${machineId3}/slot-config`,
     { credentials: "include", headers }
   );
   if (!res.ok) throw new Error(`slot-config HTTP ${res.status}`);
@@ -80879,6 +83519,7 @@ async function initializeSymbolReel(mesh, engine, reelCfg) {
   return batch;
 }
 var loadSlot = function() {
+  mb.show("Please wait 10 sec to activate render.com hosted page.");
   let slotMachine = new MatrixEngineWGPU({
     canvasSize: "fullscreen",
     fastRender: 0.9,
@@ -80992,6 +83633,7 @@ var loadSlot = function() {
       if (isMobile()) slotMachine.lightContainer[0].setIntensity(8);
       else slotMachine.lightContainer[0].setIntensity(15);
       slotMachine.activateBloomEffect();
+      slotMachine.activateFXAA();
       if (isMobile()) slotMachine.bloomPass.setBlurRadius(2);
       if (isMobile() === false) {
         slotMachine.activateVolumetricEffect({
@@ -81310,19 +83952,16 @@ var volumetrixTexProj = function() {
       app2.cameras.WASD.setYaw(0);
       app2.cameras.WASD.setPitch(-0.55);
       app2.cameras.WASD.setPosition(CENTER.x, 22, CENTER.z + 26);
-      app2.TEST_activateVolumetricEffect(
-        {
-          density: 0.03,
-          steps: 32,
-          scatterStrength: 1.2,
-          heightFalloff: 0.08,
-          lightColor: [1, 1, 1]
-        }
-      );
-      app2.volumetricPass.setDensity(34);
-      const view = await loadTextureView(app2.device, "res/textures/shooter/hang3d.png");
-      app2.volumetricPass.setProjectionTexture(view, app2.lightContainer[0].viewProjMatrix);
-      app2.volumetricPass.setTextureProjectionIntensity(111);
+      app2.activateVolumetricClouds({
+        qualityScale: 0.35,
+        steps: 24,
+        coverage: 0.58,
+        cloudBase: 2,
+        cloudTop: 28,
+        noiseScale: 0.035,
+        windSpeed: 0.8,
+        scatterStrength: 0.2
+      });
       app2.monster.playAnimationByIndex(3);
       app2.monster.position.onPositionReach = () => {
         app2.monster.playAnimationByIndex(3);
@@ -81377,11 +84016,1225 @@ var volumetrixTexProj = function() {
             if (scaleIdx > totalInstances) scaleIdx = 1;
           }
         };
-        app2.autoUpdate.push(scaleCharacters);
       }
     }, 1e3);
   });
   window.app = app2;
+};
+
+// examples/fluid-effects.js
+var loadFluidEffectExample = function() {
+  let fluidEffectDemo = new MatrixEngineWGPU({
+    canvasSize: "fullscreen",
+    fastRender: 0.9,
+    dontUsePhysics: true,
+    MAX_SPOTLIGHTS: 1,
+    MAX_BONES: 0,
+    mainCameraParams: {
+      type: "WASD",
+      responseCoef: 1e3
+    },
+    clearColor: { r: 0, b: 0.122, g: 0.122, a: 1 }
+  }, () => {
+    fluidEffectDemo.addLight();
+    downloadMeshes(
+      { ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj" },
+      onLoadObj,
+      { scale: [1, 1, 1] }
+    );
+    downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, onGround, { scale: [30, 0.5, 30] });
+    addRaycastsAABBListener("canvas1", "click");
+    function onGround(m2) {
+      fluidEffectDemo.addMeshObj({
+        material: { type: "mirror", share: true },
+        envMapParams: {
+          baseColorMix: 0.6,
+          // CLEAR SKY
+          mirrorTint: [0.9, 0.95, 1],
+          // Slight cool tint
+          reflectivity: 0.75,
+          // 25% reflection blend
+          illuminateColor: [0.3, 0.7, 1],
+          // Soft cyan
+          illuminateStrength: 1.5,
+          // Gentle rim
+          illuminatePulse: 0.1,
+          // No pulse (static)
+          fresnelPower: 5,
+          // Medium-sharp edge
+          envLodBias: 1.5,
+          usePlanarReflection: false
+          // Must be false - WIP
+        },
+        position: { x: 0, y: -20, z: -10 },
+        rotation: { x: 0, y: 0, z: 0 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        texturesPaths: ["./res/textures/floor1.webp", "./res/textures/env-maps/sky1_lod_mid.webp"],
+        name: "floor",
+        mesh: m2.cube,
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        }
+      });
+    }
+    async function onLoadObj(m2) {
+      let MYCUBE = fluidEffectDemo.addMeshObj({
+        material: { type: "standard" },
+        position: { x: 0, y: 1, z: -10 },
+        rotation: { x: 0, y: 0, z: 0 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        scale: [3, 2.5, 2],
+        texturesPaths: ["./res/textures/floor1.webp"],
+        name: "cube",
+        mesh: m2.cube,
+        raycast: { enabled: true, radius: 1 },
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        },
+        pointerEffect: { enabled: true }
+      });
+      MYCUBE.setBlend(1e-3);
+      fluidEffectDemo.lightContainer[0].setIntensity(15);
+      fluidEffectDemo.activateBloomEffect();
+      fluidEffectDemo.lightContainer[0].setPosition(0, 15, -10);
+      fluidEffectDemo.lightContainer[0].setTarget(0, 0, -10);
+      setTimeout(() => {
+        app.MYCUBE = MYCUBE;
+        app.MYCUBE.effects.laser = new LaserProjectile(app.device, "rgba16float", app.cameraBuffer);
+        app.MYCUBE.effects.laser.fireBeam([0, 3, 0], [0, 3, -10]);
+        MYCUBE.effects.fluidSpiral = new FluidEffect(
+          app.device,
+          {
+            simRes: 128,
+            dyeRes: 512,
+            splatRadius: 1,
+            localOffset: [-8, 1, -20],
+            localRotation: [0, 0, 0],
+            activeRotate: [0, 0, 0],
+            scale: 7
+          }
+        );
+        MYCUBE.effects.fluidSpiralRight = new FluidEffect(
+          app.device,
+          {
+            simRes: 128,
+            dyeRes: 512,
+            splatRadius: 0.1,
+            localOffset: [8, 1, -20],
+            localRotation: [0, 0, 0],
+            activeRotate: [0, 0, 0],
+            scale: 7
+          }
+        );
+        MYCUBE.effects.fluid = new FluidEffect(
+          app.device,
+          {
+            simRes: 128,
+            dyeRes: 512,
+            splatRadius: 1,
+            localOffset: [0, 1, 0],
+            localRotation: [0, 0, 0],
+            activeRotate: [0, 0, 0],
+            scale: 2
+          }
+        );
+        MYCUBE.effects.fluid.attachPointer(app.canvas);
+        MYCUBE.effects.fluid.splat(0.5, 0.2, 0, 300, [1, 0.1, 0.1]);
+        const fire = MYCUBE.effects.fluid.addFire({ x: 0.5, y: 0.05, height: 0.5 });
+        MYCUBE.effects.fluid.addEmitter({
+          color: [1.6, 0.45, 0.08],
+          interval: 0.016,
+          jitter: 0.25,
+          sweep: {
+            from: [0.5, 0.05],
+            // bottom
+            to: [0.5, 0.55],
+            // up
+            duration: 0.6,
+            // seconds for one drag
+            pause: 1.6,
+            // rest before the next drag
+            strength: 60,
+            // low = gentle
+            spread: 0.02
+            // random x offset per drag
+          }
+        });
+        MYCUBE.effects.fluidSpiral.addSpiral({ x: 0.5, y: 0.5 });
+        const emmiterSpiral = {
+          color: null,
+          // random colors; or [r,g,b]
+          interval: 0.016,
+          spiral: {
+            cx: 0.5,
+            cy: 0.5,
+            // center
+            rStart: 0.02,
+            rEnd: 0.35,
+            // radius travels from rStart to rEnd (rEnd < rStart = inward)
+            speed: 3,
+            // radians per second
+            duration: 3,
+            // seconds for one spiral
+            pause: 0,
+            // rest between spirals
+            strength: 400,
+            radial: 0.3,
+            // 0 = pure swirl, >0 pushes outward, <0 pulls inward
+            arms: 2,
+            // number of spiral arms
+            reverse: false
+            // flip the rotation direction
+          }
+        };
+        MYCUBE.effects.fluidSpiral.addEmitter(emmiterSpiral);
+        const emmiterSpiralRight = {
+          color: null,
+          // random colors; or [r,g,b]
+          interval: 0.016,
+          spiral: {
+            cx: 0.5,
+            cy: 0.5,
+            // center
+            rStart: 0.02,
+            rEnd: 0.35,
+            // radius travels from rStart to rEnd (rEnd < rStart = inward)
+            speed: 2,
+            // radians per second
+            duration: 3,
+            // seconds for one spiral
+            pause: 0,
+            // rest between spirals
+            strength: 200,
+            radial: 0.3,
+            // 0 = pure swirl, >0 pushes outward, <0 pulls inward
+            arms: 2,
+            // number of spiral arms
+            reverse: false
+            // flip the rotation direction
+          }
+        };
+        MYCUBE.effects.fluidSpiralRight.addEmitter(emmiterSpiralRight);
+        const fluidGridX = [-12, -6, 0, 6, 12];
+        const fluidGridY = [-7, -3, 1, 5, 9];
+        const existingFluidCells = /* @__PURE__ */ new Set(["-8,1", "0,1", "8,1"]);
+        let fluidGridIndex = 0;
+        for (const y3 of fluidGridY) {
+          for (const x3 of fluidGridX) {
+            if (existingFluidCells.has(`${x3},${y3}`)) continue;
+            const fluid = new FluidEffect(app.device, {
+              simRes: 64,
+              dyeRes: 256,
+              splatRadius: 0.16,
+              localOffset: [x3, y3, 0],
+              localRotation: [0, 0, 0],
+              activeRotate: [0, 0, 0],
+              scale: 1.7
+            });
+            MYCUBE.effects[`fluidGrid${fluidGridIndex}`] = fluid;
+            const preset = fluidGridIndex % 4;
+            if (preset === 0) {
+              fluid.addSpiral({
+                x: 0.5,
+                y: 0.5,
+                rStart: 0.02,
+                rEnd: 0.34,
+                speed: 2.2,
+                duration: 4,
+                strength: 260,
+                radial: 0.2,
+                arms: 2,
+                color: [1.4, 0.25, 0.8]
+              });
+            } else if (preset === 1) {
+              fluid.addFire({
+                x: 0.5,
+                y: 0.08,
+                height: 0.62,
+                duration: 0.9,
+                pause: 0.35,
+                strength: 90,
+                spread: 0.12,
+                color: [0.15, 0.8, 1.5]
+              });
+            } else if (preset === 2) {
+              fluid.addEmitter({
+                color: [0.3, 1.2, 0.35],
+                interval: 0.025,
+                orbit: { cx: 0.5, cy: 0.5, r: 0.24, speed: 1.4, strength: 230 }
+              });
+            } else {
+              fluid.addEmitter({
+                color: [1.5, 0.65, 0.12],
+                interval: 0.02,
+                jitter: 0.35,
+                sweep: {
+                  from: [0.15, 0.12],
+                  to: [0.85, 0.82],
+                  duration: 1.8,
+                  pause: 0.5,
+                  strength: 110,
+                  spread: 0.18
+                }
+              });
+            }
+            fluidGridIndex++;
+          }
+        }
+        console.log(`[fluid-effects] 5x5 grid ready: ${fluidGridIndex + 3} fluid planes (3 original + ${fluidGridIndex} new)`);
+        dispatchEvent(new CustomEvent("update-effects"));
+        let cam2 = app.getCamera();
+        cam2.setYaw(-0);
+        cam2.setPitch(-0.1);
+        cam2.setZ(16);
+        cam2.setY(5);
+        app.buildRenderBuckets();
+        cam2._dirtyAngle = true;
+      }, 700);
+    }
+    fluidEffectDemo.canvas.addEventListener("ray.hit.event", (e2) => {
+      if (e2.detail.hitObject.name.startsWith("cube")) {
+        console.log("ray.hit.event detected");
+        app.MYCUBE.effects.fluid.splat(0.5, 0.2, 0, 300, [1, 10.1, 0.1]);
+      }
+    });
+  });
+  window.app = fluidEffectDemo;
+};
+
+// examples/games/slot-fluid-mashine/networking.js
+async function fetchSlotConfig2(baseUrl3, machineId3) {
+  const token2 = SLOT_SIMULATOR_CONFIG_TOKEN2;
+  const headers = token2 ? { "X-Local-Config-Token": token2 } : {};
+  const res = await fetch(
+    `${baseUrl3}/slot-api/machines/${machineId3}/slot-config`,
+    { credentials: "include", headers }
+  );
+  if (!res.ok) throw new Error(`slot-config HTTP ${res.status}`);
+  return res.json();
+}
+function adaptSlotConfig2(raw) {
+  const warnings = [];
+  const errors = [];
+  if (!Array.isArray(raw?.reels) || !raw.reels.length) errors.push("No reels in config");
+  if (!Array.isArray(raw?.symbols) || !raw.symbols.length) errors.push("No symbols in config");
+  if (errors.length) throw new Error("Invalid slot config: " + errors.join("; "));
+  const symbols = new Map(raw.symbols.map((s2) => [s2.id, s2]));
+  const reelCount = raw.reels.length;
+  const reels = raw.reels.map((r3) => {
+    if (!Array.isArray(r3.strip) || !r3.strip.length) {
+      errors.push(`Reel ${r3.id}: empty or missing strip`);
+      return { id: r3.id, strip: [], length: 0 };
+    }
+    for (const id2 of r3.strip) {
+      if (!symbols.has(id2)) warnings.push(`Reel ${r3.id}: unknown symbol "${id2}" is not in the symbol registry`);
+    }
+    return { id: r3.id, strip: [...r3.strip], length: r3.strip.length };
+  });
+  if (errors.length) throw new Error("Invalid slot config: " + errors.join("; "));
+  const paylines = raw.paylines.filter((l2) => l2.enabled !== false).filter((l2) => {
+    if (l2.rows.length !== reelCount) {
+      warnings.push(`Payline ${l2.id}: ${l2.rows.length} rows vs ${reelCount} reels, skipped`);
+      return false;
+    }
+    return true;
+  }).map((l2) => ({ id: l2.id, rows: [...l2.rows] }));
+  const maxPaylineRow = paylines.length ? Math.max(...paylines.flatMap((l2) => l2.rows)) : 2;
+  const visibleRows = Math.max(1, Number(raw.visibleRows) || maxPaylineRow + 1);
+  const paytable = {};
+  for (const [sym, pays] of Object.entries(raw.paytable || {})) {
+    paytable[sym] = Object.fromEntries(Object.entries(pays).map(([k2, v2]) => [Number(k2), v2]));
+    if (!symbols.has(sym)) warnings.push(`Paytable symbol "${sym}" not in symbols`);
+  }
+  const byType = (t3) => raw.symbols.filter((s2) => s2.type === t3).map((s2) => s2.id);
+  return {
+    machineId: raw.machineId,
+    name: raw.name,
+    reelCount,
+    visibleRows,
+    reels,
+    symbols,
+    symbolRoles: { wild: byType("wild"), scatter: byType("scatter") },
+    paytable,
+    paylines,
+    freeSpins: raw.freeSpins ?? { enabled: false },
+    targetRtp: raw.targetRtp,
+    warnings
+  };
+}
+
+// examples/games/slot-fluid-mashine/reel.js
+var sleep4 = (ms2) => new Promise((r3) => setTimeout(r3, ms2));
+var easeOutCubic2 = (t3) => 1 - Math.pow(1 - t3, 3);
+var easeInOutCubic2 = (t3) => t3 < 0.5 ? 4 * t3 * t3 * t3 : 1 - Math.pow(-2 * t3 + 2, 3) / 2;
+var animateValue2 = (duration, update) => new Promise((resolve) => {
+  const start = performance.now();
+  const tick = (now) => {
+    const t3 = Math.min(1, (now - start) / duration);
+    update(t3);
+    if (t3 < 1) requestAnimationFrame(tick);
+    else resolve();
+  };
+  requestAnimationFrame(tick);
+});
+var SlotReel2 = class {
+  constructor(mesh, reelCfg, opts = {}) {
+    this.mesh = mesh;
+    this.cfg = reelCfg;
+    this.spinSpeed = opts.spinSpeed ?? 6;
+    this.angleOffset = opts.angleOffset ?? 0;
+    this.dir = opts.dir ?? -1;
+    this.extraTurns = opts.extraTurns ?? 1;
+    this.stopMs = opts.stopMs ?? 1050;
+    this.startKickSpeed = opts.startKickSpeed ?? 0.45;
+    this.startKickMs = opts.startKickMs ?? 100;
+    this.accelerationMs = opts.accelerationMs ?? 360;
+    this.overshootDegrees = opts.overshootDegrees ?? 1;
+    this.settleMs = opts.settleMs ?? 190;
+    this.visibleRows = opts.visibleRows ?? 3;
+  }
+  get fluidEffects() {
+    return this.cfg.strip.map((_2, i2) => this.mesh.effects?.[`fluidSymbol${i2}`]).filter(Boolean);
+  }
+  getAngle() {
+    return this.mesh.rotation.x;
+  }
+  // degrees, assumed readable
+  setAngle(deg) {
+    this.mesh.rotation.x = deg;
+  }
+  // degrees, assumed writable
+  async layout(delayPerSprite = 0) {
+    const N2 = this.cfg.length;
+    const effects = this.fluidEffects;
+    if (effects.length !== N2) console.warn(`[slot] ${effects.length} fluid effects vs strip length ${N2}`);
+    for (let i2 = 0; i2 < effects.length; i2++) {
+      if (delayPerSprite) await sleep4(delayPerSprite);
+    }
+  }
+  stripIndexForRow(stop, row2, topIsPrev = true) {
+    const center = Math.floor(this.visibleRows / 2);
+    const offset = (row2 - center) * (topIsPrev ? 1 : -1);
+    return ((stop + offset) % this.cfg.length + this.cfg.length) % this.cfg.length;
+  }
+  async playWinAt(stripIndex, { duration = 2500 } = {}) {
+    if (!Number.isInteger(stripIndex) || stripIndex < 0 || stripIndex >= this.cfg.length) {
+      console.warn("[slot] Invalid winning fluid symbol index:", stripIndex);
+      return;
+    }
+    const fluid = this.mesh.effects?.[`fluidSymbol${stripIndex}`];
+    if (!fluid) {
+      console.warn("[slot] Missing fluid symbol:", stripIndex);
+      return;
+    }
+    const colors = [
+      [2.2, 0.35, 0.12],
+      [0.2, 2, 0.55],
+      [0.25, 0.65, 2.2],
+      [2, 0.25, 1.8],
+      [2, 1.7, 0.2]
+    ];
+    const pulses = 4;
+    for (let i2 = 0; i2 < pulses; i2++) {
+      fluid.burst(0.5, 0.5, 10, 850, colors[i2 % colors.length]);
+      if (i2 < pulses - 1) await sleep4(duration / pulses);
+    }
+  }
+  angleForStop(s2) {
+    return this.angleOffset + this.dir * (s2 / this.cfg.length) * 360;
+  }
+  snapTo(s2) {
+    this.mesh.rotation.setRotateX(0);
+    this.setAngle(this.angleForStop(s2));
+  }
+  async startSpin() {
+    this.mesh.rotation.setRotateX(-this.startKickSpeed);
+    await sleep4(this.startKickMs);
+    const fromSpeed = -this.startKickSpeed;
+    await animateValue2(this.accelerationMs, (t3) => {
+      this.mesh.rotation.setRotateX(
+        fromSpeed + (this.spinSpeed - fromSpeed) * easeInOutCubic2(t3)
+      );
+    });
+    this.mesh.rotation.setRotateX(this.spinSpeed);
+  }
+  async stopAt(stop) {
+    this.mesh.rotation.setRotateX(0);
+    const from = this.getAngle();
+    const target = this.angleForStop(stop);
+    const travel = ((target - from) % 360 + 360) % 360 + 360 * this.extraTurns;
+    const landing = from + travel;
+    const overshoot = landing + this.overshootDegrees;
+    const settleMs = Math.min(this.settleMs, this.stopMs * 0.35);
+    const brakingMs = Math.max(1, this.stopMs - settleMs);
+    await animateValue2(brakingMs, (t3) => {
+      this.setAngle(from + (overshoot - from) * easeOutCubic2(t3));
+    });
+    await animateValue2(settleMs, (t3) => {
+      this.setAngle(overshoot + (landing - overshoot) * easeOutCubic2(t3));
+    });
+    this.setAngle(landing);
+  }
+};
+
+// examples/games/slot-fluid-mashine/math.js
+function getWindow2(slot, stops, { topIsPrev = true } = {}) {
+  const center = Math.floor(slot.visibleRows / 2);
+  return slot.reels.map((reel, i2) => {
+    const N2 = reel.length;
+    return Array.from({ length: slot.visibleRows }, (_2, row2) => {
+      const off = (row2 - center) * (topIsPrev ? 1 : -1);
+      const idx = ((stops[i2] + off) % N2 + N2) % N2;
+      return reel.strip[idx];
+    });
+  });
+}
+function localSpin2(slot, rng = Math.random) {
+  return slot.reels.map((r3) => Math.floor(rng() * r3.length));
+}
+function evaluateSpin2(slot, grid, { lineBet = 1, inFreeSpins = false } = {}) {
+  const { wild, scatter } = slot.symbolRoles;
+  const isWild = (id2) => wild.includes(id2);
+  const isScatter = (id2) => scatter.includes(id2);
+  const lineWins = [];
+  for (const line of slot.paylines) {
+    const cells = line.rows.map((row2, reel) => ({ reel, row: row2, id: grid[reel][row2] }));
+    let paySym = null;
+    for (const c2 of cells) {
+      if (isScatter(c2.id)) break;
+      if (!isWild(c2.id)) {
+        paySym = c2.id;
+        break;
+      }
+    }
+    let run = 0;
+    for (const c2 of cells) {
+      if (isScatter(c2.id)) break;
+      if (paySym === null || isWild(c2.id) || c2.id === paySym) run++;
+      else break;
+    }
+    const sym = paySym ?? wild[0];
+    const table = sym && slot.paytable[sym];
+    if (!table) continue;
+    const count = Object.keys(table).map(Number).filter((n3) => n3 <= run).sort((a2, b2) => b2 - a2)[0];
+    if (!count) continue;
+    const pay = table[count];
+    if (pay > 0) lineWins.push({ lineId: line.id, symbol: sym, count, pay, cells: cells.slice(0, count) });
+  }
+  const fs2 = slot.freeSpins;
+  const scatterCells = [];
+  grid.forEach((col, reel) => col.forEach((id2, row2) => {
+    if (fs2?.enabled && id2 === fs2.triggerSymbol) scatterCells.push({ reel, row: row2 });
+  }));
+  const freeSpinsAwarded = fs2?.enabled && scatterCells.length >= fs2.triggerCount && (!inFreeSpins || fs2.retrigger) ? fs2.spinsAwarded : 0;
+  const multiplier = inFreeSpins ? fs2?.multiplier ?? 1 : 1;
+  const payUnits = lineWins.reduce((s2, w2) => s2 + w2.pay, 0);
+  return {
+    lineWins,
+    scatterCells,
+    freeSpinsAwarded,
+    payUnits,
+    // sum of paytable values
+    totalWin: payUnits * lineBet * multiplier,
+    // currency
+    multiplier
+  };
+}
+function normalizeSpinResult2(raw, slot) {
+  const stops = raw?.stops ?? raw?.reelStops ?? raw?.positions;
+  if (!Array.isArray(stops) || stops.length !== slot.reelCount) {
+    throw new Error("Unknown spin result shape: " + JSON.stringify(raw));
+  }
+  stops.forEach((stop, reelIndex) => {
+    const length2 = slot.reels[reelIndex]?.strip?.length ?? 0;
+    if (!Number.isInteger(stop) || stop < 0 || stop >= length2) {
+      throw new Error(`Invalid stop index for reel ${reelIndex}: ${stop} (strip length ${length2})`);
+    }
+  });
+  return { stops, serverWin: raw.totalWin ?? raw.win ?? null };
+}
+
+// examples/games/slot-fluid-mashine/state.js
+var sleep5 = (ms2) => new Promise((r3) => setTimeout(r3, ms2));
+var SlotGame2 = class {
+  constructor(slot, reelViews, opts = {}) {
+    if (reelViews.length !== slot.reelCount) throw new Error("reelViews count != reelCount");
+    this.slot = slot;
+    this.views = reelViews;
+    this.lineBet = opts.lineBet ?? 1;
+    this.demoBalance = opts.demoBalance ?? 1e3;
+    this.betAmount = opts.betAmount ?? 1;
+    this.onDemoBalance = opts.onDemoBalance ?? (() => {
+    });
+    this.onDemoBalance(this.demoBalance);
+    this.minSpinMs = opts.minSpinMs ?? 800;
+    this.startStagger = opts.startStagger ?? 380;
+    this.stagger = opts.stagger ?? 300;
+    this.topIsPrev = opts.topIsPrev ?? true;
+    this.onPresentWin = opts.onPresentWin;
+    this.freeSpinsLeft = 0;
+    this.state = "IDLE";
+    this.queue = [];
+    this.listeners = {};
+  }
+  on(evt, fn2) {
+    (this.listeners[evt] ??= []).push(fn2);
+    return this;
+  }
+  emit(evt, data) {
+    (this.listeners[evt] || []).forEach((fn2) => fn2(data));
+  }
+  setState(s2) {
+    this.state = s2;
+    this.emit("state", s2);
+  }
+  spin() {
+    return this.playResult({
+      stops: localSpin2(this.slot),
+      isLocalDemo: true
+    });
+  }
+  async playResult(raw) {
+    if (this.state !== "IDLE") {
+      this.queue.push(raw);
+      return;
+    }
+    let demoBetCharged = false;
+    let demoWinningsCredited = false;
+    if (raw?.isLocalDemo) {
+      if (this.demoBalance < this.betAmount) {
+        this.emit("insufficientBalance", {
+          balance: this.demoBalance,
+          betAmount: this.betAmount
+        });
+        return;
+      }
+      this.demoBalance -= this.betAmount;
+      demoBetCharged = true;
+      this.onDemoBalance(this.demoBalance);
+      this.emit("balance", this.demoBalance);
+    }
+    try {
+      console.groupCollapsed("[slot-debug] incoming spin");
+      console.log("RAW SERVER RESULT:", raw);
+      console.log("CONFIG:", {
+        reelCount: this.slot.reelCount,
+        visibleRows: this.slot.visibleRows,
+        topIsPrev: this.topIsPrev,
+        stripLengths: this.slot.reels.map((reel) => reel.length)
+      });
+      console.groupEnd();
+      const { stops } = normalizeSpinResult2(raw, this.slot);
+      const inFree = typeof raw?.inFree === "boolean" ? raw.inFree : this.freeSpinsLeft > 0;
+      if (inFree) this.freeSpinsLeft--;
+      this.setState("SPINNING");
+      this.emit("spinStart", { inFree, freeSpinsLeft: this.freeSpinsLeft });
+      const starts = [];
+      for (let i2 = 0; i2 < this.views.length; i2++) {
+        starts.push(this.views[i2].startSpin());
+        if (i2 < this.views.length - 1) await sleep5(this.startStagger);
+      }
+      await Promise.all(starts);
+      await sleep5(this.minSpinMs);
+      this.setState("STOPPING");
+      await Promise.all(this.views.map(async (v2, i2) => {
+        await sleep5(i2 * this.stagger);
+        await v2.stopAt(stops[i2]);
+        this.emit("reelStop", { reel: i2, stop: stops[i2] });
+      }));
+      this.setState("EVALUATING");
+      const grid = Array.isArray(raw?.grid) ? raw.grid : getWindow2(this.slot, stops, { topIsPrev: this.topIsPrev });
+      const ev = Array.isArray(raw?.lineWins) ? {
+        lineWins: raw.lineWins,
+        scatterCells: Array.isArray(raw.scatterCells) ? raw.scatterCells : [],
+        freeSpinsAwarded: Number(raw.freeSpinsAwarded) || 0,
+        payUnits: Number(raw.payUnits) || 0,
+        totalWin: Number(raw.totalWin) || 0,
+        multiplier: Number(raw.multiplier) || 1
+      } : evaluateSpin2(this.slot, grid, { lineBet: this.lineBet, inFreeSpins: inFree });
+      if (typeof raw?.freeSpinsLeft === "number") {
+        this.freeSpinsLeft = raw.freeSpinsLeft;
+      } else {
+        this.freeSpinsLeft += ev.freeSpinsAwarded;
+      }
+      if (demoBetCharged) {
+        this.demoBalance += ev.totalWin;
+        demoWinningsCredited = true;
+        this.onDemoBalance(this.demoBalance);
+        this.emit("balance", this.demoBalance);
+      }
+      const result2 = { ...ev, grid, stops, inFree, freeSpinsLeft: this.freeSpinsLeft };
+      this.emit("result", result2);
+      if (ev.lineWins.length || ev.freeSpinsAwarded) {
+        this.setState("PRESENTING");
+        const winningByReel = this.views.map(() => /* @__PURE__ */ new Set());
+        const addWinningCell = (cell, source) => {
+          const { reel, row: row2 } = cell;
+          const view = this.views[reel];
+          if (!view || !Number.isInteger(row2) || row2 < 0 || row2 >= this.slot.visibleRows) {
+            console.warn("[slot] Ignoring invalid winning cell", { source, cell });
+            return;
+          }
+          const stripIndex = Number.isInteger(cell.stripIndex) ? cell.stripIndex : view.stripIndexForRow(stops[reel], row2, this.topIsPrev);
+          const actualSymbol = this.slot.reels[reel].strip[stripIndex];
+          const expectedSymbol = cell.id ?? grid[reel]?.[row2];
+          if (!Number.isInteger(stripIndex) || stripIndex < 0 || stripIndex >= this.slot.reels[reel].strip.length || actualSymbol !== expectedSymbol) {
+            console.error("[slot] WINNING SYMBOL MISMATCH", {
+              source,
+              reel,
+              row: row2,
+              stripIndex,
+              expectedSymbol,
+              actualSymbol,
+              stop: stops[reel]
+            });
+            return;
+          }
+          winningByReel[reel].add(stripIndex);
+        };
+        for (const win of ev.lineWins) {
+          for (const cell of win.cells ?? []) addWinningCell(cell, win.lineId);
+        }
+        if (ev.freeSpinsAwarded) {
+          for (const cell of ev.scatterCells) addWinningCell(cell, "scatter");
+        }
+        const animations = winningByReel.flatMap(
+          (indices, reelIndex) => [...indices].map((index) => this.views[reelIndex].playWinAt(index))
+        );
+        const presentation = this.onPresentWin ? this.onPresentWin(result2) : Promise.resolve();
+        await Promise.all([...animations, presentation]);
+      }
+    } catch (err) {
+      if (demoBetCharged && !demoWinningsCredited) {
+        this.demoBalance += this.betAmount;
+        this.onDemoBalance(this.demoBalance);
+        this.emit("balance", this.demoBalance);
+      }
+      console.error("[slot] spin failed", err);
+      this.emit("error", err);
+    } finally {
+      this.setState("IDLE");
+    }
+    if (this.queue.length) return this.playResult(this.queue.shift());
+  }
+};
+
+// examples/games/slot-fluid-mashine/slot.js
+var baseUrl2 = "https://slot-simulator.onrender.com";
+var machineId12 = new URLSearchParams(window.location.search).get("machineId");
+console.log("machineId1", machineId12);
+var machineId2 = machineId12 || "6ac80510c453c7d32ec5364a";
+var SLOT_SIMULATOR_CONFIG_TOKEN2 = "SHITHAPPENS";
+var game2;
+var setConeMood;
+var ENABLE_REMOTE_SPIN_EVENTS2 = false;
+var SPACING2 = 6;
+var SCALE2 = 3.5;
+var SYMBOL_REEL_RADIUS = 4.3;
+var SYMBOL_EFFECT_SCALE = 0.78;
+var reelX2 = (i2, n3) => ((n3 - 1) / 2 - i2) * SPACING2;
+var effectType2 = "default";
+var FLUID_SYMBOL_PALETTE = [
+  [1.8, 0.28, 0.12],
+  [0.18, 1.55, 0.62],
+  [0.18, 0.62, 1.8],
+  [1.45, 0.2, 1.55],
+  [1.5, 1.1, 0.16],
+  [0.15, 1.35, 1.55]
+];
+function createSymbolEmitter(fluid, index) {
+  const palette = FLUID_SYMBOL_PALETTE[Math.floor(Math.random() * FLUID_SYMBOL_PALETTE.length)];
+  const variant = Math.floor(Math.random() * 4);
+  const common = {
+    color: palette,
+    colorScale: 1,
+    interval: 0.055 + index % 3 * 0.012,
+    jitter: 0.18
+  };
+  if (variant === 0) {
+    fluid.addEmitter({
+      ...common,
+      spiral: {
+        cx: 0.5,
+        cy: 0.5,
+        rStart: 0.03,
+        rEnd: 0.31,
+        speed: 2.2 + index % 4 * 0.25,
+        duration: 2.2,
+        pause: 0.15,
+        strength: 230,
+        radial: 0.22,
+        arms: 2,
+        reverse: index % 2 === 0
+      }
+    });
+  } else if (variant === 1) {
+    fluid.addFire({
+      x: 0.32 + index % 4 * 0.12,
+      y: 0.08,
+      height: 0.55,
+      duration: 0.75,
+      pause: 0.25,
+      strength: 90,
+      spread: 0.08,
+      color: palette,
+      interval: common.interval,
+      jitter: 0.3
+    });
+  } else if (variant === 2) {
+    fluid.addEmitter({
+      ...common,
+      orbit: {
+        cx: 0.5,
+        cy: 0.5,
+        r: 0.22,
+        speed: 1.2 + index % 5 * 0.2,
+        strength: 260
+      }
+    });
+  } else {
+    fluid.addEmitter({
+      ...common,
+      sweep: {
+        from: [0.12, 0.18 + index % 3 * 0.08],
+        to: [0.88, 0.72 - index % 3 * 0.06],
+        duration: 0.85,
+        pause: 0.3,
+        strength: 110,
+        spread: 0.07
+      }
+    });
+  }
+}
+async function initializeSymbolReel2(mesh, engine, reelCfg) {
+  if (!mesh.effects) mesh.effects = {};
+  const effects = [];
+  const count = reelCfg.strip.length;
+  const radius = SYMBOL_REEL_RADIUS;
+  for (let index = 0; index < count; index++) {
+    const angle2 = index / count * Math.PI * 2;
+    const fluid = new FluidEffect(engine.device, {
+      simRes: 32,
+      dyeRes: 96,
+      pressureIterations: 4,
+      curl: 14,
+      densityDissipation: 0.985,
+      velocityDissipation: 0.18,
+      splatRadius: 0.12,
+      splatForce: 1700,
+      localOffset: [
+        0,
+        Math.cos(angle2) * radius,
+        Math.sin(angle2) * radius
+      ],
+      // [Math.cos(angle) * radius, Math.sin(angle) * radius, 0],
+      // FluidEffect uses radians and its quad normal is +Z. Turn it outward
+      // from the reel cylinder, then let the reel mesh supply parent rotation.
+      localRotation: [angle2 - Math.PI / 2, 0, 0],
+      // [0, Math.PI / 2, angle],
+      scale: [SYMBOL_EFFECT_SCALE, SYMBOL_EFFECT_SCALE, 1]
+    });
+    createSymbolEmitter(fluid, index);
+    fluid.burst(0.5, 0.5, 3, 170, FLUID_SYMBOL_PALETTE[index % FLUID_SYMBOL_PALETTE.length]);
+    mesh.effects[`fluidSymbol${index}`] = fluid;
+    effects.push(fluid);
+  }
+  return effects;
+}
+var loadFluidsSlot = function() {
+  mb.show("Please wait 10 sec to activate render.com hosted page.");
+  let slotMachine = new MatrixEngineWGPU({
+    canvasSize: "fullscreen",
+    fastRender: 0.9,
+    dontUsePhysics: true,
+    MAX_SPOTLIGHTS: 1,
+    MAX_BONES: 0,
+    mainCameraParams: {
+      // type: 'cinematicCamera',
+      type: "WASD",
+      responseCoef: 1e3
+    },
+    clearColor: { r: 0, b: 0.122, g: 0.122, a: 1 }
+  }, async () => {
+    let laser2, floor2, cam2, introPath, spinSpeed = 16, delayReel = 60;
+    if (urlQuery["reelSpeed"]) {
+      spinSpeed = parseInt(urlQuery["reelSpeed"]);
+    }
+    if (urlQuery["delayReel"]) {
+      delayReel = parseInt(urlQuery["delayReel"]);
+    }
+    if (urlQuery["effectType"]) {
+      effectType2 = urlQuery["effectType"];
+    }
+    const raw = await fetchSlotConfig2(baseUrl2, machineId2);
+    const slot = adaptSlotConfig2(raw);
+    slot.warnings.forEach((w2) => console.warn("[slot]", w2));
+    const n3 = slot.reelCount;
+    slotMachine.addLight();
+    downloadMeshes(
+      { ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj", plane: "./res/meshes/blender/plane.obj" },
+      onLoadObj,
+      { scale: [1, 1, 1] }
+    );
+    downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, onGround, { scale: [35, 0.5, 35] });
+    addRaycastsAABBListener("canvas1", "click");
+    function onGround(m2) {
+      floor2 = slotMachine.addMeshObj({
+        material: { type: "standard", share: true },
+        position: { x: 0, y: 0, z: -10 },
+        rotation: { x: 0, y: 180, z: 0 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        scale: [1, 1, 1],
+        texturesPaths: ["./res/textures/floor1.webp"],
+        name: "floor",
+        mesh: m2.cube,
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        }
+      });
+      loadAtlasFONT(slotMachine.device).then((OUTPUT) => {
+        const checker2 = floor2.createCheckerboardTexture(256, 128, [0, 50, 50, 255], [20, 200, 200, 255]);
+        let samplerTest = slotMachine.device.createSampler({
+          magFilter: "nearest",
+          minFilter: "nearest",
+          addressModeU: "repeat",
+          addressModeV: "repeat"
+        });
+        floor2.changeTexture(checker2, samplerTest);
+        floor2.setUVScale(12, 12);
+        floor2.effects.gpuText = new MSDFTextEffect(
+          slotMachine.device,
+          "rgba16float",
+          OUTPUT.msdfTexture,
+          samplerTest,
+          slotMachine.cameraBuffer,
+          OUTPUT.font,
+          { scale: 0.05, localOffset: [isMobile() ? -9 : -8, 5, 17], localScale: isMobile() ? [0.6, 0.8, 0.8] : [0.5, 0.7, 0.7] }
+        );
+        floor2.effects.gpuText.typeText(slotMachine.demoBalanceText ?? "Demo balance: 1000", 120, () => {
+          floor2.position.translateByY(-3);
+        });
+        slotMachine.floor = floor2;
+      });
+    }
+    async function onLoadObj(m2) {
+      slotMachine.cone = slotMachine.addProceduralMeshObj({
+        material: { type: "standard" },
+        position: { x: 14, y: 14.5, z: -10 },
+        rotation: { x: 0, y: 0, z: -90 },
+        scale: [15, 8, 15],
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        texturesPaths: ["./res/textures/cube-g1_low.webp"],
+        meshA: MeshMorpher.cone(1, 3, false),
+        meshB: MeshMorpher.cube(1),
+        name: `morph_coneLeft`,
+        physics: {
+          enabled: false,
+          geometry: "Cone",
+          mass: 1,
+          radius: 1,
+          height: 3,
+          group: 2,
+          mask: -1
+        },
+        raycast: { enabled: true, radius: 1 }
+      });
+      slotMachine.cone2 = slotMachine.addProceduralMeshObj({
+        material: { type: "standard" },
+        position: { x: -14, y: 14.5, z: -10 },
+        rotation: { x: 0, y: 0, z: 90 },
+        scale: [15, 8, 15],
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        texturesPaths: ["./res/textures/cube-g1_low.webp"],
+        meshA: MeshMorpher.cone(1, 3, false),
+        meshB: MeshMorpher.cube(1),
+        name: `morph_coneLeft`,
+        physics: {
+          enabled: false,
+          geometry: "Cone",
+          mass: 1,
+          radius: 1,
+          height: 3,
+          group: 2,
+          mask: -1
+        },
+        raycast: { enabled: true, radius: 1 }
+      });
+      const setConeAmbient = (left2) => {
+        app.cone.setAmbient(...left2);
+        app.cone2.setAmbient(...left2);
+      };
+      const coneAmbient = {
+        idle: [[-1, -1, -1]],
+        spin: [[-2, -2, -2]],
+        win: [[-2, 2, -2]]
+      };
+      setConeMood = (mood) => setConeAmbient(...coneAmbient[mood]);
+      setConeMood("idle");
+      let inputArg = {
+        material: { type: "standard", share: true },
+        position: { x: 0, y: -1, z: -20 },
+        rotation: { x: 0, y: 0, z: 0 },
+        scale: [30, 30, 30],
+        rotationSpeed: { x: 0, y: 0.1, z: 0 },
+        texturesPaths: ["./res/textures/cube-g1-extra_low.png"],
+        name: "sky",
+        mesh: m2.ball,
+        physics: {
+          enabled: false,
+          geometry: "Sphere"
+        }
+      };
+      const reelMeshes = slot.reels.map((reel, i2) => slotMachine.addMeshObj({
+        material: { type: "standard" },
+        position: { x: reelX2(i2, n3), y: 15, z: -10 },
+        rotation: { x: 180, y: 0, z: 0 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        scale: [SCALE2, SCALE2, SCALE2],
+        texturesPaths: ["./res/textures/floor1.webp"],
+        name: "reel" + i2,
+        mesh: m2.cube,
+        raycast: { enabled: false, radius: 1 },
+        physics: { enabled: false, mass: 0, geometry: "Cube" },
+        pointerEffect: { enabled: true }
+      }));
+      if (isMobile()) slotMachine.lightContainer[0].setIntensity(8);
+      else slotMachine.lightContainer[0].setIntensity(15);
+      slotMachine.activateBloomEffect();
+      slotMachine.activateFXAA();
+      if (isMobile()) slotMachine.bloomPass.setBlurRadius(2);
+      if (isMobile() === false) {
+        slotMachine.activateVolumetricEffect({
+          density: 0.01,
+          steps: 30,
+          scatterStrength: 0.2,
+          heightFalloff: 0.2,
+          lightColor: [2, 0, 1]
+        });
+      }
+      slotMachine.activateMotionBlur({ strength: 0.6, samples: 12 });
+      slotMachine.lightContainer[0].setPosition(0, 35, -8);
+      slotMachine.lightContainer[0].setTarget(0, 0, -10);
+      const FX_MESH = slotMachine.addMeshObj({
+        material: { type: "standard" },
+        position: { x: 0, y: 15, z: -10 },
+        rotation: { x: 90, y: 0, z: 180 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        scale: [9 * Math.max(1, n3 / 3), 9, 9],
+        texturesPaths: ["./res/icons/512.webp"],
+        name: "cubeeffect",
+        mesh: m2.plane,
+        raycast: { enabled: true, radius: 1 },
+        physics: { enabled: false, mass: 0, geometry: "Cube" },
+        pointerEffect: { enabled: true }
+      });
+      await sleep(600);
+      laser2 = FX_MESH.effects.laser = new LaserProjectile(
+        slotMachine.device,
+        "rgba16float",
+        slotMachine.cameraBuffer,
+        {
+          // Four beams per visible symbol, plus room for temporary win beams.
+          maxBeams: Math.max(64, n3 * slot.visibleRows * 4 + 24),
+          width: 0.045,
+          intensity: 2.8,
+          colorA: [0.15, 0.95, 1, 1],
+          colorB: [0.05, 0.25, 1, 1]
+        }
+      );
+      slotMachine.floor.effects.gpuText.setColor(1, 11, 1);
+      slotMachine.laser = laser2;
+      const framePoint = (worldX, worldY, worldZ = 0) => [
+        -worldX / (9 * Math.max(1, n3 / 3)),
+        2.4 - 5 / 9 + worldZ / 9,
+        (worldY - 17) / 9
+      ];
+      const fireFrameEdge = (a2, b2) => laser2.fireBeam(
+        framePoint(a2[0], a2[1], a2[2]),
+        framePoint(b2[0], b2[1], b2[2]),
+        0
+      );
+      const halfW = SYMBOL_EFFECT_SCALE * SCALE2;
+      const halfH = SYMBOL_EFFECT_SCALE * SCALE2;
+      for (let i2 = 0; i2 < n3; i2++) {
+        const cx = reelX2(i2, n3);
+        const stripLength = slot.reels[i2].strip.length;
+        const rowStep = Math.PI * 2 / stripLength;
+        for (let row2 = 0; row2 < slot.visibleRows; row2++) {
+          const rowOffset = row2 - Math.floor(slot.visibleRows / 2);
+          const cy = 15 + Math.sin(rowOffset * rowStep) * SYMBOL_REEL_RADIUS * SCALE2;
+          const tiltX = -rowOffset * rowStep;
+          const cosX = Math.cos(tiltX);
+          const sinX = Math.sin(tiltX);
+          const corners = [
+            [-halfW, -halfH],
+            [halfW, -halfH],
+            [halfW, halfH],
+            [-halfW, halfH]
+          ].map(([x3, y3]) => [
+            cx + x3,
+            cy + y3 * cosX,
+            y3 * sinX
+          ]);
+          for (let edge = 0; edge < 4; edge++) {
+            fireFrameEdge(corners[edge], corners[(edge + 1) % 4]);
+          }
+        }
+      }
+      FX_MESH.effects.keeffect = new KaleidoscopeEmitter(slotMachine.device, "rgba16float", 3, slotMachine.cameraBuffer);
+      for (const [i2, mesh] of reelMeshes.entries()) {
+        await initializeSymbolReel2(mesh, slotMachine, slot.reels[i2]);
+      }
+      cam2 = slotMachine.getCamera();
+      cam2.setYaw(-3.119);
+      cam2.setPitch(-0.05);
+      const adaptedZ = isMobile() ? -53 * Math.max(1, n3 / 3) : -45;
+      cam2.setZ(adaptedZ);
+      cam2.setY(16);
+      introPath = new CameraPath([
+        { position: [0, 5, 20], target: [0, 0, 0] },
+        { position: [10, 10, 10], target: [0, 1, 0] },
+        { position: [0, 13, adaptedZ], target: [0, 12, 0] }
+      ], { parameterization: "arc" });
+      cam2._dirtyAngle = true;
+      reelMeshes.forEach((mesh) => mesh.setBlend(1e-3));
+      dispatchEvent(new Event("update-effects"));
+      reelMeshes[0].setupPipeline();
+      slotMachine.buildRenderBuckets();
+      slotMachine.reelMeshes = reelMeshes;
+      await sleep(400);
+      const views = reelMeshes.map((mesh, i2) => new SlotReel2(
+        mesh,
+        slot.reels[i2],
+        {
+          visibleRows: slot.visibleRows,
+          spinSpeed
+        }
+      ));
+      for (const v2 of views) await v2.layout(delayReel);
+      reelMeshes.forEach((r3) => r3.setAmbient(2, 0, 0));
+      slotMachine.demoBalanceText = "Demo balance: 100";
+      game2 = new SlotGame2(slot, views, {
+        lineBet: 5,
+        demoBalance: 100,
+        betAmount: 1,
+        onDemoBalance: (balance) => {
+          slotMachine.demoBalanceText = `Demo balance: ${balance}`;
+          slotMachine.floor?.effects?.gpuText?.setText(slotMachine.demoBalanceText);
+        },
+        onPresentWin: async (res) => {
+          setConeMood("win");
+          const adaptedZ2 = isMobile() ? -53 * Math.max(1, n3 / 3) : -45;
+          const pulsingPath = new CameraPath([
+            { position: [0, 13, adaptedZ2], target: [0, 12, 0] },
+            { position: [0, 12, -25], target: [0, 12, 0] },
+            { position: [0, 11, -10], target: [0, 13, 0] },
+            { position: [5, 12, -8], target: [0, 15, 0] },
+            { position: [7, 14, -3], target: [0, 23, 0] },
+            { position: [2, 15, -6], target: [0, 32, 0] },
+            { position: [-6, 12, -7], target: [0, 12, 0] },
+            { position: [-5, 10, -3], target: [0, 13, 0] },
+            { position: [0, 13, -24], target: [0, 12, 0] },
+            { position: [0, 13, adaptedZ2], target: [0, 12, 0] }
+            // Use the default 0.5 tension: this engine's spline only interpolates
+            // through keyframes at 0.5, so a lower value misses the endpoints.
+          ], { parameterization: "arc" });
+          const winCamera = app.getCamera();
+          FX_MESH.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(16, 26));
+          FX_MESH.effects.keeffect.setIntensity(randomIntFromTo(10, 13));
+          app.lightContainer[0].setColorR(4011);
+          app.floor.rotation.rotationSpeed.y = 10;
+          await sleep(500);
+          app.floor.rotation.rotationSpeed.y = 20;
+          FX_MESH.rotation.rotationSpeed.x = 10;
+          await sleep(500);
+          app.floor.rotation.rotationSpeed.y = 30;
+          await sleep(2500);
+          app.cone.rotation.rotationSpeed.x = 1;
+          app.cone2.rotation.rotationSpeed.x = 1;
+          app.cone.morphTo(0, 5e3);
+          app.cone2.morphTo(0, 5e3);
+          setConeMood("idle");
+          FX_MESH.effects.keeffect.setIntensity(1);
+          FX_MESH.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(6, 8));
+          app.lightContainer[0].setColorR(1);
+          app.floor.rotation.rotationSpeed.y = 0;
+          app.floor.rotation.setRotation(0, 180, 0);
+          FX_MESH.rotation.rotationSpeed.x = 0;
+          FX_MESH.rotation.setRotation(90, 0, 180);
+        }
+      });
+      game2.on("result", (r3) => {
+        if (r3.totalWin > 0) {
+          setConeMood("win");
+          const flashed = /* @__PURE__ */ new Set();
+          for (const win of r3.lineWins ?? []) {
+            for (const cell of win.cells ?? []) {
+              const key = `${cell.reel}:${cell.row}`;
+              if (flashed.has(key)) continue;
+              flashed.add(key);
+              const cx = reelX2(cell.reel, n3);
+              const cy = 15 + (1 - cell.row) * 3.2;
+              laser2.fireBeam(
+                framePoint(cx - 2.35, cy),
+                framePoint(cx + 2.35, cy),
+                0.9,
+                {
+                  colorA: [1, 0.95, 0.25, 1],
+                  colorB: [1, 0.12, 0.45, 1],
+                  width: 0.12,
+                  intensity: 7,
+                  mode: 1
+                }
+              );
+            }
+          }
+        }
+      });
+      window.slot = slot;
+      window.slotGame = game2;
+      window.slotViews = views;
+      window.addEventListener("keydown", (e2) => {
+        if (e2.code !== "Space") return;
+        e2.preventDefault();
+        if (e2.repeat || game2.state !== "IDLE") return;
+        setConeMood("spin");
+        game2.spin();
+        app.cone.morphTo(1, 5e3);
+        app.cone2.morphTo(1, 5e3);
+        app.cone.rotation.rotationSpeed.x = 0;
+        app.cone2.rotation.rotationSpeed.x = 0;
+        FX_MESH.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(1, 2));
+        FX_MESH.effects.keeffect.setIntensity(randomIntFromTo(2, 4));
+      });
+      if (ENABLE_REMOTE_SPIN_EVENTS2) {
+        const es2 = new EventSource(`${baseUrl2}/slot-api/machines/${machineId2}/events`);
+        es2.addEventListener("spin", (e2) => {
+          setConeMood("spin");
+          game2.playResult(JSON.parse(e2.data));
+        });
+        slotMachine.slotEventSource = es2;
+      }
+      game2.on("insufficientBalance", ({ balance, betAmount }) => {
+        console.info(`[slot-demo] Not enough demo credits: balance=${balance}, bet=${betAmount}`);
+      });
+    }
+    slotMachine.canvas.addEventListener("ray.hit.event", (e2) => {
+      console.log("ray.hit.event detected");
+      if (e2.detail.hitObject.name.startsWith("cubeeffect")) {
+        if (game2.state !== "IDLE") return;
+        setConeMood("spin");
+        game2.spin();
+      }
+    });
+  });
+  window.app = slotMachine;
 };
 
 // examples.js
@@ -81395,7 +85248,7 @@ var switchDemo = (id2) => {
   }
 };
 var hideMenu = () => {
-  document.getElementById("examples").style.left = "-150px";
+  document.getElementById("examples").style.left = "-170px";
 };
 byId2("loadObjFile").addEventListener("click", () => switchDemo("1"));
 byId2("physicsPlayground").addEventListener("click", () => switchDemo("2"));
@@ -81404,6 +85257,7 @@ byId2("video-texture").addEventListener("click", () => switchDemo("4"));
 byId2("objs-anim").addEventListener("click", () => switchDemo("5"));
 byId2("glb-loader").addEventListener("click", () => switchDemo("6"));
 byId2("procedural-mesh").addEventListener("click", () => switchDemo("7"));
+byId2("fluid-effect").addEventListener("click", () => switchDemo("8"));
 byId2("myLights").addEventListener("click", () => switchDemo("9"));
 byId2("snake-light").addEventListener("click", () => switchDemo("10"));
 byId2("snake-light-instanced").addEventListener("click", () => switchDemo("11"));
@@ -81453,9 +85307,9 @@ byId2("loadPoseBeast").addEventListener("click", () => switchDemo("48"));
 byId2("loadPoseToGLB").addEventListener("click", () => switchDemo("49"));
 byId2("loadSlot").addEventListener("click", () => switchDemo("50"));
 byId2("volumetrixTexProj").addEventListener("click", () => switchDemo("51"));
+byId2("loadFluidsSlot").addEventListener("click", () => switchDemo("52"));
 byId2("jamb").addEventListener("click", () => window.open("https://goldenspiral.itch.io/jamb-3d-deluxe", "_blank"));
 byId2("moba").addEventListener("click", () => window.open("https://maximumroulette.com/apps/fohb", "_blank"));
-window.loadObjFile = loadObjFile;
 if (urlQuery["demo"] === "1") {
   loadObjFile();
 } else if (urlQuery["demo"] === "2") {
@@ -81471,7 +85325,7 @@ if (urlQuery["demo"] === "1") {
 } else if (urlQuery["demo"] === "7") {
   procMesh();
 } else if (urlQuery["demo"] === "8") {
-  loadObjFile();
+  loadFluidEffectExample();
 } else if (urlQuery["demo"] === "9") {
   myLights();
 } else if (urlQuery["demo"] === "10") {
@@ -81558,6 +85412,8 @@ if (urlQuery["demo"] === "1") {
   loadSlot();
 } else if (urlQuery["demo"] === "51") {
   volumetrixTexProj();
+} else if (urlQuery["demo"] === "52") {
+  loadFluidsSlot();
 } else {
   loadObjFile();
 }

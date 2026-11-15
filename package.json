@@ -1,7 +1,7 @@
 {
   "name": "matrix-engine-wgpu",
-  "version": "2.0.2",
-  "description": "2.0.0 beta : migration to esbuild to avoid security bugs with old compile system, effects sunrender system updated every type of effect have own pipeline cache manager this is powerfull for effects mass reuse, GPU culling vs Indirect draws - push it to the limits. AI Code Creator (use engine from npm direct render preview)Cast received for android TV, splat point clouds + color animator and vertex shader animation",
+  "version": "2.1.0",
+  "description": "2.1.0 +FXAA 2.0.0 beta: migration to esbuild to avoid security bugs with old compile system, effects sunrender system updated every type of effect have own pipeline cache manager this is powerfull for effects mass reuse, GPU culling vs Indirect draws - push it to the limits. AI Code Creator (use engine from npm direct render preview)Cast received for android TV, splat point clouds + color animator and vertex shader animation",
   "main": "index.js",
   "scripts": {
     "examples": "esbuild examples.js --bundle --outfile=public/examples.js --format=esm --watch",
@@ -10,12 +10,15 @@
     "android-tv-cast": "esbuild android-tv-cast.js --bundle --outfile=public/android-tv-cast.js --format=esm --watch",
     "jamb": "esbuild ./examples/games/jamb/jamb.js --bundle --outfile=public/yacht.js --format=esm --watch",
     "demo1": "esbuild demo1.js --bundle --outfile=public/app.js --format=esm --watch",
+    "hang3d": "esbuild ./examples/games/first-person-shooter/hang3d.js --bundle --outfile=public/app.js --format=esm --watch",
+    "chat": "esbuild ./examples/apps/public-chat/freeky-chat.js --bundle --outfile=public/chat.js --format=esm --watch",
     "empty": "esbuild empty.js --bundle --outfile=public/empty.js --format=esm --watch",
     "build.jamb": "esbuild main.js --bundle --outfile=public/app.js --format=esm",
     "glb-loader": "esbuild ./examples/glb-loader.js --bundle --outfile=public/app.js --format=esm --watch",
     "moba": "esbuild ./examples/games/moba/forestOfHollowBlood.js --bundle --outfile=public/moba-game.js --format=esm --watch",
     "moba-menu": "esbuild ./examples/games/moba/start-menu.js --bundle --outfile=public/moba-menu.js --format=esm --watch",
     "build-all": "npm run examples | npm run main | npm run empty",
+    "dedicated": "node src/tools/dedicated-server/websocket/server.js",
     "creator-install": "npm --prefix src/tools/the-beast-code-gen i",
     "creator": "npm --prefix src/tools/the-beast-code-gen run dev",
     "creator-backend": "npm --prefix src/tools/the-beast-code-gen run backend",
@@ -39,6 +42,7 @@
     "wgpu-matrix": "^2.0.0"
   },
   "dependencies": {
+    "ws": "^8.21.0",
     "@anthropic-ai/sdk": "^0.104.1",
     "@google/generative-ai": "^0.24.1",
     "@mediapipe/face_mesh": "^0.4.1633559619",
@@ -95,6 +99,9 @@
     "Natural-language-to-graph",
     "ollama-backend",
     "ollama-tool",
+    "FXAA",
+    "clouds effect",
+    "fog effect",
     "bloom",
     "volumetric",
     "post-processing",

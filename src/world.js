@@ -2,7 +2,7 @@ import {GPU_FEATURES, gpuSettings, MEConfig} from "./me-config.js";
 import {mat4, vec3} from "wgpu-matrix";
 import {CinematicCamera, FirstPersonCamera, PlaneCamera, RPGCamera, WASDCamera} from "./engine/cameras.js";
 import MEMeshObj from "./engine/mesh-obj.js";
-import {LOG_FUNNY_BIG_ARCADE, LOG_FUNNY_ARCADE, LOG_FUNNY_BIG_NEON, LOG_WARN, genName, mb, urlQuery, LOG_FUNNY, LOG_FUNNY_EXTRABIG, randomIntFromTo, isMobile, MeshType, LOG_FUNNY_SMALL, LOG_FUNNY_BIG_TERMINAL, byId, meLoader, checkLock, mobileLock, preventZoom, getOrientation} from "./engine/utils.js";
+import {LOG_FUNNY_ARCADE, LOG_FUNNY_BIG_NEON, LOG_WARN, genName, mb, urlQuery, LOG_FUNNY, LOG_FUNNY_EXTRABIG, randomIntFromTo, isMobile, MeshType, byId, meLoader, checkLock, mobileLock, preventZoom, getOrientation} from "./engine/utils.js";
 import {MultiLang} from "./multilang/lang.js";
 import {MatrixSounds} from "./sounds/sounds.js";
 import {downloadMeshes, play} from "./engine/loader-obj.js";
@@ -37,9 +37,14 @@ import {GPUCapabilities} from "./engine/GPUCapabilities.js";
 import {ComputeCullingSystem, IndirectRenderingManager} from "./engine/indirect-core.js";
 import {GPUIndirectDraws} from "./engine/overrides/GPUCulling.js";
 import {AdvancedVolumetricPass} from "./engine/postprocessing/volumetric-advanced.js";
+import {CloudsVolumetric} from "./engine/postprocessing/clouds-volumetric.js";
+import {CloudsVolumetric2} from "./engine/postprocessing/cloudes-volumetric-2.js";
+import {FXAAPass} from "./engine/postprocessing/fxaa.js";
+import {MotionBlurPass} from "./engine/postprocessing/motion-blur,js";
+import {GradePass} from "./engine/postprocessing/grade.js";
 
 /**
- *
+ * The world of Beast.
  * Main engine root class.
  * @author Nikola Lukic 2026
  * @email zlatnaspirala@gmail.com
@@ -183,6 +188,7 @@ export default class MatrixEngineWGPU {
       console.error("[webgpu][alphaMode] Wrong enum Valid:'opaque','premultiplied'!");
       return;
     }
+    // Small codepen buildin adaptation.
     if(typeof options.useContex == 'undefined') options.useContex = "webgpu";
     if(typeof options.dontUsePhysics === 'undefined') {
       if(typeof options.useJolt !== 'undefined') {
@@ -506,13 +512,11 @@ export default class MatrixEngineWGPU {
         {binding: 2, visibility: GPUShaderStage.FRAGMENT, buffer: {type: 'uniform'}}
       ]
     });
-
     this.dummyClothBuffer = this.device.createBuffer({
       label: "Dummy Cloth",
       size: 16,
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
     });
-
     this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
       label: 'uniformBufferBindGroupLayout[mesh]',
       entries: [
@@ -521,7 +525,7 @@ export default class MatrixEngineWGPU {
         {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
         {binding: 3, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
         {binding: 4, visibility: GPUShaderStage.VERTEX, buffer: {type: 'read-only-storage'}}
-      ],
+      ]
     });
     // GLB INSTANCED
     this.uniformBufferBindGroupLayoutInstanced = this.device.createBindGroupLayout({
@@ -531,9 +535,8 @@ export default class MatrixEngineWGPU {
         {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: "read-only-storage"}},
         {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
         {binding: 3, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
-        {binding: 4, visibility: GPUShaderStage.VERTEX, buffer: {type: 'read-only-storage'}},
-        // {binding: 5, visibility: GPUShaderStage.VERTEX, buffer: {type: "read-only-storage"}}
-      ],
+        {binding: 4, visibility: GPUShaderStage.VERTEX, buffer: {type: 'read-only-storage'}}
+      ]
     });
   }
 
@@ -563,7 +566,7 @@ export default class MatrixEngineWGPU {
     const requiredFeatures = [];
     for(const feature of GPU_FEATURES.GROUP_1) {
       if(this.adapter.features.has(feature)) {
-        console.log(`%cGPU Feature enabled: ${feature}.`, LOG_FUNNY_ARCADE);
+        console.info(`%cGPU Feature enabled: ${feature}.`, LOG_FUNNY_ARCADE);
         requiredFeatures.push(feature);
       }
     }
@@ -582,6 +585,7 @@ export default class MatrixEngineWGPU {
 
     this.context = canvas.getContext('webgpu');
     const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
+    this.presentationFormat = presentationFormat;
     this.context.configure({
       device: this.device,
       format: presentationFormat,
@@ -606,7 +610,7 @@ export default class MatrixEngineWGPU {
     console.log("%c ----------------------------------------------------------------------------------------------------------------- ", LOG_FUNNY);
     console.log("%c 🧬 Matrix-Engine-Wgpu 🧬 ", LOG_FUNNY_BIG_NEON);
     console.log("%c ----------------------------------------------------------------------------------------------------------------- ", LOG_FUNNY);
-    console.log("%c Version 2.0.0 [The Beast] ", LOG_FUNNY);
+    console.log("%c Version 2.1.0 [The Beast] ", LOG_FUNNY);
     console.log("%c👽", LOG_FUNNY_EXTRABIG);
     console.log(
       "%cMatrix Engine WGPU - Gate is open \n" +
@@ -614,7 +618,7 @@ export default class MatrixEngineWGPU {
       " - Optimised MediaPipe buildin library implemented (use buildin render or use the beast render).\n" +
       " - Code Creator - standalone (use engine from npm) ai top level code generator.\n" +
       " - Creative power with intuitive visual scripting work flow and ai graph generetor.\n" +
-      " - New Features: NUI-Commander Game runner, Mediapipe Face/Pose/Hand, Culling render mode CPU/GPU, Horizontal-Z-Buffer ray/reflection, sprite2DPack (effect pass) .\n" +
+      " - New Features: NUI-Commander Game runner, Mediapipe Face/Pose/Hand, Culling render mode CPU/GPU, FXAA, Horizontal-Z-Buffer ray/reflection, sprite2DPack (effect pass) .\n" +
       "   2DSprite batch manager, new game template for Jumping Cube game and PlaneCamera (3d projection but follow in 2d plane x/y).\n" +
       "🔥 Mobile support: chrome-android tested. 🔥", LOG_FUNNY);
     console.log(
@@ -710,12 +714,12 @@ export default class MatrixEngineWGPU {
       setThreshold: (v) => {},
     };
 
-    this.ssrPass = {
-      enabled: false,
-    };
-
+    this.ssrPass = {enabled: false};
     this.volumetricPass = {enabled: false};
     this.volumetricPass2 = {enabled: false};
+    this.fxaaPass = {enabled: false};
+    this.motionBlurPass = {enabled: false};
+    this.gradePass = {enabled: false};
 
     this.bloomOutputTex = this.device.createTexture({
       size: [this.canvas.width, this.canvas.height],
@@ -727,7 +731,7 @@ export default class MatrixEngineWGPU {
       label: "final pipeline sceneTexture",
       size: [this.canvas.width, this.canvas.height],
       format: 'rgba16float',
-      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
     });
 
     this.sceneTextureView = this.sceneTexture.createView();
@@ -960,13 +964,8 @@ export default class MatrixEngineWGPU {
   }
 
   getSceneObjectByName = (name) => {return this.mainRenderBundle.find((sceneObject) => sceneObject.name === name)}
-
-  getSceneObjectIfIncludes = (str) => {
-    return this.mainRenderBundle.filter((o) => o.name.includes(str) === true);
-  }
-
+  getSceneObjectIfIncludes = (str) => {return this.mainRenderBundle.filter((o) => o.name.includes(str) === true)}
   getSceneLightByName = (name) => {return this.lightContainer.find((l) => l.name === name)}
-
   getNameFromPath(p) {return p.split(/[/\\]/).pop().replace(/\.[^/.]+$/, "");}
 
   removeSceneObjectByName = (name) => {
@@ -1233,7 +1232,10 @@ export default class MatrixEngineWGPU {
         {binding: 1, resource: this.presentSampler},
         {binding: 2, resource: this.dummySSRTexture.createView()},
       ]
-    })
+    });
+
+    this._dummySSRView = this.dummySSRTexture.createView();
+    this._bloomOutputView = this.bloomOutputTex.createView();
   }
 
   async run(callback) {
@@ -1288,7 +1290,6 @@ export default class MatrixEngineWGPU {
   };
 
   updateLights() {
-    // const floatsPerLight = 36;
     for(let i = 0;i < this.MAX_SPOTLIGHTS;i++) {
       const light = this.lightContainer[i];
       if(light?.update) {
@@ -1374,10 +1375,7 @@ export default class MatrixEngineWGPU {
         pass.setPipeline(pipeline);
         let l = null;
         for(const mesh of meshes) {
-          // chatgpt SUGGESTION START
-          // Never submit a stale external-texture bind group when no current frame is ready.
           if(mesh.isVideo && !mesh.videoFrameReady) continue;
-          // chatgpt SUGGESTION end
           if(mesh.materialBindGroup !== l) {
             pass.setBindGroup(1, mesh.materialBindGroup);
             l = mesh.materialBindGroup;
@@ -1430,6 +1428,12 @@ export default class MatrixEngineWGPU {
       }
       pass.end();
 
+      if(this.motionBlurPass.enabled === true) {
+        mat4.invert(camera.VP, this._invViewProj);
+        this.motionBlurPass.render(commandEncoder, this.sceneTexture, this.sceneTextureView,
+          this.mainDepthView, this._invViewProj, camera.VP);
+      }
+
       if(this.ssrPass.enabled === true) {
         mat4.invert(camera.VP, this._invViewProj);
         this.ssrPass.updateConfig(this._invViewProj, camera.projectionMatrix);
@@ -1464,13 +1468,41 @@ export default class MatrixEngineWGPU {
         this._lastCanvasTex = canvasTexture;
         this._canvasView = canvasTexture.createView();
       }
-      if(this.bloomPass.enabled === true) this.bloomPass.render(commandEncoder, this.bloomOutputTex.createView());
+      // if(this.bloomPass.enabled === true) this.bloomPass.render(commandEncoder, this.bloomOutputTex.createView());
+      if(this.bloomPass.enabled === true) this.bloomPass.render(commandEncoder, this._bloomOutputView);
+
+
       this.finalPS.colorAttachments[0].view = this._canvasView;
-      pass = commandEncoder.beginRenderPass(this.finalPS);
-      pass.setPipeline(this.presentPipeline);
-      pass.setBindGroup(0, this._activeBindGroup);
-      pass.draw(6);
-      pass.end();
+      const hdrView = this.bloomPass.enabled ? this._bloomOutputView : this.sceneTextureView;
+      const ssrView = this.ssrPass.enabled ? this.ssrPass.ssrOutputView : this._dummySSRView;
+      if(this.gradePass.enabled === true) {
+        if(this.fxaaPass.enabled === true) {
+          this.gradePass.render(commandEncoder, hdrView, ssrView, this._ldrView);
+          this.fxaaPass.render(commandEncoder, this._ldrView, ssrView, this._canvasView, true);
+        } else {
+          this.gradePass.render(commandEncoder, hdrView, ssrView, this._canvasView);
+        }
+      } else if(this.fxaaPass.enabled === true) {
+        this.fxaaPass.render(commandEncoder, hdrView, ssrView, this._canvasView);
+      } else {
+        pass = commandEncoder.beginRenderPass(this.finalPS);
+        pass.setPipeline(this.presentPipeline);
+        pass.setBindGroup(0, this._activeBindGroup);
+        pass.draw(6);
+        pass.end();
+      }
+      // this.finalPS.colorAttachments[0].view = this._canvasView;
+      // if(this.fxaaPass.enabled === true) {
+      //   const hdrView = this.bloomPass.enabled ? this._bloomOutputView : this.sceneTextureView;
+      //   const ssrView = this.ssrPass.enabled ? this.ssrPass.ssrOutputView : this._dummySSRView;
+      //   this.fxaaPass.render(commandEncoder, hdrView, ssrView, this._canvasView);
+      // } else {
+      //   pass = commandEncoder.beginRenderPass(this.finalPS);
+      //   pass.setPipeline(this.presentPipeline);
+      //   pass.setBindGroup(0, this._activeBindGroup);
+      //   pass.draw(6);
+      //   pass.end();
+      // }
 
       this.submitQueue[0] = commandEncoder.finish();
       this.device.queue.submit(this.submitQueue);
@@ -1741,7 +1773,7 @@ export default class MatrixEngineWGPU {
     }
   }
 
-  TEST_activateVolumetricEffect = (arg) => {
+  activateVolumetricTexProj = (arg) => {
     if(this.bloomPass.enabled != true) {console.warn(`%cTheBeast: You must enable bloom before volumetric.`); return;}
     let p;
     if(typeof arg === 'undefined') {
@@ -1757,6 +1789,71 @@ export default class MatrixEngineWGPU {
       this.volumetricPass = new AdvancedVolumetricPass(this.canvas.width, this.canvas.height, this.device, p, this.sceneTextureView).init();
       this.volumetricPass.enabled = true;
       this.bloomPass._invalidateSceneBindGroups(this.volumetricPass.compositeOutputTexView);
+    }
+  }
+
+  activateVolumetricClouds = (arg) => {
+    if(this.bloomPass.enabled !== true) {
+      console.warn('%cTheBeast: You must enable bloom before volumetric clouds.'); return;
+    }
+    const p = {
+      qualityScale: 0.35,
+      steps: 24,
+      coverage: 0.58,
+      cloudBase: 24,
+      cloudTop: 58,
+      noiseScale: 0.035,
+      windSpeed: 0.8,
+      scatterStrength: 1.2,
+      // User overrides
+      ...(arg || {})
+    };
+    if(this.volumetricPass?.enabled === true) {return;}
+    this.volumetricPass = new CloudsVolumetric(this.canvas.width, this.canvas.height, this.device, p);
+    this.volumetricPass.enabled = true;
+    this.bloomPass._invalidateSceneBindGroups(this.volumetricPass.getOutputView());
+  };
+
+  activateVolumetricClouds2 = (arg) => {
+    if(this.bloomPass.enabled !== true) {
+      console.warn('%cTheBeast: You must enable bloom before volumetric clouds.'); return;
+    }
+    const p = {
+      coverage: 0.55, cloudBase: 120, cloudThickness: 60,
+      // User overrides
+      ...(arg || {})
+    };
+    if(this.volumetricPass?.enabled === true) {return;}
+    this.volumetricPass = new CloudsVolumetric2(this.canvas.width, this.canvas.height, this.device, p, this.sceneTextureView);
+    this.volumetricPass.enabled = true;
+    this.bloomPass._invalidateSceneBindGroups(this.volumetricPass.getOutputView());
+  };
+
+  activateFXAA = () => {
+    if(this.fxaaPass.enabled != true) {
+      this.fxaaPass = new FXAAPass(this.device, isMobile() == true ? 'rgba8unorm' : 'bgra8unorm');
+      this.fxaaPass.enabled = true;
+    }
+  }
+
+  activateMotionBlur = (opts) => {
+    if(this.motionBlurPass.enabled != true) {
+      this.motionBlurPass = new MotionBlurPass(this.canvas.width, this.canvas.height, this.device, opts);
+      this.motionBlurPass.enabled = true;
+    }
+  }
+
+  activateGrade = (opts) => {
+    if(this.gradePass.enabled != true) {
+      this.gradePass = new GradePass(this.device, this.presentationFormat, opts);
+      this.gradePass.enabled = true;
+      this._ldrTex = this.device.createTexture({
+        label: 'grade LDR',
+        size: [this.canvas.width, this.canvas.height],
+        format: this.presentationFormat,
+        usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
+      });
+      this._ldrView = this._ldrTex.createView();
     }
   }
 }

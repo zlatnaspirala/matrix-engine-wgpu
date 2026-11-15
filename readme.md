@@ -2,7 +2,7 @@
 
 **Author:** Nikola Lukić
 📧 [zlatnaspirala@gmail.com](mailto:zlatnaspirala@gmail.com)
-📅 Version: 2.0.0 Beta 2026 Alias `The Beast`
+📅 Version: 2.1.0 2026 Alias `The Beast`
 
 ---
 
@@ -36,7 +36,7 @@ Code Creator does not need its own JavaScript bundle; use it from the watcher bu
 - ✔️ Ammo.js, cannonES, Jolt and matter.js physics libs integration (app<->bridge<->worker).
      Physics uses Web Workers by default. The cross-origin worker issue has been fixed.
 - ✔️ Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend.
-- ✔️ Bloom, HZB and Volumetric post processing.
+- ✔️ Bloom, HZB, FXAA and Volumetric post processing.
 - ✔️ GPU Features: `texture-compression-bc` - (Not active by default).
 - ✔️ Scene Culling feature (see maze example for CPU Culling).
 - ✔️ Effects (a sub-draw system) use cached pipelines. An effect is a standalone WebGPU entity with its own
@@ -1037,14 +1037,38 @@ Dimension (TextureViewDimension::e2DArray) of [TextureView of Texture "shadowTex
 
 ### Networking
 
+From [2.2.x] Standalone solution for TheBeast networking, no more explicit kurento/openvidu,
+now we can simple just run `npm run dedicated` for signlaing server. APi level is stay same.
+
+```js
+// Easy activating networking
+app.net = activateNet2({
+  backend: 'webrtc',
+  sessionName: 'beast-room-01',
+  domain: "https://localhost",
+  signalingUrl: 'ws://localhost:2020',
+  media: {audio: true, video: true}
+});
+
+// Direct way
+net = new NativeWebRTC({
+  domain: sessionOption.domain,
+  port: sessionOption.port || 2020,
+  signalingUrl: sessionOption.signalingUrl,
+  sessionName: sessionOption.sessionName,
+  customData: sessionOption.customData,
+  media: sessionOption.media || false,
+  rtcConfig: sessionOption.rtcConfig
+});
+```
+
 From 1.7.0 engine powered by networking. Used kurento&Openvidu server for backend.
 Very good for handling streams, channels etc...
-
 All you need to do is start Kurento and OpenVidu and connect them to this Node.js server.
 https://github.com/zlatnaspirala/matrix-stream/blob/main/middleware/server.js
 
 
-See example code at `./examples/games/moba/`
+See more net example code at `./examples/games/moba/`
 
 Buildin net sync basic:
 Let's say app is engine root object and net is networking object.
@@ -1094,19 +1118,24 @@ mesh.position.teams[1] = [connId2, connId3];
 if (this.teams.length > 0)
   if (this.teams[0].length > 0)
     app.net.send({
-      toRemote: this.teams[0], // default null remote conns
+      toRemote: this.teams[0],   // default null remote conns
       sceneName: this.netObject, // origin scene name to receive
       netPos: {x: this.x, y: this.y, z: this.z},
     });
 if (this.teams.length > 0)
   if (this.teams[1].length > 0)
     app.net.send({
-      toRemote: this.teams[1], // default null remote conns
-      remoteName: this.remoteName, // to enemy players
-      sceneName: this.netObject, // now not important
+      toRemote: this.teams[1], // default null remote conns default [] emit to all.
+      // controll some other - or fix for runtime created net object
+      remoteName: this.remoteName,
+      sceneName: this.netObject,
       netPos: {x: this.x, y: this.y, z: this.z},
     });
 ```
+
+#### Accounts
+ - It will be deeply integrated with rocketcraftingserver NodeJS MongoDB.
+
 
 ### About URLParams
 
@@ -1439,6 +1468,9 @@ You may use, modify, and sell projects based on this code, provided that you kee
 
   One of buildin shaders use original source (material: {type: 'hell'})
   https://www.shadertoy.com/view/4ttGWM
+
+  Buildin FluidEffect class inspired by great job of Pavel (super fast solution):
+  https://github.com/PavelDoGreat/WebGL-Fluid-Simulation
 
 ---
 

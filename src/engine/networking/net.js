@@ -1,4 +1,5 @@
-import {scriptManager, htmlHeader} from "../utils";
+import {scriptManager, htmlHeader, LOG_WARN, LOG_MATRIX} from "../utils";
+import {NativeWebRTC} from "./native-webrtc";
 import {BIGLOG, byId, closeSession, fetchInfo, joinSession, leaveSession, netConfig, REDLOG, removeUser} from "./matrix-stream";
 
 /**
@@ -8,6 +9,9 @@ import {BIGLOG, byId, closeSession, fetchInfo, joinSession, leaveSession, netCon
  * 
  * You can use old networking if you wanna 
  * full control (MultiRtc3 like in matrix-engine old versions)
+ * 
+ * NEW - From 2.2.0 Standalone nodejs signaling server
+ * npm run dedicated
  */
 export class MatrixStream {
 
@@ -136,7 +140,7 @@ export class MatrixStream {
       // console.log('connectionDestroyed from engine ', e.detail);
       const rc = byId('video-container');
       if(!rc) return;
-        rc.querySelectorAll('div:not(:has(*))').forEach(div => div.remove());
+      rc.querySelectorAll('div:not(:has(*))').forEach(div => div.remove());
     });
 
     this.joinSessionUI.addEventListener('click', () => {
@@ -211,8 +215,8 @@ export class MatrixStream {
 }
 
 export let activateNet2 = (sessionOption) => {
-
-  console.info(`%cNetworking2 [openvidu/kurento server] params: ${sessionOption}`, CS3);
+  let net;
+  console.info(`%cNetworking2 backend params: ${sessionOption}`, LOG_MATRIX);
   // -----------------------
   // Make run
   // -----------------------
@@ -224,16 +228,32 @@ export let activateNet2 = (sessionOption) => {
     sessionOption.domain = 'maximumroulette.com';
     sessionOption.port = 2020;
   }
-  net = new MatrixStream({
-    domain: t.networking2.domain,
-    port: t.networking2.port,
-    sessionName: sessionOption.sessionName,
-    resolution: sessionOption.resolution
-  })
+  const backend = sessionOption.backend || sessionOption.provider || 'kurento';
+  if(backend === 'webrtc' || backend === 'native-webrtc') {
+    net = new NativeWebRTC({
+      domain: sessionOption.domain, // || t?.networking2?.domain,
+      port: sessionOption.port || 2020,
+      signalingUrl: sessionOption.signalingUrl,
+      sessionName: sessionOption.sessionName,
+      customData: sessionOption.customData,
+      media: sessionOption.media || false,
+      rtcConfig: sessionOption.rtcConfig
+    });
+  } else {
+    net = new MatrixStream({
+      domain: t.networking2.domain,
+      port: t.networking2.port,
+      sessionName: sessionOption.sessionName,
+      resolution: sessionOption.resolution
+    });
+  }
 
   addEventListener(`setTitle`, (e) => {
     document.title = e.detail;
   })
+
+  return net;
+
 };
 
 const StreamSlotManager = {

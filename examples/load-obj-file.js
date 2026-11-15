@@ -11,6 +11,7 @@ import {GenGeo} from "../src/engine/effects/gen.js";
 import {KaleidoscopeEffect} from "../src/engine/effects/KaleidoscopeEffect.js";
 import {LaserProjectile} from "../src/engine/effects/laser.js";
 import {MANABarEffect} from "../src/engine/effects/mana-bar.js";
+import {FluidEffect} from "../src/engine/effects/fluid-.js";
 
 export var loadObjFile = function() {
 

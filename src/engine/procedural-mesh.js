@@ -1,5 +1,5 @@
-import {vertexMorphWGSL} from '../shaders/vertex.procedural.wgsl';
-import {genName, LOG_WARN, MeshType} from './utils';
+import {vertexMorphShadowWGSL, vertexMorphWGSL} from '../shaders/vertex.procedural.wgsl';
+import {genName, LOG_FUNNY_ARCADE, LOG_WARN, MeshType} from './utils';
 import Materials from './materials';
 import {GeometryFactory} from './geometry-factory';
 import {mat4} from 'wgpu-matrix';

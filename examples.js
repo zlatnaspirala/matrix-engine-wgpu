@@ -1,7 +1,7 @@
 /**
  * @examples
  * MATRIX_ENGINE_WGPU EXAMPLE WORKSPACE
- * @version 2.0.0
+ * @version 2.2.0
  * @www maximumroulette.com 2026
  */
 import {loadCameraTexture} from "./examples/camera-texture.js";
@@ -55,6 +55,8 @@ import {loadPoseBeast} from "./examples/games/nui/pose-beast-render.js";
 import {loadPoseToGLB} from "./examples/games/nui/pose-to-glb.js";
 import {loadSlot} from "./examples/games/slot-machine/slot.js";
 import {volumetrixTexProj} from "./examples/volumetric-tex-projection.js";
+import {loadFluidEffectExample} from "./examples/fluid-effects.js";
+import {loadFluidsSlot} from "./examples/games/slot-fluid-mashine/slot.js";
 
 const switchDemo = (id) => {
   const url = new URL(window.location.href);
@@ -66,7 +68,7 @@ const switchDemo = (id) => {
   }
 };
 
-const hideMenu = () => {document.getElementById('examples').style.left = "-150px"}
+const hideMenu = () => {document.getElementById('examples').style.left = "-170px"}
 
 byId('loadObjFile').addEventListener("click", () => switchDemo('1'));
 byId('physicsPlayground').addEventListener("click", () => switchDemo('2'));
@@ -75,6 +77,7 @@ byId('video-texture').addEventListener("click", () => switchDemo('4'));
 byId('objs-anim').addEventListener("click", () => switchDemo('5'));
 byId('glb-loader').addEventListener("click", () => switchDemo('6'));
 byId('procedural-mesh').addEventListener("click", () => switchDemo('7'));
+byId('fluid-effect').addEventListener("click", () => switchDemo('8'));
 byId('myLights').addEventListener("click", () => switchDemo('9'));
 byId('snake-light').addEventListener("click", () => switchDemo('10'));
 byId('snake-light-instanced').addEventListener("click", () => switchDemo('11'));
@@ -120,12 +123,10 @@ byId('loadPoseBeast').addEventListener("click", () => switchDemo('48'));
 byId('loadPoseToGLB').addEventListener("click", () => switchDemo('49'));
 byId('loadSlot').addEventListener("click", () => switchDemo('50'));
 byId('volumetrixTexProj').addEventListener("click", () => switchDemo('51'));
+byId('loadFluidsSlot').addEventListener("click", () => switchDemo('52'));
 
 byId('jamb').addEventListener("click", () => window.open('https://goldenspiral.itch.io/jamb-3d-deluxe', '_blank'));
-// byId('moba').addEventListener("click", () => window.open('https://goldenspiral.itch.io/forest-of-hollow-blood', '_blank'));
 byId('moba').addEventListener("click", () => window.open('https://maximumroulette.com/apps/fohb', '_blank'));
-
-window.loadObjFile = loadObjFile;
 
 if(urlQuery['demo'] === '1') {
   loadObjFile();
@@ -142,7 +143,7 @@ if(urlQuery['demo'] === '1') {
 } else if(urlQuery['demo'] === '7') {
   procMesh();
 } else if(urlQuery['demo'] === '8') {
-  loadObjFile();
+  loadFluidEffectExample();
 } else if(urlQuery['demo'] === '9') {
   myLights();
 } else if(urlQuery['demo'] === '10') {
@@ -229,6 +230,8 @@ if(urlQuery['demo'] === '1') {
   loadSlot();
 } else if(urlQuery['demo'] === '51') {
   volumetrixTexProj();
+} else if(urlQuery['demo'] === '52') {
+  loadFluidsSlot();
 } else {
   loadObjFile();
 }

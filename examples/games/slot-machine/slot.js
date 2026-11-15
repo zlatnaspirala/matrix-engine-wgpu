@@ -4,7 +4,7 @@ import {addRaycastsAABBListener} from "../../../src/engine/raycast.js";
 import {SpritesPack2D} from "../../../src/engine/effects/sprite2d2.js";
 // import {InstancedKinematicOperations} from "../../../src/engine/procedures/InstancedKinematicOperations.js";
 import {KaleidoscopeEmitter} from "../../../src/engine/effects/kaleidoscopeEffectInstance.js";
-import {CameraPath, isMobile, randomIntFromTo, sleep, urlQuery} from "../../../src/engine/utils.js";
+import {CameraPath, isMobile, mb, randomIntFromTo, sleep, urlQuery} from "../../../src/engine/utils.js";
 // import {GenGeoTexture2} from "../../../src/engine/effects/gen-tex2.js";
 import {adaptSlotConfig, fetchSlotConfig} from "./networking.js";
 import {SlotReel} from "./reel.js";
@@ -65,6 +65,8 @@ async function initializeSymbolReel(mesh, engine, reelCfg) {
 }
 
 export var loadSlot = function() {
+
+  mb.show("Please wait 10 sec to activate render.com hosted page.")
 
   let slotMachine = new MatrixEngineWGPU({
     canvasSize: 'fullscreen',
@@ -191,6 +193,7 @@ export var loadSlot = function() {
       // postprocessing
       if(isMobile()) slotMachine.lightContainer[0].setIntensity(8); else slotMachine.lightContainer[0].setIntensity(15);
       slotMachine.activateBloomEffect();
+      slotMachine.activateFXAA();
       if(isMobile()) slotMachine.bloomPass.setBlurRadius(2);
       if(isMobile() === false) {
         slotMachine.activateVolumetricEffect({
