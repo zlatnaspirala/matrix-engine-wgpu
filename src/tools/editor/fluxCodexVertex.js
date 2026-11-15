@@ -4241,32 +4241,29 @@ LIST OF INTEREST OBJECT:
         return;
       }
 
-      if(n._boundPosition && n._boundHandler &&
-        n._boundPosition.onTargetPositionReach === n._boundHandler) {
-        n._boundPosition.onTargetPositionReach = n._previousHandler;
+      if(!n._boundPositions || typeof n._boundPositions.has !== "function") {
+        n._boundPositions = new WeakSet();
       }
-
-      const graph = this;
-      const previousHandler = pos.onTargetPositionReach;
-      const handler = function(...args) {
-        if(typeof previousHandler === "function") previousHandler.apply(this, args);
-        graph.enqueueOutputs(n, "reached");
-      };
-      pos.onTargetPositionReach = handler;
-      n._boundPosition = pos;
-      n._previousHandler = previousHandler;
-      n._boundHandler = handler;
+      if(!n._boundPositions.has(pos)) {
+        const graph = this;
+        const previousHandler = pos.onTargetPositionReach;
+        const handler = function(...args) {
+          if(typeof previousHandler === "function") previousHandler.apply(this, args);
+          graph.enqueueOutputs(n, "reached");
+        };
+        pos.onTargetPositionReach = handler;
+        n._boundPositions.add(pos);
+      }
       n._listenerAttached = true;
       this.enqueueOutputs(n, "execOut");
       return;
     } else if(n.title === "On Target Position Reach") {
       const pos = this.getValue(nodeId, "position");
-      if(!pos || typeof pos.onTargetPositionReach !== "function") return;
-      const graph = this;
-      const previousHandler = pos.onTargetPositionReach;
-      pos.onTargetPositionReach = function(...args) {
-        if(typeof previousHandler === "function") previousHandler.apply(this, args);
-        graph.enqueueOutputs(n, "exec");
+      console.info("On Target Position Reach ", pos);
+      if(!pos) return;
+      pos.onTargetPositionReach = () => {
+        this.triggerNode(n);
+        this.enqueueOutputs(n, "exec");
       };
       n._listenerAttached = true;
       return;
