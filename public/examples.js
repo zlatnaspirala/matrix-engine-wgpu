@@ -56630,7 +56630,7 @@ var MatrixEngineWGPU = class {
     }
     if (typeof o3.physics.enabled === "undefined") o3.physics.enabled = true;
     if (typeof o3.physics.geometry === "undefined") o3.physics.geometry = "Cube";
-    if (typeof o3.physics.radius === "undefined") o3.physics.radius = o3.scale;
+    if (typeof o3.physics.radius === "undefined") o3.physics.radius = typeof o3.scale == Number ? o3.scale : o3.scale[0];
     if (typeof o3.physics.mass === "undefined") o3.physics.mass = 1;
     if (typeof o3.physics.name === "undefined") o3.physics.name = o3.name;
     if (typeof o3.physics.scale === "undefined") o3.physics.scale = o3.scale;
@@ -56723,7 +56723,7 @@ var MatrixEngineWGPU = class {
     }
     if (typeof o3.physics.enabled === "undefined") o3.physics.enabled = true;
     if (typeof o3.physics.geometry === "undefined") o3.physics.geometry = "Cube";
-    if (typeof o3.physics.radius === "undefined") o3.physics.radius = o3.scale;
+    if (typeof o3.physics.radius === "undefined") o3.physics.radius = typeof o3.scale == Number ? o3.scale : o3.scale[0];
     if (typeof o3.physics.mass === "undefined") o3.physics.mass = 1;
     if (typeof o3.physics.name === "undefined") o3.physics.name = o3.name;
     if (typeof o3.physics.scale === "undefined") o3.physics.scale = o3.scale;
@@ -62161,7 +62161,8 @@ var testCannonES = function() {
       downloadMeshes({
         cube: "./res/meshes/blender/cube.obj",
         plane: "./res/meshes/blender/plane-sub10.obj",
-        ball: "./res/meshes/shapes/sphere-uv-cilinder-proj.obj",
+        // ball: "./res/meshes/shapes/sphere-uv-cilinder-proj.obj",
+        ball: "./res/meshes/shapes/sphere.obj",
         reel: "./res/meshes/obj/reel.obj"
       }, onGround, { scale: [1, 1, 1] });
       physicsPlayground2.matrixPhysics.speedUpSimulation(2);
@@ -62330,6 +62331,7 @@ var testCannonES = function() {
         name: "jelly",
         mesh: m2.ball,
         physics: {
+          // radius: undefined,
           enabled: true,
           geometry: "SoftBody",
           mass: 2,

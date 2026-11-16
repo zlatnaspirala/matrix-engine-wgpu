@@ -26,7 +26,8 @@ export var testCannonES = function() {
       downloadMeshes({
         cube: "./res/meshes/blender/cube.obj",
         plane: "./res/meshes/blender/plane-sub10.obj",
-        ball: "./res/meshes/shapes/sphere-uv-cilinder-proj.obj",
+        // ball: "./res/meshes/shapes/sphere-uv-cilinder-proj.obj",
+        ball: "./res/meshes/shapes/sphere.obj",
         reel: "./res/meshes/obj/reel.obj"
       }, onGround, {scale: [1, 1, 1]})
 
@@ -179,6 +180,7 @@ export var testCannonES = function() {
         texturesPaths: ['./res/textures/floor1.webp'],
         name: 'jelly', mesh: m.ball,
         physics: {
+          // radius: undefined,
           enabled: true, geometry: 'SoftBody', mass: 2,
           nodeSpacing: 0.5, group: 2, mask: -1,
           vertices: m.ball.vertices, indices: m.ball.indices
