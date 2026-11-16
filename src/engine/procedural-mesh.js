@@ -57,7 +57,7 @@ export default class ProceduralMeshObj extends Materials {
     this.materialBGL = o.materialBGL;
     this.uniformBufferBindGroupLayout = o.uniformBufferBindGroupLayout;
 
-    if(o.physics.geometry !== 'Cloth') {
+    if(o.physics.geometry !== 'Cloth' && o.physics.geometry !== 'SoftBody') {
       this.dummyClothBuffer = o.dummyClothBuffer;
     }
     this._o = o;
@@ -408,11 +408,13 @@ export default class ProceduralMeshObj extends Materials {
       ]
     });
 
-    if(this.o_.physics.geometry === 'Cloth') {
-      const maxClothParticles = 384;
+    if(this.o_.physics.geometry === 'Cloth' || this.o_.physics.geometry === 'SoftBody') {
+      const vertexCount = this.o_.physics.geometry === 'SoftBody'
+        ? Math.max(1, Math.ceil((this.o_.physics.vertices?.length || 0) / 3))
+        : 384;
       this.clothBuffer = this.device.createBuffer({
-        label: "Cloth Physics Storage Buffer",
-        size: maxClothParticles * 4 * Float32Array.BYTES_PER_ELEMENT,
+        label: this.o_.physics.geometry === 'SoftBody' ? "SoftBody Physics Storage Buffer" : "Cloth Physics Storage Buffer",
+        size: vertexCount * 4 * Float32Array.BYTES_PER_ELEMENT,
         usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
       });
     } else {
