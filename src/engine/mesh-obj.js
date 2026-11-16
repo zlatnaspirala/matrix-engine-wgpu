@@ -68,7 +68,7 @@ export default class MEMeshObj extends Materials {
     this.sceneBGL = o.sceneBGL;
     this.materialBGL = o.materialBGL;
     this.uniformBufferBindGroupLayout = o.uniformBufferBindGroupLayout;
-    if(o.physics.geometry !== 'Cloth') {
+    if(o.physics.geometry !== 'Cloth' && o.physics.geometry !== 'SoftBody') {
       this.dummyClothBuffer = o.dummyClothBuffer;
     }
     this.useScale = o.useScale || false;
@@ -494,11 +494,13 @@ export default class MEMeshObj extends Materials {
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       });
 
-      if(o_.physics.geometry === 'Cloth') {
-        const maxClothParticles = 384;
+      if(o_.physics.geometry === 'Cloth' || o_.physics.geometry === 'SoftBody') {
+        const vertexCount = o_.physics.geometry === 'SoftBody'
+          ? Math.max(1, Math.ceil((o_.physics.vertices?.length || 0) / 3))
+          : 384;
         this.clothBuffer = this.device.createBuffer({
-          label: "ClothPhysicsStorage",
-          size: maxClothParticles * 4 * Float32Array.BYTES_PER_ELEMENT,
+          label: o_.physics.geometry === 'SoftBody' ? "SoftBody Physics Storage" : "ClothPhysicsStorage",
+          size: vertexCount * 4 * Float32Array.BYTES_PER_ELEMENT,
           usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
         });
       } else {
