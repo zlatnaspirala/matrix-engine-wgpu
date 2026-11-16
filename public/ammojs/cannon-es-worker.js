@@ -5,6 +5,7 @@ const LAYER_MOVING = 2;   // 1 << 1
 const LAYER_ANCHOR = 4;   // 1 << 2
 const LAYER_FLIPPER = 8;  // 1 << 3
 const LAYER_BALL = 16;    // 1 << 4
+const SOFT_BODY_COLLISION_BITS = 0x1FFFFE00; // bits 9–28
 
 const MASK = {
   [LAYER_WORLD]: LAYER_BALL | LAYER_FLIPPER | LAYER_MOVING,
@@ -178,7 +179,8 @@ class MatrixCannon {
     const groundBody = new CANNON.Body({mass: 0, shape: groundShape});
     groundBody.position.set(0, GROUND_Y, 0);
     groundBody.collisionFilterGroup = LAYER_WORLD;
-    groundBody.collisionFilterMask = LAYER_BALL | LAYER_FLIPPER | LAYER_MOVING;
+    groundBody.collisionFilterMask = LAYER_BALL | LAYER_FLIPPER | LAYER_MOVING |
+      SOFT_BODY_COLLISION_BITS;
     groundBody.name = 'ground';
     const idx = this.rigidBodies.length;
     this.rigidBodies.push(groundBody);

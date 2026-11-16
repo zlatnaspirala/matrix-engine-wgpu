@@ -171,6 +171,7 @@ export var testCannonES = function() {
         raycast: {enabled: true, radius: 1}
       });
 
+      console.log('....... ..d.. .. . .. ..d..d... ')
       const jelly = physicsPlayground.addMeshObj({
         material: {type: 'standard'},
         position: {x: 0, y: 8, z: -10},
@@ -179,7 +180,7 @@ export var testCannonES = function() {
         name: 'jelly', mesh: m.ball,
         physics: {
           enabled: true, geometry: 'SoftBody', mass: 2,
-          nodeSpacing: 0.5,
+          nodeSpacing: 0.5, group: 2, mask: -1,
           vertices: m.ball.vertices, indices: m.ball.indices
         }
       });

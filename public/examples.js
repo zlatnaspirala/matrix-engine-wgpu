@@ -16375,6 +16375,7 @@ const ANIM_NOISE: u32 = 16u;
 const ANIM_OCEAN: u32 = 32u;
 
 const ANIM_CLOTH: u32 = 128u;
+const ANIM_SOFT_BODY: u32 = 256u;
 
 fn applyWave(pos: vec3f) -> vec3f {
   let wave = sin(pos.x * vertexAnim.waveFrequency + vertexAnim.time * vertexAnim.waveSpeed) * 
@@ -16490,7 +16491,7 @@ fn main(
   let flags = u32(vertexAnim.flags);
 
   // If cloth simulation is active via flags, read position directly from the cloth storage buffer!
-  if ((flags & ANIM_CLOTH) != 0u) {
+  if ((flags & (ANIM_CLOTH | ANIM_SOFT_BODY)) != 0u) {
     basePosition = clothBuffer[vertexIndex].xyz;
   }
 
@@ -16498,13 +16499,18 @@ fn main(
   var finalPos  = skinned.position.xyz;
   var finalNorm = skinned.normal;
 
-  if ((flags & ~ANIM_CLOTH) != 0u && vertexAnim.globalIntensity > 0.0) {
+  if ((flags & ~(ANIM_CLOTH | ANIM_SOFT_BODY)) != 0u && vertexAnim.globalIntensity > 0.0) {
     let animated = applyVertexAnimation(finalPos, finalNorm);
     finalPos  = animated.position.xyz;
     finalNorm = animated.normal;
   }
 
-  let worldPos = model.modelMatrix * vec4f(finalPos, 1.0);
+  // SoftBody positions are already in world space from the physics worker.
+  let worldPos = select(
+    model.modelMatrix * vec4f(finalPos, 1.0),
+    vec4f(finalPos, 1.0),
+    (flags & ANIM_SOFT_BODY) != 0u
+  );
   let normalMatrix = mat3x3f(
     model.modelMatrix[0].xyz,
     model.modelMatrix[1].xyz,
@@ -24923,8 +24929,10 @@ var VERTEX_ANIM_FLAGS = {
   // 32
   DISPLACEMENT: 1 << 6,
   // 64
-  CLOTH: 1 << 7
+  CLOTH: 1 << 7,
   // 128
+  SOFT_BODY: 1 << 8
+  // 256
 };
 
 // src/shaders/standalone/pointer.effect.js
@@ -25970,7 +25978,7 @@ var MEMeshObj = class extends Materials {
     this.sceneBGL = o3.sceneBGL;
     this.materialBGL = o3.materialBGL;
     this.uniformBufferBindGroupLayout = o3.uniformBufferBindGroupLayout;
-    if (o3.physics.geometry !== "Cloth") {
+    if (o3.physics.geometry !== "Cloth" && o3.physics.geometry !== "SoftBody") {
       this.dummyClothBuffer = o3.dummyClothBuffer;
     }
     this.useScale = o3.useScale || false;
@@ -26371,11 +26379,11 @@ var MEMeshObj = class extends Materials {
         size: this.vertexAnimParams.byteLength,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
-      if (o_.physics.geometry === "Cloth") {
-        const maxClothParticles = 384;
+      if (o_.physics.geometry === "Cloth" || o_.physics.geometry === "SoftBody") {
+        const vertexCount = o_.physics.geometry === "SoftBody" ? Math.max(1, Math.ceil((o_.physics.vertices?.length || 0) / 3)) : 384;
         this.clothBuffer = this.device.createBuffer({
-          label: "ClothPhysicsStorage",
-          size: maxClothParticles * 4 * Float32Array.BYTES_PER_ELEMENT,
+          label: o_.physics.geometry === "SoftBody" ? "SoftBody Physics Storage" : "ClothPhysicsStorage",
+          size: vertexCount * 4 * Float32Array.BYTES_PER_ELEMENT,
           usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
         });
       } else {
@@ -26386,12 +26394,13 @@ var MEMeshObj = class extends Materials {
         clothBuffer: this.clothBuffer,
         enableCloth: (startIndex = 0) => {
           this.vertexAnim.active = true;
-          this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.CLOTH;
+          const physicsFlag = o_.physics.geometry === "SoftBody" ? VERTEX_ANIM_FLAGS.SOFT_BODY : VERTEX_ANIM_FLAGS.CLOTH;
+          this.vertexAnimParams[1] |= physicsFlag;
           this.vertexAnimParams[28] = startIndex;
           this.updateVertexAnimBuffer();
         },
         disableCloth: () => {
-          this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.CLOTH;
+          this.vertexAnimParams[1] &= ~(VERTEX_ANIM_FLAGS.CLOTH | VERTEX_ANIM_FLAGS.SOFT_BODY);
           this.vertexAnim.clothBuffer = null;
           this.updateVertexAnimBuffer();
         },
@@ -47892,7 +47901,7 @@ var ProceduralMeshObj = class extends Materials {
     this.sceneBGL = o3.sceneBGL;
     this.materialBGL = o3.materialBGL;
     this.uniformBufferBindGroupLayout = o3.uniformBufferBindGroupLayout;
-    if (o3.physics.geometry !== "Cloth") {
+    if (o3.physics.geometry !== "Cloth" && o3.physics.geometry !== "SoftBody") {
       this.dummyClothBuffer = o3.dummyClothBuffer;
     }
     this._o = o3;
@@ -48237,11 +48246,11 @@ var ProceduralMeshObj = class extends Materials {
         // morphBlend
       ]
     });
-    if (this.o_.physics.geometry === "Cloth") {
-      const maxClothParticles = 384;
+    if (this.o_.physics.geometry === "Cloth" || this.o_.physics.geometry === "SoftBody") {
+      const vertexCount = this.o_.physics.geometry === "SoftBody" ? Math.max(1, Math.ceil((this.o_.physics.vertices?.length || 0) / 3)) : 384;
       this.clothBuffer = this.device.createBuffer({
-        label: "Cloth Physics Storage Buffer",
-        size: maxClothParticles * 4 * Float32Array.BYTES_PER_ELEMENT,
+        label: this.o_.physics.geometry === "SoftBody" ? "SoftBody Physics Storage Buffer" : "Cloth Physics Storage Buffer",
+        size: vertexCount * 4 * Float32Array.BYTES_PER_ELEMENT,
         usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
       });
     } else {
@@ -48252,12 +48261,13 @@ var ProceduralMeshObj = class extends Materials {
       clothBuffer: this.clothBuffer,
       enableCloth: (startIndex = 0) => {
         this.vertexAnim.active = true;
-        this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.CLOTH;
+        const physicsFlag = this.o_.physics.geometry === "SoftBody" ? VERTEX_ANIM_FLAGS.SOFT_BODY : VERTEX_ANIM_FLAGS.CLOTH;
+        this.vertexAnimParams[1] |= physicsFlag;
         this.vertexAnimParams[28] = startIndex;
         this.updateVertexAnimBuffer();
       },
       disableCloth: () => {
-        this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.CLOTH;
+        this.vertexAnimParams[1] &= ~(VERTEX_ANIM_FLAGS.CLOTH | VERTEX_ANIM_FLAGS.SOFT_BODY);
         this.vertexAnim.clothBuffer = null;
         this.updateVertexAnimBuffer();
       },
@@ -56643,7 +56653,7 @@ var MatrixEngineWGPU = class {
     o3.sceneBGL = this.sceneBGL;
     o3.materialBGL = this.materialBGL;
     o3.uniformBufferBindGroupLayout = this.uniformBufferBindGroupLayout;
-    if (o3.physics.enabled !== true || o3.physics.geometry !== "Cloth") {
+    if (o3.physics.enabled !== true || o3.physics.geometry !== "Cloth" && o3.physics.geometry !== "SoftBody") {
       o3.dummyClothBuffer = this.dummyClothBuffer;
     }
     let myMesh1 = new MEMeshObj(
@@ -56730,7 +56740,7 @@ var MatrixEngineWGPU = class {
     o3.sceneBGL = this.sceneBGL;
     o3.materialBGL = this.materialBGL;
     o3.uniformBufferBindGroupLayout = this.uniformBufferBindGroupLayout;
-    if (o3.physics.enabled !== true || o3.physics.geometry !== "Cloth") {
+    if (o3.physics.enabled !== true || o3.physics.geometry !== "Cloth" && o3.physics.geometry !== "SoftBody") {
       o3.dummyClothBuffer = this.dummyClothBuffer;
     }
     let myMesh = new ProceduralMeshObj(this.canvas, this.device, this.context, o3, this.inputHandler, AM, this.cameraBuffer);
@@ -57103,7 +57113,7 @@ var MatrixEngineWGPU = class {
     o3.sceneBGL = this.sceneBGL;
     let r3 = [];
     o3.textureCache = this.textureCache;
-    if (o3.physics.enabled !== true || o3.physics.geometry !== "Cloth") {
+    if (o3.physics.enabled !== true || o3.physics.geometry !== "Cloth" && o3.physics.geometry !== "SoftBody") {
       o3.dummyClothBuffer = this.dummyClothBuffer;
     }
     let skinnedNodeIndex = 0;
@@ -57232,7 +57242,7 @@ var MatrixEngineWGPU = class {
     o3.sceneBGL = this.sceneBGL;
     let results = [];
     let skinnedNodeIndex = 0;
-    if (o3.physics.enabled !== true || o3.physics.geometry !== "Cloth") {
+    if (o3.physics.enabled !== true || o3.physics.geometry !== "Cloth" && o3.physics.geometry !== "SoftBody") {
       o3.dummyClothBuffer = this.dummyClothBuffer;
     }
     for (const skinnedNode of glbFile.skinnedMeshNodes) {
@@ -62311,6 +62321,7 @@ var testCannonES = function() {
         },
         raycast: { enabled: true, radius: 1 }
       });
+      console.log("....... ..d.. .. . .. ..d..d... ");
       const jelly = physicsPlayground2.addMeshObj({
         material: { type: "standard" },
         position: { x: 0, y: 8, z: -10 },
@@ -62323,6 +62334,8 @@ var testCannonES = function() {
           geometry: "SoftBody",
           mass: 2,
           nodeSpacing: 0.5,
+          group: 2,
+          mask: -1,
           vertices: m2.ball.vertices,
           indices: m2.ball.indices
         }
