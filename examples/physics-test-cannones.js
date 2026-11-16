@@ -47,6 +47,9 @@ export var testCannonES = function() {
         "./res/textures/gold-1.webp", "pyr", 2, true, [1, 1, 1], 2, 400
       );
 
+
+
+
       const W = 8;
       const H = 8;
       const NX = 10;
@@ -167,6 +170,20 @@ export var testCannonES = function() {
         },
         raycast: {enabled: true, radius: 1}
       });
+
+      const jelly = physicsPlayground.addMeshObj({
+        material: {type: 'standard'},
+        position: {x: 0, y: 8, z: -10},
+        scale: [1.5, 1.5, 1.5],
+        texturesPaths: ['./res/textures/floor1.webp'],
+        name: 'jelly', mesh: m.ball,
+        physics: {
+          enabled: true, geometry: 'SoftBody', mass: 2,
+          nodeSpacing: 0.5,
+          vertices: m.ball.vertices, indices: m.ball.indices
+        }
+      });
+      setTimeout(() => jelly.vertexAnim.enableCloth(1), 500);
 
       app.activateBloomEffect();
       app.activateVolumetricEffect();
