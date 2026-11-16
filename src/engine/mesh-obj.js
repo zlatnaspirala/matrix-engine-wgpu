@@ -512,12 +512,15 @@ export default class MEMeshObj extends Materials {
         clothBuffer: this.clothBuffer,
         enableCloth: (startIndex = 0) => {
           this.vertexAnim.active = true;
-          this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.CLOTH;
+          const physicsFlag = o_.physics.geometry === 'SoftBody'
+            ? VERTEX_ANIM_FLAGS.SOFT_BODY
+            : VERTEX_ANIM_FLAGS.CLOTH;
+          this.vertexAnimParams[1] |= physicsFlag;
           this.vertexAnimParams[28] = startIndex;
           this.updateVertexAnimBuffer();
         },
         disableCloth: () => {
-          this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.CLOTH;
+          this.vertexAnimParams[1] &= ~(VERTEX_ANIM_FLAGS.CLOTH | VERTEX_ANIM_FLAGS.SOFT_BODY);
           this.vertexAnim.clothBuffer = null;
           this.updateVertexAnimBuffer();
           // this.updateModelBindGroup();
