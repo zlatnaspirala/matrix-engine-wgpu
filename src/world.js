@@ -1118,7 +1118,7 @@ export default class MatrixEngineWGPU {
     o.materialBGL = this.materialBGL;
     o.uniformBufferBindGroupLayout = this.uniformBufferBindGroupLayout;
 
-    if(o.physics.enabled !== true || o.physics.geometry !== 'Cloth') {
+    if(o.physics.enabled !== true || (o.physics.geometry !== 'Cloth' && o.physics.geometry !== 'SoftBody')) {
       o.dummyClothBuffer = this.dummyClothBuffer;
     }
 
@@ -1190,7 +1190,7 @@ export default class MatrixEngineWGPU {
     o.materialBGL = this.materialBGL;
     o.uniformBufferBindGroupLayout = this.uniformBufferBindGroupLayout;
 
-    if(o.physics.enabled !== true || o.physics.geometry !== 'Cloth') {
+    if(o.physics.enabled !== true || (o.physics.geometry !== 'Cloth' && o.physics.geometry !== 'SoftBody')) {
       o.dummyClothBuffer = this.dummyClothBuffer;
     }
 
@@ -1560,7 +1560,7 @@ export default class MatrixEngineWGPU {
     let r = [];
     o.textureCache = this.textureCache;
 
-    if(o.physics.enabled !== true || o.physics.geometry !== 'Cloth') {
+    if(o.physics.enabled !== true || (o.physics.geometry !== 'Cloth' && o.physics.geometry !== 'SoftBody')) {
       o.dummyClothBuffer = this.dummyClothBuffer;
     }
 
@@ -1660,7 +1660,7 @@ export default class MatrixEngineWGPU {
     let results = [];
     let skinnedNodeIndex = 0;
 
-    if(o.physics.enabled !== true || o.physics.geometry !== 'Cloth') {
+    if(o.physics.enabled !== true || (o.physics.geometry !== 'Cloth' && o.physics.geometry !== 'SoftBody')) {
       o.dummyClothBuffer = this.dummyClothBuffer;
     }
 
