@@ -94,7 +94,6 @@ export class PhysicsBridge {
         const ny = response?.ny ?? pOptions.ny ?? 10;
         const count = response?.count ?? ((nx + 1) * (ny + 1));
         this._clothMap.set(startIndex, {mesh: MEObject, startIndex, nx, ny, count});
-        // console.log('[CLOTH REGISTERED]', startIndex, nx, ny, count);
         return;
       }
       this._bodyIndexMap.set(startIndex, MEObject);
