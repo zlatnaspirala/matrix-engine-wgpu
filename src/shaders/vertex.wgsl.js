@@ -89,6 +89,7 @@ const ANIM_NOISE: u32 = 16u;
 const ANIM_OCEAN: u32 = 32u;
 
 const ANIM_CLOTH: u32 = 128u;
+const ANIM_SOFT_BODY: u32 = 256u;
 
 fn applyWave(pos: vec3f) -> vec3f {
   let wave = sin(pos.x * vertexAnim.waveFrequency + vertexAnim.time * vertexAnim.waveSpeed) * 
@@ -204,7 +205,7 @@ fn main(
   let flags = u32(vertexAnim.flags);
 
   // If cloth simulation is active via flags, read position directly from the cloth storage buffer!
-  if ((flags & ANIM_CLOTH) != 0u) {
+  if ((flags & (ANIM_CLOTH | ANIM_SOFT_BODY)) != 0u) {
     basePosition = clothBuffer[vertexIndex].xyz;
   }
 
@@ -212,13 +213,18 @@ fn main(
   var finalPos  = skinned.position.xyz;
   var finalNorm = skinned.normal;
 
-  if ((flags & ~ANIM_CLOTH) != 0u && vertexAnim.globalIntensity > 0.0) {
+  if ((flags & ~(ANIM_CLOTH | ANIM_SOFT_BODY)) != 0u && vertexAnim.globalIntensity > 0.0) {
     let animated = applyVertexAnimation(finalPos, finalNorm);
     finalPos  = animated.position.xyz;
     finalNorm = animated.normal;
   }
 
-  let worldPos = model.modelMatrix * vec4f(finalPos, 1.0);
+  // SoftBody positions are already in world space from the physics worker.
+  let worldPos = select(
+    model.modelMatrix * vec4f(finalPos, 1.0),
+    vec4f(finalPos, 1.0),
+    (flags & ANIM_SOFT_BODY) != 0u
+  );
   let normalMatrix = mat3x3f(
     model.modelMatrix[0].xyz,
     model.modelMatrix[1].xyz,
