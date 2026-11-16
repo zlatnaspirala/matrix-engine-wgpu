@@ -1026,9 +1026,15 @@ self.onmessage = async ({data}) => {
     }
     case 'step': {
       cannon.step();
-      if(!cannon._useSAB && cannon._snapshot) {
-        const copy = cannon._snapshot.slice();
-        self.postMessage({cmd: 'snapshot', snap: copy, clothPackets: cannon.clothDataPackets}, [copy.buffer]);
+      if(cannon._snapshot) {
+        if(cannon._useSAB) {
+          // Shared snapshots can be posted without copying or transferring their buffer.
+          // Cloth/SoftBody vertex packets must still reach the render thread every step.
+          self.postMessage({cmd: 'snapshot', snap: cannon._snapshot, clothPackets: cannon.clothDataPackets});
+        } else {
+          const copy = cannon._snapshot.slice();
+          self.postMessage({cmd: 'snapshot', snap: copy, clothPackets: cannon.clothDataPackets}, [copy.buffer]);
+        }
       }
       break;
     }
