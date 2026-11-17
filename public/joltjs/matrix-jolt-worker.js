@@ -989,7 +989,26 @@ self.onmessage = async ({data}) => {
       });
       break;
     }
-    case 'step': jolt.step(); if(!jolt._useSAB && jolt._snapshot) {const copy = jolt._snapshot.slice(); self.postMessage({cmd: 'snapshot', snap: copy, clothPackets: jolt.clothDataPackets}, [copy.buffer]);} break;
+    case 'step': {
+      jolt.step();
+      if(jolt._snapshot) {
+        if(jolt._useSAB) {
+          self.postMessage({
+            cmd: 'snapshot',
+            snap: jolt._snapshot,
+            clothPackets: jolt.clothDataPackets
+          });
+        } else {
+          const copy = jolt._snapshot.slice();
+          self.postMessage({
+            cmd: 'snapshot',
+            snap: copy,
+            clothPackets: jolt.clothDataPackets
+          }, [copy.buffer]);
+        }
+      }
+      break;
+    }
     case 'applyClothForce': jolt.applyClothForce(data.startIndex, data.x, data.y, data.z); break;
     case 'applyImpulse': jolt.applyImpulse(data.idx, data.x, data.y, data.z); break;
     case 'shootBody': jolt.shootBody(data.idx, data.lx, data.ly, data.lz, data.ax, data.ay, data.az); break;
