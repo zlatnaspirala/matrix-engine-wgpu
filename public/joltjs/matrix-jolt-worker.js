@@ -434,8 +434,8 @@ class MatrixJolt {
 
   _addSoftBody(pOptions) {
     const Jolt = this.Jolt;
-    if(!pOptions.vertices || !pOptions.indices) {
-      console.warn('[jolt] SoftBody needs vertices and triangle indices');
+    if(!pOptions.vertices) {
+      console.warn('[jolt] SoftBody needs vertices');
       return -1;
     }
 
