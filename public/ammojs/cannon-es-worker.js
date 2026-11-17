@@ -5,6 +5,7 @@ const LAYER_MOVING = 2;   // 1 << 1
 const LAYER_ANCHOR = 4;   // 1 << 2
 const LAYER_FLIPPER = 8;  // 1 << 3
 const LAYER_BALL = 16;    // 1 << 4
+const SOFT_BODY_COLLISION_BITS = 0x1FFFFE00; // bits 9–28
 
 const MASK = {
   [LAYER_WORLD]: LAYER_BALL | LAYER_FLIPPER | LAYER_MOVING,
@@ -35,6 +36,80 @@ function getHingeAngle(bodyA, bodyB, axis) {
   bodyA.quaternion.vmult(axisWorld, axisWorld);
   const angle = 2 * Math.acos(qRel.w);
   return angle;
+}
+
+// function weldMesh(verts, indices, scale = [1, 1, 1], pos = {x: 0, y: 0, z: 0}, eps = 1e-4) {
+//   const q = 1 / eps, map = new Map(), nodePos = [];
+//   const vcount = verts.length / 3;
+//   const v2n = new Uint32Array(vcount);
+//   for(let i = 0;i < vcount;i++) {
+//     const x = verts[i * 3] * scale[0] + (pos.x || 0);
+//     const y = verts[i * 3 + 1] * scale[1] + (pos.y || 0);
+//     const z = verts[i * 3 + 2] * scale[2] + (pos.z || 0);
+//     const key = Math.round(x * q) + ',' + Math.round(y * q) + ',' + Math.round(z * q);
+//     let n = map.get(key);
+//     if(n === undefined) {n = nodePos.length / 3; map.set(key, n); nodePos.push(x, y, z);}
+//     v2n[i] = n;
+//   }
+//   const triCount = indices ? indices.length : vcount;
+//   const seen = new Set(), edges = [], tris = new Uint32Array(triCount);
+//   for(let i = 0;i < triCount;i++) tris[i] = v2n[indices ? indices[i] : i];
+//   const addEdge = (a, b) => {
+//     if(a === b) return;
+//     const k = a < b ? a + '_' + b : b + '_' + a;
+//     if(seen.has(k)) return;
+//     seen.add(k); edges.push(a, b);
+//   };
+//   for(let t = 0;t < triCount;t += 3) {
+//     addEdge(tris[t], tris[t + 1]); addEdge(tris[t + 1], tris[t + 2]); addEdge(tris[t + 2], tris[t]);
+//   }
+//   return {nodePos: Float32Array.from(nodePos), count: nodePos.length / 3, v2n, tris, edges: Uint32Array.from(edges)};
+// }
+function weldMesh(verts, indices, scale = [1, 1, 1], pos = {x: 0, y: 0, z: 0}, cell = 0) {
+  const step = cell > 0 ? cell : 1e-4;
+  const vcount = verts.length / 3;
+  const world = new Float32Array(vcount * 3);
+  const v2n = new Uint32Array(vcount);
+  const map = new Map(), sum = [], cnt = [];
+  for(let i = 0;i < vcount;i++) {
+    const x = verts[i * 3] * scale[0] + (pos.x || 0);
+    const y = verts[i * 3 + 1] * scale[1] + (pos.y || 0);
+    const z = verts[i * 3 + 2] * scale[2] + (pos.z || 0);
+    world[i * 3] = x; world[i * 3 + 1] = y; world[i * 3 + 2] = z;
+    const key = Math.floor(x / step) + ',' + Math.floor(y / step) + ',' + Math.floor(z / step);
+    let n = map.get(key);
+    if(n === undefined) {n = cnt.length; map.set(key, n); sum.push(0, 0, 0); cnt.push(0);}
+    sum[n * 3] += x; sum[n * 3 + 1] += y; sum[n * 3 + 2] += z; cnt[n]++;
+    v2n[i] = n;
+  }
+  const count = cnt.length;
+  const nodePos = new Float32Array(count * 3);
+  for(let n = 0;n < count;n++) {
+    nodePos[n * 3] = sum[n * 3] / cnt[n];
+    nodePos[n * 3 + 1] = sum[n * 3 + 1] / cnt[n];
+    nodePos[n * 3 + 2] = sum[n * 3 + 2] / cnt[n];
+  }
+  const offsets = new Float32Array(vcount * 3);
+  for(let i = 0;i < vcount;i++) {
+    const n = v2n[i];
+    offsets[i * 3] = world[i * 3] - nodePos[n * 3];
+    offsets[i * 3 + 1] = world[i * 3 + 1] - nodePos[n * 3 + 1];
+    offsets[i * 3 + 2] = world[i * 3 + 2] - nodePos[n * 3 + 2];
+  }
+  const triCount = indices ? indices.length : vcount;
+  const tris = new Uint32Array(triCount);
+  for(let i = 0;i < triCount;i++) tris[i] = v2n[indices ? indices[i] : i];
+  const seen = new Set(), edges = [];
+  const addEdge = (a, b) => {
+    if(a === b) return;
+    const k = a < b ? a + '_' + b : b + '_' + a;
+    if(seen.has(k)) return;
+    seen.add(k); edges.push(a, b);
+  };
+  for(let t = 0;t < triCount;t += 3) {
+    addEdge(tris[t], tris[t + 1]); addEdge(tris[t + 1], tris[t + 2]); addEdge(tris[t + 2], tris[t]);
+  }
+  return {nodePos, count, v2n, offsets, tris, edges: Uint32Array.from(edges)};
 }
 
 class MatrixCannon {
@@ -104,7 +179,8 @@ class MatrixCannon {
     const groundBody = new CANNON.Body({mass: 0, shape: groundShape});
     groundBody.position.set(0, GROUND_Y, 0);
     groundBody.collisionFilterGroup = LAYER_WORLD;
-    groundBody.collisionFilterMask = LAYER_BALL | LAYER_FLIPPER | LAYER_MOVING;
+    groundBody.collisionFilterMask = LAYER_BALL | LAYER_FLIPPER | LAYER_MOVING |
+      SOFT_BODY_COLLISION_BITS;
     groundBody.name = 'ground';
     const idx = this.rigidBodies.length;
     this.rigidBodies.push(groundBody);
@@ -118,6 +194,9 @@ class MatrixCannon {
     }
     this.world.addBody(groundBody);
     this.world.addEventListener('beginContact', (e) => {
+
+
+
       const b1Idx = this.bodyMap.get(e.bodyA);
       const b2Idx = this.bodyMap.get(e.bodyB);
       if(b1Idx !== undefined && b2Idx !== undefined) {
@@ -142,6 +221,7 @@ class MatrixCannon {
   addBody(pOptions) {
     let body = null;
     switch(pOptions.geometry) {
+      case 'SoftBody': return this._addSoftBody(pOptions);
       case 'Sphere': body = this._addSphere(pOptions); break;
       case 'Cube': body = this._addBox(pOptions); break;
       case 'Capsule': body = this._addCapsule(pOptions); break;
@@ -156,12 +236,13 @@ class MatrixCannon {
     return body ? this.rigidBodies.length - 1 : -1;
   }
 
-  _registerBody(cannonBody, pOptions) {
+  _registerBody(cannonBody, pOptions, deferAlloc = false) {
     cannonBody.name = pOptions.name;
     const idx = this.rigidBodies.length;
     this.rigidBodies.push(cannonBody);
     this.bodyMap.set(cannonBody, idx);
     this._allocBuffer(this.rigidBodies.length);
+    if(!deferAlloc) this._allocBuffer(this.rigidBodies.length);
     if(this._snapshot) {
       const base = idx * FLOATS_PER_BODY;
       this._snapshot[base + 0] = pOptions.position?.x ?? 0;
@@ -320,6 +401,9 @@ class MatrixCannon {
     const particleMass = (pOptions.mass || 1) / ((nx + 1) * (ny + 1));
     const radius = pOptions.radius || 0.05;
 
+    this._clothGroupCount = (this._clothGroupCount || 0) + 1;
+    const clothGroup = 1 << (8 + (this._clothGroupCount % 20));
+
     const particles = [];
     const pos = pOptions.position || {x: 0, y: 0, z: 0};
     const pinTop = pOptions.pinTop !== false;
@@ -345,8 +429,10 @@ class MatrixCannon {
         });
 
         body.position.set(px, py, pz);
-        body.collisionFilterGroup = pOptions.group ?? LAYER_MOVING;
-        body.collisionFilterMask = pOptions.mask ?? -1;
+        // body.collisionFilterGroup = pOptions.group ?? LAYER_MOVING;
+        // body.collisionFilterMask = pOptions.mask ?? -1;
+        body.collisionFilterGroup = clothGroup;
+        body.collisionFilterMask = (pOptions.mask ?? -1) & ~clothGroup;
 
         this.world.addBody(body);
         this._registerBody(body, {
@@ -392,6 +478,15 @@ class MatrixCannon {
     this.cloths.push({startIndex, nx, ny, count: particles.length});
     // console.log('worker cloths: ', this.cloths)
     return startIndex;
+  }
+
+  applyClothForce(startIndex, x, y, z) {
+    const c = this.cloths.find(c => c.startIndex === startIndex);
+    if(!c) return;
+    for(let i = 0;i < c.count;i++) {
+      const b = this.rigidBodies[c.startIndex + i];
+      if(b.mass > 0) b.applyImpulse(new this.CANNON.Vec3(x, y, z), b.position);
+    }
   }
 
   applyImpulse(idx, x, y, z) {
@@ -544,6 +639,90 @@ class MatrixCannon {
         this.applyImpulse(idx, (dx / dist) * force, (dy / dist) * force, (dz / dist) * force);
       }
     }
+  }
+
+  _nextSoftBit() {
+    this._softBits = (this._softBits || 0) + 1;
+    return 1 << (8 + (this._softBits % 20));
+  }
+
+  _addSoftBody(pOptions) {
+    const CANNON = this.CANNON;
+    if(!pOptions.vertices) {console.warn('[cannon] SoftBody needs vertices'); return -1;}
+
+    const w = weldMesh(pOptions.vertices, pOptions.indices, pOptions.scale, pOptions.position, pOptions.nodeSpacing || 0);
+    // ...
+    const count = w.count;
+    const mass = (pOptions.mass || 1) / count;
+    // Cannon.Sphere requires a finite scalar radius. Mesh scale is a vec3
+    // and must never be passed through as the particle collision radius.
+    const requestedRadius = pOptions.radius;
+    const defaultRadius = pOptions.nodeSpacing > 0 ? pOptions.nodeSpacing * 0.4 : 0.05;
+    const radius = Number.isFinite(requestedRadius) && requestedRadius > 0
+      ? requestedRadius
+      : defaultRadius;
+    const bit = this._nextSoftBit();
+    const startIndex = this.rigidBodies.length;
+    const P = w.nodePos;
+
+    let cx = 0, cy = 0, cz = 0;
+    for(let i = 0;i < count;i++) {cx += P[i * 3]; cy += P[i * 3 + 1]; cz += P[i * 3 + 2];}
+    cx /= count; cy /= count; cz /= count;
+
+    const nodes = [];
+    for(let i = 0;i < count;i++) {
+      const b = new CANNON.Body({
+        mass, shape: new CANNON.Sphere(radius),
+        collisionFilterGroup: bit, collisionFilterMask: ~bit,
+        // SoftBody particles need stronger velocity damping to settle after
+        // impact instead of oscillating for a long time. Keep it configurable.
+        linearDamping: pOptions.linearDamping ?? 0.85,
+        angularDamping: 0.4, allowSleep: false
+        // allowSleep: true, 
+        // // sleepSpeedLimit: 0.15, sleepTimeLimit: 1
+      });
+      b.position.set(P[i * 3], P[i * 3 + 1], P[i * 3 + 2]);
+
+      this.world.addBody(b);
+      this._registerBody(b, {name: `${pOptions.name}_${i}`, position: {x: P[i * 3], y: P[i * 3 + 1], z: P[i * 3 + 2]}}, true);
+      nodes.push(b);
+
+
+
+
+    }
+
+    const E = w.edges;
+    for(let e = 0;e < E.length;e += 2) {
+      const a = nodes[E[e]], b = nodes[E[e + 1]];
+      const c = new CANNON.DistanceConstraint(a, b, a.position.distanceTo(b.position));
+      this.world.addConstraint(c);
+      this.constraints.push(c);
+    }
+
+    if(pOptions.hub !== false) {
+      const hub = new CANNON.Body({
+        mass: mass * 2, shape: new CANNON.Sphere(radius),
+        collisionFilterGroup: bit, collisionFilterMask: 0,
+        linearDamping: pOptions.linearDamping ?? 0.85,
+        allowSleep: false
+      });
+      hub.position.set(cx, cy, cz);
+      this.world.addBody(hub);
+      this._registerBody(hub, {name: `${pOptions.name}_hub`, position: {x: cx, y: cy, z: cz}}, true);
+      for(const n of nodes) {
+        const c = new CANNON.DistanceConstraint(hub, n, hub.position.distanceTo(n.position));
+        this.world.addConstraint(c);
+        this.constraints.push(c);
+      }
+    }
+
+    this._allocBuffer(this.rigidBodies.length);
+    this.world.broadphase.dirty = true;
+    this.world.broadphase.needsUpdate = true;
+    // this.cloths.push({startIndex, nx: 0, ny: 0, count, v2n: w.v2n});
+    this.cloths.push({startIndex, nx: 0, ny: 0, count, v2n: w.v2n, offsets: w.offsets});
+    return startIndex;
   }
 
   addHingeConstraint(idxA, idxB, opts, msgID) {
@@ -854,21 +1033,28 @@ self.onmessage = async ({data}) => {
         (c.startIndex <= idx && idx < c.startIndex + c.count));
 
       self.postMessage({
-        cmd: 'bodyAdded',
-        id: data.id,
+        cmd: 'bodyAdded', id: data.id,
         idx: clothMeta ? clothMeta.startIndex : idx,
         count: clothMeta ? clothMeta.count : 1,
         nx: clothMeta ? clothMeta.nx : undefined,
-        ny: clothMeta ? clothMeta.ny : undefined
+        ny: clothMeta ? clothMeta.ny : undefined,
+        vertexToNode: clothMeta ? clothMeta.v2n : undefined,
+        vertexOffsets: clothMeta ? clothMeta.offsets : undefined
       });
 
       break;
     }
     case 'step': {
       cannon.step();
-      if(!cannon._useSAB && cannon._snapshot) {
-        const copy = cannon._snapshot.slice();
-        self.postMessage({cmd: 'snapshot', snap: copy, clothPackets: cannon.clothDataPackets}, [copy.buffer]);
+      if(cannon._snapshot) {
+        if(cannon._useSAB) {
+          // Shared snapshots can be posted without copying or transferring their buffer.
+          // Cloth/SoftBody vertex packets must still reach the render thread every step.
+          self.postMessage({cmd: 'snapshot', snap: cannon._snapshot, clothPackets: cannon.clothDataPackets});
+        } else {
+          const copy = cannon._snapshot.slice();
+          self.postMessage({cmd: 'snapshot', snap: copy, clothPackets: cannon.clothDataPackets}, [copy.buffer]);
+        }
       }
       break;
     }
@@ -904,5 +1090,6 @@ self.onmessage = async ({data}) => {
     case 'isSleeping': cannon.isSleeping(data.idx, data.id); break;
     case 'switchToKinematic': cannon.switchToKinematic(data.idx); break;
     case 'switchToDinamic': cannon.switchToDinamic(data.idx); break;
+    case 'applyClothForce': cannon.applyClothForce(data.startIndex, data.x, data.y, data.z); break;
   }
 };

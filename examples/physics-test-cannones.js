@@ -26,7 +26,8 @@ export var testCannonES = function() {
       downloadMeshes({
         cube: "./res/meshes/blender/cube.obj",
         plane: "./res/meshes/blender/plane-sub10.obj",
-        ball: "./res/meshes/shapes/sphere-uv-cilinder-proj.obj",
+        // ball: "./res/meshes/shapes/sphere-uv-cilinder-proj.obj",
+        ball: "./res/meshes/shapes/sphere.obj",
         reel: "./res/meshes/obj/reel.obj"
       }, onGround, {scale: [1, 1, 1]})
 
@@ -46,6 +47,9 @@ export var testCannonES = function() {
         "standard", {x: 0, y: 1, z: -20}, {x: 0, y: 0, z: 0},
         "./res/textures/gold-1.webp", "pyr", 2, true, [1, 1, 1], 2, 400
       );
+
+
+
 
       const W = 8;
       const H = 8;
@@ -136,7 +140,7 @@ export var testCannonES = function() {
       })
 
       physicsPlayground.addMeshObj({
-        position: {x: 0, y: -0.5, z: -10},
+        position: {x: 0, y: 0, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
         scale: [25, 0.1, 25],
@@ -167,6 +171,23 @@ export var testCannonES = function() {
         },
         raycast: {enabled: true, radius: 1}
       });
+
+      console.log('....... ..d.. .. . .. ..d..d... ')
+      const jelly = physicsPlayground.addMeshObj({
+        material: {type: 'standard'},
+        position: {x: 0, y: 8, z: -10},
+        scale: [1, 1, 1],
+        texturesPaths: ['./res/textures/floor1.webp'],
+        name: 'jelly', mesh: m.ball,
+        physics: {
+          // radius: undefined,
+          enabled: true, geometry: 'SoftBody', mass: 2,
+          nodeSpacing: 0, group: 2, mask: -1,
+          vertices: m.ball.vertices, indices: m.ball.indices,
+            hub: false,  radius: 0.01
+        }
+      });
+      setTimeout(() => jelly.vertexAnim.enableCloth(1), 500);
 
       app.activateBloomEffect();
       app.activateVolumetricEffect();

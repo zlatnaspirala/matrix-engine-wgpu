@@ -1,23 +1,54 @@
 import {mat4} from 'wgpu-matrix';
 
+function calculateSoftBodyNormals(positions, indices, vertexCount, fallbackNormals, normals) {
+  normals = normals || new Float32Array(vertexCount * 3);
+  normals.fill(0);
+  for(let i = 0;i + 2 < indices.length;i += 3) {
+    const ia = indices[i], ib = indices[i + 1], ic = indices[i + 2];
+    if(ia >= vertexCount || ib >= vertexCount || ic >= vertexCount) continue;
+    const ax = positions[ia * 4], ay = positions[ia * 4 + 1], az = positions[ia * 4 + 2];
+    const bx = positions[ib * 4], by = positions[ib * 4 + 1], bz = positions[ib * 4 + 2];
+    const cx = positions[ic * 4], cy = positions[ic * 4 + 1], cz = positions[ic * 4 + 2];
+    const abx = bx - ax, aby = by - ay, abz = bz - az;
+    const acx = cx - ax, acy = cy - ay, acz = cz - az;
+    const nx = aby * acz - abz * acy;
+    const ny = abz * acx - abx * acz;
+    const nz = abx * acy - aby * acx;
+    normals[ia * 3] += nx; normals[ia * 3 + 1] += ny; normals[ia * 3 + 2] += nz;
+    normals[ib * 3] += nx; normals[ib * 3 + 1] += ny; normals[ib * 3 + 2] += nz;
+    normals[ic * 3] += nx; normals[ic * 3 + 1] += ny; normals[ic * 3 + 2] += nz;
+  }
+  for(let i = 0;i < vertexCount;i++) {
+    const o = i * 3;
+    const len = Math.hypot(normals[o], normals[o + 1], normals[o + 2]);
+    if(len > 1e-10) {
+      normals[o] /= len;
+      normals[o + 1] /= len;
+      normals[o + 2] /= len;
+    } else if(fallbackNormals && fallbackNormals.length >= o + 3) {
+      normals[o] = fallbackNormals[o];
+      normals[o + 1] = fallbackNormals[o + 1];
+      normals[o + 2] = fallbackNormals[o + 2];
+    } else {
+      normals[o] = 0; normals[o + 1] = 1; normals[o + 2] = 0;
+    }
+  }
+  return normals;
+}
+
+
 export class PhysicsBridge {
   constructor(workerUrl) {
     this._worker = null;
     const isModule = workerUrl.indexOf('ammo') === -1 && workerUrl.indexOf('matter') === -1;
     const needsBlobBridge = new URL(workerUrl, location.href).origin !== location.origin;
     if(needsBlobBridge) {
-      const blobText = isModule
-        ? `import ${JSON.stringify(workerUrl)};`
-        : `importScripts(${JSON.stringify(workerUrl)});`;
+      const blobText = isModule ? `import ${JSON.stringify(workerUrl)};` : `importScripts(${JSON.stringify(workerUrl)});`;
       const blob = new Blob([blobText], {type: 'application/javascript'});
       const blobUrl = URL.createObjectURL(blob);
-      this._worker = isModule
-        ? new Worker(blobUrl, {type: 'module'})
-        : new Worker(blobUrl);
+      this._worker = isModule ? new Worker(blobUrl, {type: 'module'}) : new Worker(blobUrl);
     } else {
-      this._worker = isModule
-        ? new Worker(workerUrl, {type: 'module'})
-        : new Worker(workerUrl);
+      this._worker = isModule ? new Worker(workerUrl, {type: 'module'}) : new Worker(workerUrl);
     }
     this._worker.onerror = (e) => {
       console.error('MEWorker error:', e.message, e.filename, e.lineno);
@@ -82,83 +113,31 @@ export class PhysicsBridge {
     this._doAddPhysics(MEObject, pOptions);
   }
 
-  // _doAddPhysics(MEObject, pOptions) {
-  //   MEObject.isKinematic = pOptions.state === 4;
-
-  //   this._send('addBody', {pOptions}).then((startIndex) => {
-  //     // Check if this specific body option was a Cloth
-  //     if(pOptions.geometry === 'Cloth') {
-  //       console.log("addBody cloth startIndex:", startIndex);
-  //       // nx: 15, // Must match your OBJ's width subdivisions + 1 (or match total vertex math)
-  //       // ny: 23, // Must match your OBJ's height subdivisions + 1
-  //       const nx = pOptions.nx || 15;
-  //       const ny = pOptions.ny || 23;
-  //       const count = (nx + 1) * (ny + 1);
-  //       if(!this._clothMap) this._clothMap = new Map();
-  //       this._clothMap.set(startIndex, {
-  //         mesh: MEObject,
-  //         startIndex: startIndex,
-  //         nx: nx,
-  //         ny: ny,
-  //         count: count
-  //       });
-  //       console.log("Cloth registered successfully:", {startIndex, nx, ny, count});
-  //     } else {
-  //       // Regular rigid body
-  //       this._bodyIndexMap.set(startIndex, MEObject);
-  //     }
-  //   });
-  // }
-
   _doAddPhysics(MEObject, pOptions) {
-
     MEObject.isKinematic = pOptions.state === 4;
-
     this._send('addBody', {pOptions}).then((response) => {
-
-      const startIndex =
-        typeof response === 'object'
-          ? response.idx
-          : response;
-
-      if(pOptions.geometry === 'Cloth') {
-
-        const nx =
-          response?.nx ??
-          pOptions.nx ??
-          10;
-
-        const ny =
-          response?.ny ??
-          pOptions.ny ??
-          10;
-
-        const count =
-          response?.count ??
-          ((nx + 1) * (ny + 1));
-
+      const startIndex = typeof response === 'object' ? response.idx : response;
+      if(pOptions.geometry === 'SoftBody') {
         this._clothMap.set(startIndex, {
-          mesh: MEObject,
-          startIndex,
-          nx,
-          ny,
-          count
+          mesh: MEObject, startIndex,
+          count: response?.count ?? 0,
+          v2n: response?.vertexToNode || null,
+          off: response?.vertexOffsets || null,
+          isSoftBody: true
         });
-
-        console.log(
-          '[CLOTH REGISTERED]',
-          startIndex,
-          nx,
-          ny,
-          count
-        );
-
         return;
       }
-
+      if(pOptions.geometry === 'Cloth') {
+        const nx = response?.nx ?? pOptions.nx ?? 10;
+        const ny = response?.ny ?? pOptions.ny ?? 10;
+        const count = response?.count ?? ((nx + 1) * (ny + 1));
+        this._clothMap.set(startIndex, {mesh: MEObject, startIndex, nx, ny, count});
+        return;
+      }
       this._bodyIndexMap.set(startIndex, MEObject);
     });
   }
+
   setKinematicTransformDeplaced() {
     let count = 0;
     const idxArr = this._kinematicIdx;
@@ -366,6 +345,10 @@ export class PhysicsBridge {
     this._worker.postMessage({cmd: 'createSphereBoundary', idxs, pos, radius});
   }
 
+  applyClothForce(startIndex, x, y, z) {
+    this._worker.postMessage({cmd: 'applyClothForce', startIndex, x, y, z});
+  }
+
   _syncToObjects() {
     const snap = this._snapshot;
     if(!snap) return;
@@ -388,25 +371,6 @@ export class PhysicsBridge {
       meObj.position.y = pos[1];
       meObj.position.z = pos[2];
     }
-
-    if(this._clothMap) {
-      for(const [startIndex, clothData] of this._clothMap) {
-        const meObj = clothData.mesh;
-        const count = clothData.count;
-        try {
-          const clothPositions = new Float32Array(count * 4);
-          for(let i = 0;i < count;i++) {
-            const base = (startIndex + i) * STRIDE;
-            clothPositions[i * 4 + 0] = snap[base + 0];
-            clothPositions[i * 4 + 1] = snap[base + 1];
-            clothPositions[i * 4 + 2] = snap[base + 2];
-            clothPositions[i * 4 + 3] = 0.0;
-          }
-          app.device.queue.writeBuffer(meObj.vertexAnim.clothBuffer, 0, clothPositions);
-        } catch(err) {}
-      }
-    }
-
   }
 
   _send(cmd, extra = {}) {
@@ -434,7 +398,10 @@ export class PhysicsBridge {
         const resolveFn = this._pending.get(data.id);
         if(resolveFn) {
           if(data.count && data.count > 1) {
-            resolveFn({idx: data.idx, count: data.count, nx: data.nx, ny: data.ny});
+            resolveFn({
+              idx: data.idx, count: data.count, nx: data.nx, ny: data.ny,
+              vertexToNode: data.vertexToNode, vertexOffsets: data.vertexOffsets
+            });
           } else {
             resolveFn(data.idx);
           }
@@ -443,26 +410,39 @@ export class PhysicsBridge {
         break;
       case 'snapshot':
         this._snapshot = data.snap;
-
         if(data.clothPackets) {
           for(const packet of data.clothPackets) {
-            const clothMeta = this._clothMap.get(packet.startIndex);
-            if(clothMeta && clothMeta.mesh && clothMeta.mesh.vertexAnim?.clothBuffer) {
-              const count = clothMeta.count;
-              const src = packet.positions;
-              // Convert xyz → vec4 (shader expects array<vec4f>)
-              const clothPositions = new Float32Array(count * 4);
-              for(let i = 0;i < count;i++) {
-                clothPositions[i * 4 + 0] = src[i * 3 + 0]; // x
-                clothPositions[i * 4 + 1] = src[i * 3 + 1]; // y
-                clothPositions[i * 4 + 2] = src[i * 3 + 2]; // z
-                clothPositions[i * 4 + 3] = 0.0;             // padding
+            const meta = this._clothMap.get(packet.startIndex);
+            const buf = meta?.mesh?.vertexAnim?.clothBuffer;
+            if(!buf) continue;
+            const src = packet.positions, v2n = meta.v2n;
+            const n = v2n ? v2n.length : meta.count;
+            if(!meta._scratch || meta._scratch.length !== n * 4) meta._scratch = new Float32Array(n * 4);
+            const dst = meta._scratch;
+            const o = meta.off; // per-vertex offset from its node (null for cloth)
+            for(let i = 0;i < n;i++) {
+              const s = (v2n ? v2n[i] : i) * 3;
+              dst[i * 4] = src[s] + (o ? o[i * 3] : 0);
+              dst[i * 4 + 1] = src[s + 1] + (o ? o[i * 3 + 1] : 0);
+              dst[i * 4 + 2] = src[s + 2] + (o ? o[i * 3 + 2] : 0);
+            }
+            app.device.queue.writeBuffer(buf, 0, dst);
+
+            if(meta.isSoftBody) {
+              const normalBuffer = meta.mesh.vertexNormalsBuffer;
+              const indices = meta.mesh.mesh?.indices;
+              if(normalBuffer && indices?.length) {
+                if(!meta._normalScratch || meta._normalScratch.length !== n * 3) {
+                  meta._normalScratch = new Float32Array(n * 3);
+                }
+                meta._normalScratch = calculateSoftBodyNormals(
+                  dst, indices, n, meta.mesh.mesh?.vertexNormals, meta._normalScratch
+                );
+                app.device.queue.writeBuffer(normalBuffer, 0, meta._normalScratch);
               }
-              app.device.queue.writeBuffer(clothMeta.mesh.vertexAnim.clothBuffer, 0, clothPositions);
             }
           }
         }
-
         this._syncToObjects();
         break;
       case 'collision':

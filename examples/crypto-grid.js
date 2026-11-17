@@ -84,7 +84,7 @@ export var loadCryptoGrid = function() {
           if(name === "coingecko") charts.effects.cryptoGrid.updateData(grid);
         });
         dataHandler.start("coingecko", 60000);
-        charts.setBlend(0.001);
+        charts.setBlend(0.1);
         app.charts = charts;
         app.charts.effects.flameEffect.setScale(100)
         let cam = app.getCamera();

@@ -33,6 +33,8 @@ export class ChartsEffect {
     this.titleContainer = this._createLabelContainer();
     this.iconContainer = this._createIconContainer();
     this.labelMaxDistance = 30;
+    this.coins = [];
+    setTimeout(() => {dispatchEvent(new CustomEvent('update-effects', {}))}, 30);
   }
 
   _createIconContainer() {

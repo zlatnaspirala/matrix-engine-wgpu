@@ -16375,6 +16375,7 @@ const ANIM_NOISE: u32 = 16u;
 const ANIM_OCEAN: u32 = 32u;
 
 const ANIM_CLOTH: u32 = 128u;
+const ANIM_SOFT_BODY: u32 = 256u;
 
 fn applyWave(pos: vec3f) -> vec3f {
   let wave = sin(pos.x * vertexAnim.waveFrequency + vertexAnim.time * vertexAnim.waveSpeed) * 
@@ -16490,7 +16491,7 @@ fn main(
   let flags = u32(vertexAnim.flags);
 
   // If cloth simulation is active via flags, read position directly from the cloth storage buffer!
-  if ((flags & ANIM_CLOTH) != 0u) {
+  if ((flags & (ANIM_CLOTH | ANIM_SOFT_BODY)) != 0u) {
     basePosition = clothBuffer[vertexIndex].xyz;
   }
 
@@ -16498,13 +16499,18 @@ fn main(
   var finalPos  = skinned.position.xyz;
   var finalNorm = skinned.normal;
 
-  if ((flags & ~ANIM_CLOTH) != 0u && vertexAnim.globalIntensity > 0.0) {
+  if ((flags & ~(ANIM_CLOTH | ANIM_SOFT_BODY)) != 0u && vertexAnim.globalIntensity > 0.0) {
     let animated = applyVertexAnimation(finalPos, finalNorm);
     finalPos  = animated.position.xyz;
     finalNorm = animated.normal;
   }
 
-  let worldPos = model.modelMatrix * vec4f(finalPos, 1.0);
+  // SoftBody positions are already in world space from the physics worker.
+  let worldPos = select(
+    model.modelMatrix * vec4f(finalPos, 1.0),
+    vec4f(finalPos, 1.0),
+    (flags & ANIM_SOFT_BODY) != 0u
+  );
   let normalMatrix = mat3x3f(
     model.modelMatrix[0].xyz,
     model.modelMatrix[1].xyz,
@@ -16517,7 +16523,11 @@ fn main(
 
   // test
   // output.fragNorm = vec3f(0.0, 1.0, 0.0);
-  output.fragNorm  = normalize(normalMatrix * finalNorm);
+  output.fragNorm  = normalize(select(
+    normalMatrix * finalNorm,
+    finalNorm,
+    (flags & ANIM_SOFT_BODY) != 0u
+  ));
   
   output.uv        = uv * uvScale;
   return output;
@@ -24923,8 +24933,10 @@ var VERTEX_ANIM_FLAGS = {
   // 32
   DISPLACEMENT: 1 << 6,
   // 64
-  CLOTH: 1 << 7
+  CLOTH: 1 << 7,
   // 128
+  SOFT_BODY: 1 << 8
+  // 256
 };
 
 // src/shaders/standalone/pointer.effect.js
@@ -25970,7 +25982,7 @@ var MEMeshObj = class extends Materials {
     this.sceneBGL = o3.sceneBGL;
     this.materialBGL = o3.materialBGL;
     this.uniformBufferBindGroupLayout = o3.uniformBufferBindGroupLayout;
-    if (o3.physics.geometry !== "Cloth") {
+    if (o3.physics.geometry !== "Cloth" && o3.physics.geometry !== "SoftBody") {
       this.dummyClothBuffer = o3.dummyClothBuffer;
     }
     this.useScale = o3.useScale || false;
@@ -26241,7 +26253,7 @@ var MEMeshObj = class extends Materials {
       }
       this.vertexNormalsBuffer = this.device.createBuffer({
         size: this.mesh.vertexNormals.length * Float32Array.BYTES_PER_ELEMENT,
-        usage: GPUBufferUsage.VERTEX,
+        usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
         mappedAtCreation: true
       });
       {
@@ -26371,11 +26383,11 @@ var MEMeshObj = class extends Materials {
         size: this.vertexAnimParams.byteLength,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
-      if (o_.physics.geometry === "Cloth") {
-        const maxClothParticles = 384;
+      if (o_.physics.geometry === "Cloth" || o_.physics.geometry === "SoftBody") {
+        const vertexCount = o_.physics.geometry === "SoftBody" ? Math.max(1, Math.ceil((o_.physics.vertices?.length || 0) / 3)) : 384;
         this.clothBuffer = this.device.createBuffer({
-          label: "ClothPhysicsStorage",
-          size: maxClothParticles * 4 * Float32Array.BYTES_PER_ELEMENT,
+          label: o_.physics.geometry === "SoftBody" ? "SoftBody Physics Storage" : "ClothPhysicsStorage",
+          size: vertexCount * 4 * Float32Array.BYTES_PER_ELEMENT,
           usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
         });
       } else {
@@ -26386,12 +26398,13 @@ var MEMeshObj = class extends Materials {
         clothBuffer: this.clothBuffer,
         enableCloth: (startIndex = 0) => {
           this.vertexAnim.active = true;
-          this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.CLOTH;
+          const physicsFlag = o_.physics.geometry === "SoftBody" ? VERTEX_ANIM_FLAGS.SOFT_BODY : VERTEX_ANIM_FLAGS.CLOTH;
+          this.vertexAnimParams[1] |= physicsFlag;
           this.vertexAnimParams[28] = startIndex;
           this.updateVertexAnimBuffer();
         },
         disableCloth: () => {
-          this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.CLOTH;
+          this.vertexAnimParams[1] &= ~(VERTEX_ANIM_FLAGS.CLOTH | VERTEX_ANIM_FLAGS.SOFT_BODY);
           this.vertexAnim.clothBuffer = null;
           this.updateVertexAnimBuffer();
         },
@@ -47892,7 +47905,7 @@ var ProceduralMeshObj = class extends Materials {
     this.sceneBGL = o3.sceneBGL;
     this.materialBGL = o3.materialBGL;
     this.uniformBufferBindGroupLayout = o3.uniformBufferBindGroupLayout;
-    if (o3.physics.geometry !== "Cloth") {
+    if (o3.physics.geometry !== "Cloth" && o3.physics.geometry !== "SoftBody") {
       this.dummyClothBuffer = o3.dummyClothBuffer;
     }
     this._o = o3;
@@ -48237,11 +48250,11 @@ var ProceduralMeshObj = class extends Materials {
         // morphBlend
       ]
     });
-    if (this.o_.physics.geometry === "Cloth") {
-      const maxClothParticles = 384;
+    if (this.o_.physics.geometry === "Cloth" || this.o_.physics.geometry === "SoftBody") {
+      const vertexCount = this.o_.physics.geometry === "SoftBody" ? Math.max(1, Math.ceil((this.o_.physics.vertices?.length || 0) / 3)) : 384;
       this.clothBuffer = this.device.createBuffer({
-        label: "Cloth Physics Storage Buffer",
-        size: maxClothParticles * 4 * Float32Array.BYTES_PER_ELEMENT,
+        label: this.o_.physics.geometry === "SoftBody" ? "SoftBody Physics Storage Buffer" : "Cloth Physics Storage Buffer",
+        size: vertexCount * 4 * Float32Array.BYTES_PER_ELEMENT,
         usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
       });
     } else {
@@ -48252,12 +48265,13 @@ var ProceduralMeshObj = class extends Materials {
       clothBuffer: this.clothBuffer,
       enableCloth: (startIndex = 0) => {
         this.vertexAnim.active = true;
-        this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.CLOTH;
+        const physicsFlag = this.o_.physics.geometry === "SoftBody" ? VERTEX_ANIM_FLAGS.SOFT_BODY : VERTEX_ANIM_FLAGS.CLOTH;
+        this.vertexAnimParams[1] |= physicsFlag;
         this.vertexAnimParams[28] = startIndex;
         this.updateVertexAnimBuffer();
       },
       disableCloth: () => {
-        this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.CLOTH;
+        this.vertexAnimParams[1] &= ~(VERTEX_ANIM_FLAGS.CLOTH | VERTEX_ANIM_FLAGS.SOFT_BODY);
         this.vertexAnim.clothBuffer = null;
         this.updateVertexAnimBuffer();
       },
@@ -50719,13 +50733,19 @@ var cullingPass = function() {
       this._lastCanvasTex = canvasTexture;
       this._canvasView = canvasTexture.createView();
     }
-    if (this.bloomPass.enabled === true) this.bloomPass.render(commandEncoder, this.bloomOutputTex.createView());
+    if (this.bloomPass.enabled === true) this.bloomPass.render(commandEncoder, this._bloomOutputView);
     this.finalPS.colorAttachments[0].view = this._canvasView;
-    pass = commandEncoder.beginRenderPass(this.finalPS);
-    pass.setPipeline(this.presentPipeline);
-    pass.setBindGroup(0, this._activeBindGroup);
-    pass.draw(6);
-    pass.end();
+    if (this.fxaaPass.enabled === true) {
+      const hdrView = this.bloomPass.enabled ? this._bloomOutputView : this.sceneTextureView;
+      const ssrView = this.ssrPass.enabled ? this.ssrPass.ssrOutputView : this._dummySSRView;
+      this.fxaaPass.render(commandEncoder, hdrView, ssrView, this._canvasView);
+    } else {
+      pass = commandEncoder.beginRenderPass(this.finalPS);
+      pass.setPipeline(this.presentPipeline);
+      pass.setBindGroup(0, this._activeBindGroup);
+      pass.draw(6);
+      pass.end();
+    }
     this.submitQueue[0] = commandEncoder.finish();
     this.device.queue.submit(this.submitQueue);
     this.submitQueue[0] = null;
@@ -50847,13 +50867,19 @@ var noShadowPass = function() {
       this._lastCanvasTex = canvasTexture;
       this._canvasView = canvasTexture.createView();
     }
-    if (this.bloomPass.enabled === true) this.bloomPass.render(commandEncoder, this.bloomOutputTex.createView());
+    if (this.bloomPass.enabled === true) this.bloomPass.render(commandEncoder, this._bloomOutputView);
     this.finalPS.colorAttachments[0].view = this._canvasView;
-    pass = commandEncoder.beginRenderPass(this.finalPS);
-    pass.setPipeline(this.presentPipeline);
-    pass.setBindGroup(0, this._activeBindGroup);
-    pass.draw(6);
-    pass.end();
+    if (this.fxaaPass.enabled === true) {
+      const hdrView = this.bloomPass.enabled ? this._bloomOutputView : this.sceneTextureView;
+      const ssrView = this.ssrPass.enabled ? this.ssrPass.ssrOutputView : this._dummySSRView;
+      this.fxaaPass.render(commandEncoder, hdrView, ssrView, this._canvasView);
+    } else {
+      pass = commandEncoder.beginRenderPass(this.finalPS);
+      pass.setPipeline(this.presentPipeline);
+      pass.setBindGroup(0, this._activeBindGroup);
+      pass.draw(6);
+      pass.end();
+    }
     this.submitQueue[0] = commandEncoder.finish();
     this.device.queue.submit(this.submitQueue);
     this.submitQueue[0] = null;
@@ -50924,6 +50950,49 @@ var nanoPass = function() {
 };
 
 // src/engine/physics/bridge.js
+function calculateSoftBodyNormals(positions, indices, vertexCount, fallbackNormals, normals) {
+  normals = normals || new Float32Array(vertexCount * 3);
+  normals.fill(0);
+  for (let i2 = 0; i2 + 2 < indices.length; i2 += 3) {
+    const ia2 = indices[i2], ib = indices[i2 + 1], ic2 = indices[i2 + 2];
+    if (ia2 >= vertexCount || ib >= vertexCount || ic2 >= vertexCount) continue;
+    const ax = positions[ia2 * 4], ay = positions[ia2 * 4 + 1], az = positions[ia2 * 4 + 2];
+    const bx = positions[ib * 4], by = positions[ib * 4 + 1], bz = positions[ib * 4 + 2];
+    const cx = positions[ic2 * 4], cy = positions[ic2 * 4 + 1], cz = positions[ic2 * 4 + 2];
+    const abx = bx - ax, aby = by - ay, abz = bz - az;
+    const acx = cx - ax, acy = cy - ay, acz = cz - az;
+    const nx = aby * acz - abz * acy;
+    const ny = abz * acx - abx * acz;
+    const nz = abx * acy - aby * acx;
+    normals[ia2 * 3] += nx;
+    normals[ia2 * 3 + 1] += ny;
+    normals[ia2 * 3 + 2] += nz;
+    normals[ib * 3] += nx;
+    normals[ib * 3 + 1] += ny;
+    normals[ib * 3 + 2] += nz;
+    normals[ic2 * 3] += nx;
+    normals[ic2 * 3 + 1] += ny;
+    normals[ic2 * 3 + 2] += nz;
+  }
+  for (let i2 = 0; i2 < vertexCount; i2++) {
+    const o3 = i2 * 3;
+    const len2 = Math.hypot(normals[o3], normals[o3 + 1], normals[o3 + 2]);
+    if (len2 > 1e-10) {
+      normals[o3] /= len2;
+      normals[o3 + 1] /= len2;
+      normals[o3 + 2] /= len2;
+    } else if (fallbackNormals && fallbackNormals.length >= o3 + 3) {
+      normals[o3] = fallbackNormals[o3];
+      normals[o3 + 1] = fallbackNormals[o3 + 1];
+      normals[o3 + 2] = fallbackNormals[o3 + 2];
+    } else {
+      normals[o3] = 0;
+      normals[o3 + 1] = 1;
+      normals[o3 + 2] = 0;
+    }
+  }
+  return normals;
+}
 var PhysicsBridge = class {
   constructor(workerUrl) {
     this._worker = null;
@@ -51001,54 +51070,26 @@ var PhysicsBridge = class {
     }
     this._doAddPhysics(MEObject, pOptions);
   }
-  // _doAddPhysics(MEObject, pOptions) {
-  //   MEObject.isKinematic = pOptions.state === 4;
-  //   this._send('addBody', {pOptions}).then((startIndex) => {
-  //     // Check if this specific body option was a Cloth
-  //     if(pOptions.geometry === 'Cloth') {
-  //       console.log("addBody cloth startIndex:", startIndex);
-  //       // nx: 15, // Must match your OBJ's width subdivisions + 1 (or match total vertex math)
-  //       // ny: 23, // Must match your OBJ's height subdivisions + 1
-  //       const nx = pOptions.nx || 15;
-  //       const ny = pOptions.ny || 23;
-  //       const count = (nx + 1) * (ny + 1);
-  //       if(!this._clothMap) this._clothMap = new Map();
-  //       this._clothMap.set(startIndex, {
-  //         mesh: MEObject,
-  //         startIndex: startIndex,
-  //         nx: nx,
-  //         ny: ny,
-  //         count: count
-  //       });
-  //       console.log("Cloth registered successfully:", {startIndex, nx, ny, count});
-  //     } else {
-  //       // Regular rigid body
-  //       this._bodyIndexMap.set(startIndex, MEObject);
-  //     }
-  //   });
-  // }
   _doAddPhysics(MEObject, pOptions) {
     MEObject.isKinematic = pOptions.state === 4;
     this._send("addBody", { pOptions }).then((response) => {
       const startIndex = typeof response === "object" ? response.idx : response;
+      if (pOptions.geometry === "SoftBody") {
+        this._clothMap.set(startIndex, {
+          mesh: MEObject,
+          startIndex,
+          count: response?.count ?? 0,
+          v2n: response?.vertexToNode || null,
+          off: response?.vertexOffsets || null,
+          isSoftBody: true
+        });
+        return;
+      }
       if (pOptions.geometry === "Cloth") {
         const nx = response?.nx ?? pOptions.nx ?? 10;
         const ny = response?.ny ?? pOptions.ny ?? 10;
         const count = response?.count ?? (nx + 1) * (ny + 1);
-        this._clothMap.set(startIndex, {
-          mesh: MEObject,
-          startIndex,
-          nx,
-          ny,
-          count
-        });
-        console.log(
-          "[CLOTH REGISTERED]",
-          startIndex,
-          nx,
-          ny,
-          count
-        );
+        this._clothMap.set(startIndex, { mesh: MEObject, startIndex, nx, ny, count });
         return;
       }
       this._bodyIndexMap.set(startIndex, MEObject);
@@ -51224,6 +51265,9 @@ var PhysicsBridge = class {
   createSphereBoundary(idxs, pos2 = { x: 0, y: 0, z: 0 }, radius = 20) {
     this._worker.postMessage({ cmd: "createSphereBoundary", idxs, pos: pos2, radius });
   }
+  applyClothForce(startIndex, x3, y3, z2) {
+    this._worker.postMessage({ cmd: "applyClothForce", startIndex, x: x3, y: y3, z: z2 });
+  }
   _syncToObjects() {
     const snap = this._snapshot;
     if (!snap) return;
@@ -51243,24 +51287,6 @@ var PhysicsBridge = class {
       meObj.position.x = pos2[0];
       meObj.position.y = pos2[1];
       meObj.position.z = pos2[2];
-    }
-    if (this._clothMap) {
-      for (const [startIndex, clothData] of this._clothMap) {
-        const meObj = clothData.mesh;
-        const count = clothData.count;
-        try {
-          const clothPositions = new Float32Array(count * 4);
-          for (let i2 = 0; i2 < count; i2++) {
-            const base = (startIndex + i2) * STRIDE;
-            clothPositions[i2 * 4 + 0] = snap[base + 0];
-            clothPositions[i2 * 4 + 1] = snap[base + 1];
-            clothPositions[i2 * 4 + 2] = snap[base + 2];
-            clothPositions[i2 * 4 + 3] = 0;
-          }
-          app.device.queue.writeBuffer(meObj.vertexAnim.clothBuffer, 0, clothPositions);
-        } catch (err) {
-        }
-      }
     }
   }
   _send(cmd, extra = {}) {
@@ -51285,7 +51311,14 @@ var PhysicsBridge = class {
         const resolveFn = this._pending.get(data.id);
         if (resolveFn) {
           if (data.count && data.count > 1) {
-            resolveFn({ idx: data.idx, count: data.count, nx: data.nx, ny: data.ny });
+            resolveFn({
+              idx: data.idx,
+              count: data.count,
+              nx: data.nx,
+              ny: data.ny,
+              vertexToNode: data.vertexToNode,
+              vertexOffsets: data.vertexOffsets
+            });
           } else {
             resolveFn(data.idx);
           }
@@ -51296,18 +51329,37 @@ var PhysicsBridge = class {
         this._snapshot = data.snap;
         if (data.clothPackets) {
           for (const packet of data.clothPackets) {
-            const clothMeta = this._clothMap.get(packet.startIndex);
-            if (clothMeta && clothMeta.mesh && clothMeta.mesh.vertexAnim?.clothBuffer) {
-              const count = clothMeta.count;
-              const src = packet.positions;
-              const clothPositions = new Float32Array(count * 4);
-              for (let i2 = 0; i2 < count; i2++) {
-                clothPositions[i2 * 4 + 0] = src[i2 * 3 + 0];
-                clothPositions[i2 * 4 + 1] = src[i2 * 3 + 1];
-                clothPositions[i2 * 4 + 2] = src[i2 * 3 + 2];
-                clothPositions[i2 * 4 + 3] = 0;
+            const meta = this._clothMap.get(packet.startIndex);
+            const buf = meta?.mesh?.vertexAnim?.clothBuffer;
+            if (!buf) continue;
+            const src = packet.positions, v2n = meta.v2n;
+            const n3 = v2n ? v2n.length : meta.count;
+            if (!meta._scratch || meta._scratch.length !== n3 * 4) meta._scratch = new Float32Array(n3 * 4);
+            const dst = meta._scratch;
+            const o3 = meta.off;
+            for (let i2 = 0; i2 < n3; i2++) {
+              const s2 = (v2n ? v2n[i2] : i2) * 3;
+              dst[i2 * 4] = src[s2] + (o3 ? o3[i2 * 3] : 0);
+              dst[i2 * 4 + 1] = src[s2 + 1] + (o3 ? o3[i2 * 3 + 1] : 0);
+              dst[i2 * 4 + 2] = src[s2 + 2] + (o3 ? o3[i2 * 3 + 2] : 0);
+            }
+            app.device.queue.writeBuffer(buf, 0, dst);
+            if (meta.isSoftBody) {
+              const normalBuffer = meta.mesh.vertexNormalsBuffer;
+              const indices = meta.mesh.mesh?.indices;
+              if (normalBuffer && indices?.length) {
+                if (!meta._normalScratch || meta._normalScratch.length !== n3 * 3) {
+                  meta._normalScratch = new Float32Array(n3 * 3);
+                }
+                meta._normalScratch = calculateSoftBodyNormals(
+                  dst,
+                  indices,
+                  n3,
+                  meta.mesh.mesh?.vertexNormals,
+                  meta._normalScratch
+                );
+                app.device.queue.writeBuffer(normalBuffer, 0, meta._normalScratch);
               }
-              app.device.queue.writeBuffer(clothMeta.mesh.vertexAnim.clothBuffer, 0, clothPositions);
             }
           }
         }
@@ -53122,13 +53174,19 @@ async function GPUIndirectDraws() {
       this._lastCanvasTex = canvasTexture;
       this._canvasView = canvasTexture.createView();
     }
-    if (this.bloomPass.enabled === true) this.bloomPass.render(commandEncoder, this.bloomOutputTex.createView());
+    if (this.bloomPass.enabled === true) this.bloomPass.render(commandEncoder, this._bloomOutputView);
     this.finalPS.colorAttachments[0].view = this._canvasView;
-    pass = commandEncoder.beginRenderPass(this.finalPS);
-    pass.setPipeline(this.presentPipeline);
-    pass.setBindGroup(0, this._activeBindGroup);
-    pass.draw(6);
-    pass.end();
+    if (this.fxaaPass.enabled === true) {
+      const hdrView = this.bloomPass.enabled ? this._bloomOutputView : this.sceneTextureView;
+      const ssrView = this.ssrPass.enabled ? this.ssrPass.ssrOutputView : this._dummySSRView;
+      this.fxaaPass.render(commandEncoder, hdrView, ssrView, this._canvasView);
+    } else {
+      pass = commandEncoder.beginRenderPass(this.finalPS);
+      pass.setPipeline(this.presentPipeline);
+      pass.setBindGroup(0, this._activeBindGroup);
+      pass.draw(6);
+      pass.end();
+    }
     this.device.queue.submit([commandEncoder.finish()]);
     if (this.collisionSystem) this.collisionSystem.update();
   } catch (err) {
@@ -56637,7 +56695,7 @@ var MatrixEngineWGPU = class {
     }
     if (typeof o3.physics.enabled === "undefined") o3.physics.enabled = true;
     if (typeof o3.physics.geometry === "undefined") o3.physics.geometry = "Cube";
-    if (typeof o3.physics.radius === "undefined") o3.physics.radius = o3.scale;
+    if (typeof o3.physics.radius === "undefined") o3.physics.radius = typeof o3.scale == Number ? o3.scale : o3.scale[0];
     if (typeof o3.physics.mass === "undefined") o3.physics.mass = 1;
     if (typeof o3.physics.name === "undefined") o3.physics.name = o3.name;
     if (typeof o3.physics.scale === "undefined") o3.physics.scale = o3.scale;
@@ -56660,7 +56718,7 @@ var MatrixEngineWGPU = class {
     o3.sceneBGL = this.sceneBGL;
     o3.materialBGL = this.materialBGL;
     o3.uniformBufferBindGroupLayout = this.uniformBufferBindGroupLayout;
-    if (o3.physics.enabled !== true || o3.physics.geometry !== "Cloth") {
+    if (o3.physics.enabled !== true || o3.physics.geometry !== "Cloth" && o3.physics.geometry !== "SoftBody") {
       o3.dummyClothBuffer = this.dummyClothBuffer;
     }
     let myMesh1 = new MEMeshObj(
@@ -56730,7 +56788,13 @@ var MatrixEngineWGPU = class {
     }
     if (typeof o3.physics.enabled === "undefined") o3.physics.enabled = true;
     if (typeof o3.physics.geometry === "undefined") o3.physics.geometry = "Cube";
-    if (typeof o3.physics.radius === "undefined") o3.physics.radius = o3.scale;
+    if (typeof o3.physics.radius === "undefined") {
+      if (o3.physics.geometry === "SoftBody") {
+        o3.physics.radius = 0.05;
+      } else {
+        o3.physics.radius = typeof o3.scale === "number" ? o3.scale : o3.scale[0];
+      }
+    }
     if (typeof o3.physics.mass === "undefined") o3.physics.mass = 1;
     if (typeof o3.physics.name === "undefined") o3.physics.name = o3.name;
     if (typeof o3.physics.scale === "undefined") o3.physics.scale = o3.scale;
@@ -56747,7 +56811,7 @@ var MatrixEngineWGPU = class {
     o3.sceneBGL = this.sceneBGL;
     o3.materialBGL = this.materialBGL;
     o3.uniformBufferBindGroupLayout = this.uniformBufferBindGroupLayout;
-    if (o3.physics.enabled !== true || o3.physics.geometry !== "Cloth") {
+    if (o3.physics.enabled !== true || o3.physics.geometry !== "Cloth" && o3.physics.geometry !== "SoftBody") {
       o3.dummyClothBuffer = this.dummyClothBuffer;
     }
     let myMesh = new ProceduralMeshObj(this.canvas, this.device, this.context, o3, this.inputHandler, AM, this.cameraBuffer);
@@ -57120,7 +57184,7 @@ var MatrixEngineWGPU = class {
     o3.sceneBGL = this.sceneBGL;
     let r3 = [];
     o3.textureCache = this.textureCache;
-    if (o3.physics.enabled !== true || o3.physics.geometry !== "Cloth") {
+    if (o3.physics.enabled !== true || o3.physics.geometry !== "Cloth" && o3.physics.geometry !== "SoftBody") {
       o3.dummyClothBuffer = this.dummyClothBuffer;
     }
     let skinnedNodeIndex = 0;
@@ -57249,7 +57313,7 @@ var MatrixEngineWGPU = class {
     o3.sceneBGL = this.sceneBGL;
     let results = [];
     let skinnedNodeIndex = 0;
-    if (o3.physics.enabled !== true || o3.physics.geometry !== "Cloth") {
+    if (o3.physics.enabled !== true || o3.physics.geometry !== "Cloth" && o3.physics.geometry !== "SoftBody") {
       o3.dummyClothBuffer = this.dummyClothBuffer;
     }
     for (const skinnedNode of glbFile.skinnedMeshNodes) {
@@ -62047,6 +62111,27 @@ var testJolt = function() {
         },
         raycast: { enabled: true, radius: 1 }
       });
+      const jelly = physicsPlayground2.addMeshObj({
+        material: { type: "standard" },
+        position: { x: 0, y: 8, z: -10 },
+        scale: [1.5, 1.5, 1.5],
+        texturesPaths: ["./res/textures/floor1.webp"],
+        name: "jelly",
+        mesh: m2.ball,
+        physics: {
+          // radius: undefined,
+          enabled: true,
+          geometry: "SoftBody",
+          mass: 2,
+          nodeSpacing: 0,
+          group: 2,
+          mask: -1,
+          vertices: m2.ball.vertices,
+          indices: m2.ball.indices,
+          radius: 0.01
+        }
+      });
+      setTimeout(() => jelly.vertexAnim.enableCloth(1), 500);
       app.cameras.WASD.setYaw(-0.03);
       app.cameras.WASD.setPitch(-0.49);
       app.cameras.WASD.setZ(0);
@@ -62168,7 +62253,8 @@ var testCannonES = function() {
       downloadMeshes({
         cube: "./res/meshes/blender/cube.obj",
         plane: "./res/meshes/blender/plane-sub10.obj",
-        ball: "./res/meshes/shapes/sphere-uv-cilinder-proj.obj",
+        // ball: "./res/meshes/shapes/sphere-uv-cilinder-proj.obj",
+        ball: "./res/meshes/shapes/sphere.obj",
         reel: "./res/meshes/obj/reel.obj"
       }, onGround, { scale: [1, 1, 1] });
       physicsPlayground2.matrixPhysics.speedUpSimulation(2);
@@ -62298,7 +62384,7 @@ var testCannonES = function() {
         raycast: { enabled: true, radius: 1 }
       });
       physicsPlayground2.addMeshObj({
-        position: { x: 0, y: -0.5, z: -10 },
+        position: { x: 0, y: 0, z: -10 },
         rotation: { x: 0, y: 0, z: 0 },
         rotationSpeed: { x: 0, y: 0, z: 0 },
         scale: [25, 0.1, 25],
@@ -62328,6 +62414,29 @@ var testCannonES = function() {
         },
         raycast: { enabled: true, radius: 1 }
       });
+      console.log("....... ..d.. .. . .. ..d..d... ");
+      const jelly = physicsPlayground2.addMeshObj({
+        material: { type: "standard" },
+        position: { x: 0, y: 8, z: -10 },
+        scale: [1, 1, 1],
+        texturesPaths: ["./res/textures/floor1.webp"],
+        name: "jelly",
+        mesh: m2.ball,
+        physics: {
+          // radius: undefined,
+          enabled: true,
+          geometry: "SoftBody",
+          mass: 2,
+          nodeSpacing: 0,
+          group: 2,
+          mask: -1,
+          vertices: m2.ball.vertices,
+          indices: m2.ball.indices,
+          hub: false,
+          radius: 0.01
+        }
+      });
+      setTimeout(() => jelly.vertexAnim.enableCloth(1), 500);
       app.activateBloomEffect();
       app.activateVolumetricEffect();
       physicsPlayground2.lightContainer[0].setPosY(65);
@@ -75979,6 +76088,10 @@ var ChartsEffect = class _ChartsEffect {
     this.titleContainer = this._createLabelContainer();
     this.iconContainer = this._createIconContainer();
     this.labelMaxDistance = 30;
+    this.coins = [];
+    setTimeout(() => {
+      dispatchEvent(new CustomEvent("update-effects", {}));
+    }, 30);
   }
   _createIconContainer() {
     const el2 = document.createElement("div");
@@ -77449,7 +77562,7 @@ var loadCryptoGrid = function() {
           if (name2 === "coingecko") charts.effects.cryptoGrid.updateData(grid);
         });
         dataHandler.start("coingecko", 6e4);
-        charts.setBlend(1e-3);
+        charts.setBlend(0.1);
         app.charts = charts;
         app.charts.effects.flameEffect.setScale(100);
         let cam2 = app.getCamera();

@@ -73,18 +73,46 @@ export class MatrixTTS {
   }
 
   splitIntoChunks(text) {
+    const MAX_TEXT_LENGTH = 10_000;
+    const MAX_CHUNK_LENGTH = 120;
+    const MAX_CHUNKS = 100;
+
+    if (typeof text !== 'string') {
+      throw new TypeError('Speech text must be a string.');
+    }
+    if (text.length > MAX_TEXT_LENGTH) {
+      throw new RangeError(`Speech text must not exceed ${MAX_TEXT_LENGTH} characters.`);
+    }
+
     const parts = text
       .split(/([.!?]+(?:\s|$))/)
       .map(s => s.trim())
       .filter(Boolean);
+
     const chunks = [];
-    for(const p of parts) {
-      if(p.length > 120 && p.includes(',')) {
-        p.split(',').map(s => s.trim()).filter(Boolean).forEach(s => chunks.push(s + ','));
-      } else {
-        chunks.push(p);
+    const addChunk = chunk => {
+      const trimmed = chunk.trim();
+      if (!trimmed) return;
+      if (chunks.length >= MAX_CHUNKS) {
+        throw new RangeError(`Speech text must not produce more than ${MAX_CHUNKS} chunks.`);
       }
+      chunks.push(trimmed);
+    };
+
+    for (const part of parts) {
+      let remaining = part;
+
+      while (remaining.length > MAX_CHUNK_LENGTH) {
+        let cutAt = remaining.lastIndexOf(' ', MAX_CHUNK_LENGTH);
+        if (cutAt <= 0) cutAt = MAX_CHUNK_LENGTH;
+
+        addChunk(remaining.slice(0, cutAt));
+        remaining = remaining.slice(cutAt).trim();
+      }
+
+      addChunk(remaining);
     }
+
     return chunks;
   }
 

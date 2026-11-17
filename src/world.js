@@ -1094,7 +1094,7 @@ export default class MatrixEngineWGPU {
     }
     if(typeof o.physics.enabled === 'undefined') o.physics.enabled = true;
     if(typeof o.physics.geometry === 'undefined') o.physics.geometry = "Cube";
-    if(typeof o.physics.radius === 'undefined') o.physics.radius = o.scale
+    if(typeof o.physics.radius === 'undefined') o.physics.radius = (typeof o.scale == Number ? o.scale : o.scale[0]);
     if(typeof o.physics.mass === 'undefined') o.physics.mass = 1;
     if(typeof o.physics.name === 'undefined') o.physics.name = o.name;
     if(typeof o.physics.scale === 'undefined') o.physics.scale = o.scale;
@@ -1118,7 +1118,7 @@ export default class MatrixEngineWGPU {
     o.materialBGL = this.materialBGL;
     o.uniformBufferBindGroupLayout = this.uniformBufferBindGroupLayout;
 
-    if(o.physics.enabled !== true || o.physics.geometry !== 'Cloth') {
+    if(o.physics.enabled !== true || (o.physics.geometry !== 'Cloth' && o.physics.geometry !== 'SoftBody')) {
       o.dummyClothBuffer = this.dummyClothBuffer;
     }
 
@@ -1172,7 +1172,15 @@ export default class MatrixEngineWGPU {
     }
     if(typeof o.physics.enabled === 'undefined') o.physics.enabled = true;
     if(typeof o.physics.geometry === 'undefined') o.physics.geometry = "Cube";
-    if(typeof o.physics.radius === 'undefined') o.physics.radius = o.scale;
+    if(typeof o.physics.radius === 'undefined') {
+      if(o.physics.geometry === 'SoftBody') {
+        o.physics.radius = 0.05;
+      } else {
+        o.physics.radius = typeof o.scale === 'number'
+          ? o.scale
+          : o.scale[0];
+      }
+    }
     if(typeof o.physics.mass === 'undefined') o.physics.mass = 1;
     if(typeof o.physics.name === 'undefined') o.physics.name = o.name;
     if(typeof o.physics.scale === 'undefined') o.physics.scale = o.scale;
@@ -1190,7 +1198,7 @@ export default class MatrixEngineWGPU {
     o.materialBGL = this.materialBGL;
     o.uniformBufferBindGroupLayout = this.uniformBufferBindGroupLayout;
 
-    if(o.physics.enabled !== true || o.physics.geometry !== 'Cloth') {
+    if(o.physics.enabled !== true || (o.physics.geometry !== 'Cloth' && o.physics.geometry !== 'SoftBody')) {
       o.dummyClothBuffer = this.dummyClothBuffer;
     }
 
@@ -1560,7 +1568,7 @@ export default class MatrixEngineWGPU {
     let r = [];
     o.textureCache = this.textureCache;
 
-    if(o.physics.enabled !== true || o.physics.geometry !== 'Cloth') {
+    if(o.physics.enabled !== true || (o.physics.geometry !== 'Cloth' && o.physics.geometry !== 'SoftBody')) {
       o.dummyClothBuffer = this.dummyClothBuffer;
     }
 
@@ -1660,7 +1668,7 @@ export default class MatrixEngineWGPU {
     let results = [];
     let skinnedNodeIndex = 0;
 
-    if(o.physics.enabled !== true || o.physics.geometry !== 'Cloth') {
+    if(o.physics.enabled !== true || (o.physics.geometry !== 'Cloth' && o.physics.geometry !== 'SoftBody')) {
       o.dummyClothBuffer = this.dummyClothBuffer;
     }
 

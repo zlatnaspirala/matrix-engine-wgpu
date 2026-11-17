@@ -8,5 +8,6 @@ export const VERTEX_ANIM_FLAGS = {
   NOISE: 1 << 4,     // 16
   OCEAN: 1 << 5,     // 32
   DISPLACEMENT: 1 << 6, // 64
-  CLOTH: 1 << 7 // 128
+  CLOTH: 1 << 7, // 128
+  SOFT_BODY: 1 << 8 // 256
 };

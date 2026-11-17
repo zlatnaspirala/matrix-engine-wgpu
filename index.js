@@ -1,9 +1,9 @@
 /**
  * This file created by:
- * @author Nikola Lukic 
+ * @author Nikola Lukic
  * @email zlatnaspirala@gmail.com mart 2024-2026
  * npm import/export sync with
- * @version 2.0.0
+ * @version 2.2.0
  */
 
 import MatrixEngineWGPU from "./src/world.js";
@@ -56,13 +56,32 @@ import {HPBarEffect} from "./src/engine/effects/energy-bar.js";
 import {FlameEffect} from "./src/engine/effects/flame.js";
 import {FlameEmitter} from "./src/engine/effects/flame-emmiter.js";
 import {CloudsVolumetric} from "./src/engine/postprocessing/clouds-volumetric.js";
+import {CloudsVolumetric2} from "./src/engine/postprocessing/cloudes-volumetric-2.js";
+import {NativeWebRTC} from "./src/engine/networking/native-webrtc.js";
+import {BloodBurst} from "./src/engine/effects/blood-target.js";
+import {DepthWebcamVoxelEffect} from "./src/engine/effects/camera-depth.js";
+import {LaserProjectile} from "./src/engine/effects/laser.js";
+import {SplatFaceEffect} from "./src/engine/effects/splatFace.js";
+import {WaterSimSphereEffect} from "./src/engine/effects/waterSimEffectSphere.js";
 
 export {
-  MatrixEngineWGPU,
-  CloudsVolumetric,
   MEConfig,
+  KaleidoscopePresets,
+  MobileDOM,
+  geoTypesForMorph,
   touchCoordinate,
-  addRaycastsListener,
+  mb,
+  mocapCsCmuEdu,
+  geometryTypes,
+  MatrixEngineWGPU,
+  SplatFaceEffect,
+  WaterSimSphereEffect,
+  BloodBurst,
+  LaserProjectile,
+  DepthWebcamVoxelEffect,
+  CloudsVolumetric,
+  CloudsVolumetric2,
+  NativeWebRTC,
   ExternalDataHandler,
   FlameEmitter,
   FullScreenManagerElement,
@@ -80,10 +99,7 @@ export {
   InstancedKinematicOperations,
   SpritesPack2D,
   GeometryFactory,
-  mb,
   Player,
-  mocapCsCmuEdu,
-  geometryTypes,
   ParticleActionEmitter,
   DragRotateController,
   SeismicPortalAdapter,
@@ -92,6 +108,23 @@ export {
   HPBarEffect,
   FlameEffect,
   MANABarEffect,
+  GaussianSplatScene,
+  SplatColorAnimator,
+  SplatPositionAnimator,
+  KaleidoscopeEmitter,
+  PVector,
+  CameraPath,
+  SWITCHER,
+  OSCILLATOR,
+  CollisionSystem,
+  MapCreator,
+  ProjectileSystem,
+  MeshMorpher,
+  GenGeoTexture2,
+  MatrixStream,
+  WaterSimEffect,
+  MatrixTTS,
+  addRaycastsListener,
   rayIntersectsSphere2,
   byId,
   vecOf,
@@ -115,23 +148,4 @@ export {
   getOrientation,
   loadNavMesh,
   followPath,
-  WaterSimEffect,
-  KaleidoscopePresets,
-  GaussianSplatScene,
-  SplatColorAnimator,
-  SplatPositionAnimator,
-  KaleidoscopeEmitter,
-  PVector,
-  CameraPath,
-  SWITCHER,
-  OSCILLATOR,
-  CollisionSystem,
-  MapCreator,
-  ProjectileSystem,
-  MeshMorpher,
-  GenGeoTexture2,
-  MatrixStream,
-  MatrixTTS,
-  MobileDOM,
-  geoTypesForMorph,
 }

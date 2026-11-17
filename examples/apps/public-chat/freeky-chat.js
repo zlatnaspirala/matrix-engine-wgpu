@@ -222,10 +222,8 @@ export var loadFreekyChat = function() {
       })
 
       setTimeout(() => {
-
         MYCUBE.position.netObject = MYCUBE.name;
         MYCUBE.rotation.emitY = MYCUBE.name;
-
         PLANE.vertexAnim.enableCloth(1);
         app.activateHZB();
       }, 500)
@@ -266,9 +264,8 @@ export var loadFreekyChat = function() {
         physics: {enabled: false}
       });
 
-
       app.activateBloomEffect();
-      app.activateVolumetricEffect();
+      // app.activateVolumetricEffect();
 
       freekyChat.lightContainer[0].setPosY(65);
       freekyChat.lightContainer[0].setIntensity(100);
