@@ -484,7 +484,7 @@ class MatrixJolt {
     shared.CreateConstraints(
       attributes,
       1,
-      Jolt.SoftBodySharedSettings_EBendType_Distance
+      Jolt.SoftBodySharedSettingsEBendType_Distance
     );
     Jolt.destroy(attributes);
 
@@ -974,19 +974,29 @@ self.onmessage = async ({data}) => {
       break;
     }
     case 'addBody': {
-      const idx = jolt.addBody(data.pOptions);
-      const meta = jolt.cloths.find(c => c.startIndex === idx);
-      self.postMessage({
-        cmd: 'bodyAdded',
-        id,
-        idx,
-        sab: jolt._sab,
-        count: meta ? meta.count : 1,
-        nx: meta?.nx,
-        ny: meta?.ny,
-        vertexToNode: meta?.v2n,
-        vertexOffsets: meta?.offsets
-      });
+      try {
+        const idx = jolt.addBody(data.pOptions);
+        const meta = jolt.cloths.find(c => c.startIndex === idx);
+        self.postMessage({
+          cmd: 'bodyAdded',
+          id,
+          idx,
+          sab: jolt._sab,
+          count: meta ? meta.count : 1,
+          nx: meta?.nx,
+          ny: meta?.ny,
+          vertexToNode: meta?.v2n,
+          vertexOffsets: meta?.offsets
+        });
+      } catch(error) {
+        console.error('[jolt] addBody failed:', error);
+        self.postMessage({
+          cmd: 'bodyAdded',
+          id,
+          idx: -1,
+          error: error?.stack || error?.message || String(error)
+        });
+      }
       break;
     }
     case 'step': {
