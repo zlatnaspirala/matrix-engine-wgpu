@@ -237,7 +237,11 @@ fn main(
 
   // test
   // output.fragNorm = vec3f(0.0, 1.0, 0.0);
-  output.fragNorm  = normalize(normalMatrix * finalNorm);
+  output.fragNorm  = normalize(select(
+    normalMatrix * finalNorm,
+    finalNorm,
+    (flags & ANIM_SOFT_BODY) != 0u
+  ));
   
   output.uv        = uv * uvScale;
   return output;
