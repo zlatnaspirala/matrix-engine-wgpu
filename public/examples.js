@@ -56788,7 +56788,13 @@ var MatrixEngineWGPU = class {
     }
     if (typeof o3.physics.enabled === "undefined") o3.physics.enabled = true;
     if (typeof o3.physics.geometry === "undefined") o3.physics.geometry = "Cube";
-    if (typeof o3.physics.radius === "undefined") o3.physics.radius = typeof o3.scale == Number ? o3.scale : o3.scale[0];
+    if (typeof o3.physics.radius === "undefined") {
+      if (o3.physics.geometry === "SoftBody") {
+        o3.physics.radius = 0.05;
+      } else {
+        o3.physics.radius = typeof o3.scale === "number" ? o3.scale : o3.scale[0];
+      }
+    }
     if (typeof o3.physics.mass === "undefined") o3.physics.mass = 1;
     if (typeof o3.physics.name === "undefined") o3.physics.name = o3.name;
     if (typeof o3.physics.scale === "undefined") o3.physics.scale = o3.scale;
@@ -62121,7 +62127,8 @@ var testJolt = function() {
           group: 2,
           mask: -1,
           vertices: m2.ball.vertices,
-          indices: m2.ball.indices
+          indices: m2.ball.indices,
+          radius: 0.01
         }
       });
       setTimeout(() => jelly.vertexAnim.enableCloth(1), 500);
@@ -62377,7 +62384,7 @@ var testCannonES = function() {
         raycast: { enabled: true, radius: 1 }
       });
       physicsPlayground2.addMeshObj({
-        position: { x: 0, y: -0.5, z: -10 },
+        position: { x: 0, y: 0, z: -10 },
         rotation: { x: 0, y: 0, z: 0 },
         rotationSpeed: { x: 0, y: 0, z: 0 },
         scale: [25, 0.1, 25],
@@ -62411,7 +62418,7 @@ var testCannonES = function() {
       const jelly = physicsPlayground2.addMeshObj({
         material: { type: "standard" },
         position: { x: 0, y: 8, z: -10 },
-        scale: [1.5, 1.5, 1.5],
+        scale: [1, 1, 1],
         texturesPaths: ["./res/textures/floor1.webp"],
         name: "jelly",
         mesh: m2.ball,
@@ -62424,7 +62431,9 @@ var testCannonES = function() {
           group: 2,
           mask: -1,
           vertices: m2.ball.vertices,
-          indices: m2.ball.indices
+          indices: m2.ball.indices,
+          hub: false,
+          radius: 0.01
         }
       });
       setTimeout(() => jelly.vertexAnim.enableCloth(1), 500);
