@@ -676,7 +676,9 @@ class MatrixCannon {
       const b = new CANNON.Body({
         mass, shape: new CANNON.Sphere(radius),
         collisionFilterGroup: bit, collisionFilterMask: ~bit,
-        linearDamping: pOptions.linearDamping ?? 0.3,
+        // SoftBody particles need stronger velocity damping to settle after
+        // impact instead of oscillating for a long time. Keep it configurable.
+        linearDamping: pOptions.linearDamping ?? 0.85,
         angularDamping: 0.4, allowSleep: false
         // allowSleep: true, 
         // // sleepSpeedLimit: 0.15, sleepTimeLimit: 1
@@ -703,7 +705,9 @@ class MatrixCannon {
     if(pOptions.hub !== false) {
       const hub = new CANNON.Body({
         mass: mass * 2, shape: new CANNON.Sphere(radius),
-        collisionFilterGroup: bit, collisionFilterMask: 0, allowSleep: false
+        collisionFilterGroup: bit, collisionFilterMask: 0,
+        linearDamping: pOptions.linearDamping ?? 0.85,
+        allowSleep: false
       });
       hub.position.set(cx, cy, cz);
       this.world.addBody(hub);
