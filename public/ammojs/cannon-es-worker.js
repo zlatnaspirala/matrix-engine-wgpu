@@ -195,26 +195,6 @@ class MatrixCannon {
     this.world.addBody(groundBody);
     this.world.addEventListener('beginContact', (e) => {
 
-      //--
-      const a = e.bodyA;
-      const b = e.bodyB;
-
-      if(a.name === 'ground' || b.name === 'ground') {
-        const other = a.name === 'ground' ? b : a;
-
-        console.log('[GROUND CONTACT]', {
-          otherName: other.name,
-          groundPosition: e.bodyA.name === 'ground'
-            ? e.bodyA.position
-            : e.bodyB.position,
-          otherPosition: other.position,
-          otherGroup: other.collisionFilterGroup,
-          otherMask: other.collisionFilterMask,
-          groundGroup: groundBody.collisionFilterGroup,
-          groundMask: groundBody.collisionFilterMask
-        });
-      }
-      //--
 
 
       const b1Idx = this.bodyMap.get(e.bodyA);
@@ -676,11 +656,13 @@ class MatrixCannon {
     // ...
     const count = w.count;
     const mass = (pOptions.mass || 1) / count;
-    // const radius = pOptions.radius ?? 0.05;?
-
-      console.log('[SOFTBODY FILTER DEBUG ???]', pOptions.radius)
-
-    const radius = pOptions.radius ?? (pOptions.nodeSpacing ? pOptions.nodeSpacing * 0.4 : 0.05);
+    // Cannon.Sphere requires a finite scalar radius. Mesh scale is a vec3
+    // and must never be passed through as the particle collision radius.
+    const requestedRadius = pOptions.radius;
+    const defaultRadius = pOptions.nodeSpacing > 0 ? pOptions.nodeSpacing * 0.4 : 0.05;
+    const radius = Number.isFinite(requestedRadius) && requestedRadius > 0
+      ? requestedRadius
+      : defaultRadius;
     const bit = this._nextSoftBit();
     const startIndex = this.rigidBodies.length;
     const P = w.nodePos;
@@ -701,19 +683,6 @@ class MatrixCannon {
       });
       b.position.set(P[i * 3], P[i * 3 + 1], P[i * 3 + 2]);
 
-      if(i === 0) {
-        console.log('[SOFTBODY FILTER DEBUG]', {
-          nodeName: b.name,
-          nodeGroup: b.collisionFilterGroup,
-          nodeMask: b.collisionFilterMask,
-          groundGroup: this.world.bodies.find(x => x.name === 'ground')?.collisionFilterGroup,
-          groundMask: this.world.bodies.find(x => x.name === 'ground')?.collisionFilterMask,
-          nodeRadius: radius,
-          nodePosition: b.position,
-          groundPosition: this.world.bodies.find(x => x.name === 'ground')?.position
-        });
-      }
-
       this.world.addBody(b);
       this._registerBody(b, {name: `${pOptions.name}_${i}`, position: {x: P[i * 3], y: P[i * 3 + 1], z: P[i * 3 + 2]}}, true);
       nodes.push(b);
@@ -722,14 +691,6 @@ class MatrixCannon {
 
 
     }
-
-    console.log('[SOFTBODY CREATED]', {
-      name: pOptions.name,
-      count: nodes.length,
-      radius,
-      bit,
-      firstNode: nodes[0]?.position
-    });
 
     const E = w.edges;
     for(let e = 0;e < E.length;e += 2) {
