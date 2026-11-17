@@ -164,7 +164,7 @@ class MatterPhysicsWorker {
           body = this.Bodies.rectangle(mx, my, sw, sh, {...rest, name});
       }
     } catch(e) {
-      console.warn(`Failed to create body ${geometry}:`, e);
+      console.warn("Failed to create body:", geometry, e);
       return -1;
     }
 
