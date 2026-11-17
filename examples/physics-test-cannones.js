@@ -182,7 +182,7 @@ export var testCannonES = function() {
         physics: {
           // radius: undefined,
           enabled: true, geometry: 'SoftBody', mass: 2,
-          nodeSpacing: 0.5, group: 2, mask: -1,
+          nodeSpacing: 0, group: 2, mask: -1,
           vertices: m.ball.vertices, indices: m.ball.indices
         }
       });
