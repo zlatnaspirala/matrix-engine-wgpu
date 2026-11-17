@@ -140,7 +140,7 @@ export var testCannonES = function() {
       })
 
       physicsPlayground.addMeshObj({
-        position: {x: 0, y: -0.5, z: -10},
+        position: {x: 0, y: 0, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
         scale: [25, 0.1, 25],
@@ -184,7 +184,7 @@ export var testCannonES = function() {
           enabled: true, geometry: 'SoftBody', mass: 2,
           nodeSpacing: 0, group: 2, mask: -1,
           vertices: m.ball.vertices, indices: m.ball.indices,
-            hub: false,
+            hub: false,  radius: 0.01
         }
       });
       setTimeout(() => jelly.vertexAnim.enableCloth(1), 500);
