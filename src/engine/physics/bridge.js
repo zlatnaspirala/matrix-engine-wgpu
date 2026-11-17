@@ -1,7 +1,8 @@
 import {mat4} from 'wgpu-matrix';
 
-function calculateSoftBodyNormals(positions, indices, vertexCount, fallbackNormals) {
-  const normals = new Float32Array(vertexCount * 3);
+function calculateSoftBodyNormals(positions, indices, vertexCount, fallbackNormals, normals) {
+  normals = normals || new Float32Array(vertexCount * 3);
+  normals.fill(0);
   for(let i = 0;i + 2 < indices.length;i += 3) {
     const ia = indices[i], ib = indices[i + 1], ic = indices[i + 2];
     if(ia >= vertexCount || ib >= vertexCount || ic >= vertexCount) continue;
@@ -13,11 +14,9 @@ function calculateSoftBodyNormals(positions, indices, vertexCount, fallbackNorma
     const nx = aby * acz - abz * acy;
     const ny = abz * acx - abx * acz;
     const nz = abx * acy - aby * acx;
-    for(const index of [ia, ib, ic]) {
-      normals[index * 3] += nx;
-      normals[index * 3 + 1] += ny;
-      normals[index * 3 + 2] += nz;
-    }
+    normals[ia * 3] += nx; normals[ia * 3 + 1] += ny; normals[ia * 3 + 2] += nz;
+    normals[ib * 3] += nx; normals[ib * 3 + 1] += ny; normals[ib * 3 + 2] += nz;
+    normals[ic * 3] += nx; normals[ic * 3 + 1] += ny; normals[ic * 3 + 2] += nz;
   }
   for(let i = 0;i < vertexCount;i++) {
     const o = i * 3;
@@ -437,7 +436,7 @@ export class PhysicsBridge {
                   meta._normalScratch = new Float32Array(n * 3);
                 }
                 meta._normalScratch = calculateSoftBodyNormals(
-                  dst, indices, n, meta.mesh.mesh?.vertexNormals
+                  dst, indices, n, meta.mesh.mesh?.vertexNormals, meta._normalScratch
                 );
                 app.device.queue.writeBuffer(normalBuffer, 0, meta._normalScratch);
               }
