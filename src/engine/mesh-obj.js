@@ -385,7 +385,7 @@ export default class MEMeshObj extends Materials {
 
       this.vertexNormalsBuffer = this.device.createBuffer({
         size: this.mesh.vertexNormals.length * Float32Array.BYTES_PER_ELEMENT,
-        usage: GPUBufferUsage.VERTEX,
+        usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
         mappedAtCreation: true,
       });
       {
