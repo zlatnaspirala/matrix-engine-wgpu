@@ -395,6 +395,7 @@ export class PhysicsBridge {
     switch(data.cmd) {
       case 'ready':
       case 'bodyAdded':
+        if(data.error) console.error('[PhysicsBridge] worker body creation failed:', data.error);
         const resolveFn = this._pending.get(data.id);
         if(resolveFn) {
           if(data.count && data.count > 1) {
