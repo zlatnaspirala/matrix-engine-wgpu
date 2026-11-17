@@ -358,6 +358,10 @@ export class PhysicsBridge {
     for(const [idx, meObj] of this._bodyIndexMap) {
       if(!meObj.modelMatrix) continue;
       const b = idx * STRIDE;
+      // Worker marks a slot valid only after it has written a real transform.
+      // Inactive/static bodies can have no fresh snapshot this frame; never
+      // overwrite their render transform with an uninitialized zero snapshot.
+      if(snap[b + 7] !== 1) continue;
       const pos = snap.subarray(b, b + 3);
       const quat = snap.subarray(b + 3, b + 7);
       mat4.fromQuat(quat, meObj.modelMatrix);
