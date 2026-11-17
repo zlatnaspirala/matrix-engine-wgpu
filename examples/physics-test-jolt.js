@@ -82,7 +82,7 @@ export var testJolt = function() {
           // radius: undefined,
           enabled: true, geometry: 'SoftBody', mass: 2,
           nodeSpacing: 0, group: 2, mask: -1,
-          vertices: m.ball.vertices, indices: m.ball.indices
+          vertices: m.ball.vertices, indices: m.ball.indices, radius: 0.01
         }
       });
       setTimeout(() => jelly.vertexAnim.enableCloth(1), 500);
