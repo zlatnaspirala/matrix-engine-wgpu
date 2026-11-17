@@ -176,7 +176,7 @@ export var testCannonES = function() {
       const jelly = physicsPlayground.addMeshObj({
         material: {type: 'standard'},
         position: {x: 0, y: 8, z: -10},
-        scale: [1.5, 1.5, 1.5],
+        scale: [1, 1, 1],
         texturesPaths: ['./res/textures/floor1.webp'],
         name: 'jelly', mesh: m.ball,
         physics: {

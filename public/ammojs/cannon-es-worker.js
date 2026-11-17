@@ -650,8 +650,6 @@ class MatrixCannon {
     const CANNON = this.CANNON;
     if(!pOptions.vertices) {console.warn('[cannon] SoftBody needs vertices'); return -1;}
 
-
-
     const w = weldMesh(pOptions.vertices, pOptions.indices, pOptions.scale, pOptions.position, pOptions.nodeSpacing || 0);
     // ...
     const count = w.count;

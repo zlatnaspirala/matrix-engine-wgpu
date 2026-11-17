@@ -1172,7 +1172,15 @@ export default class MatrixEngineWGPU {
     }
     if(typeof o.physics.enabled === 'undefined') o.physics.enabled = true;
     if(typeof o.physics.geometry === 'undefined') o.physics.geometry = "Cube";
-    if(typeof o.physics.radius === 'undefined') o.physics.radius = (typeof o.scale == Number ? o.scale : o.scale[0]);
+    if(typeof o.physics.radius === 'undefined') {
+      if(o.physics.geometry === 'SoftBody') {
+        o.physics.radius = 0.05;
+      } else {
+        o.physics.radius = typeof o.scale === 'number'
+          ? o.scale
+          : o.scale[0];
+      }
+    }
     if(typeof o.physics.mass === 'undefined') o.physics.mass = 1;
     if(typeof o.physics.name === 'undefined') o.physics.name = o.name;
     if(typeof o.physics.scale === 'undefined') o.physics.scale = o.scale;
