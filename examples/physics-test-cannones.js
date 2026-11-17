@@ -183,7 +183,8 @@ export var testCannonES = function() {
           // radius: undefined,
           enabled: true, geometry: 'SoftBody', mass: 2,
           nodeSpacing: 0, group: 2, mask: -1,
-          vertices: m.ball.vertices, indices: m.ball.indices
+          vertices: m.ball.vertices, indices: m.ball.indices,
+            hub: false,
         }
       });
       setTimeout(() => jelly.vertexAnim.enableCloth(1), 500);
