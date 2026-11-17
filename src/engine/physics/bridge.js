@@ -1,5 +1,43 @@
 import {mat4} from 'wgpu-matrix';
 
+function calculateSoftBodyNormals(positions, indices, vertexCount, fallbackNormals) {
+  const normals = new Float32Array(vertexCount * 3);
+  for(let i = 0;i + 2 < indices.length;i += 3) {
+    const ia = indices[i], ib = indices[i + 1], ic = indices[i + 2];
+    if(ia >= vertexCount || ib >= vertexCount || ic >= vertexCount) continue;
+    const ax = positions[ia * 4], ay = positions[ia * 4 + 1], az = positions[ia * 4 + 2];
+    const bx = positions[ib * 4], by = positions[ib * 4 + 1], bz = positions[ib * 4 + 2];
+    const cx = positions[ic * 4], cy = positions[ic * 4 + 1], cz = positions[ic * 4 + 2];
+    const abx = bx - ax, aby = by - ay, abz = bz - az;
+    const acx = cx - ax, acy = cy - ay, acz = cz - az;
+    const nx = aby * acz - abz * acy;
+    const ny = abz * acx - abx * acz;
+    const nz = abx * acy - aby * acx;
+    for(const index of [ia, ib, ic]) {
+      normals[index * 3] += nx;
+      normals[index * 3 + 1] += ny;
+      normals[index * 3 + 2] += nz;
+    }
+  }
+  for(let i = 0;i < vertexCount;i++) {
+    const o = i * 3;
+    const len = Math.hypot(normals[o], normals[o + 1], normals[o + 2]);
+    if(len > 1e-10) {
+      normals[o] /= len;
+      normals[o + 1] /= len;
+      normals[o + 2] /= len;
+    } else if(fallbackNormals && fallbackNormals.length >= o + 3) {
+      normals[o] = fallbackNormals[o];
+      normals[o + 1] = fallbackNormals[o + 1];
+      normals[o + 2] = fallbackNormals[o + 2];
+    } else {
+      normals[o] = 0; normals[o + 1] = 1; normals[o + 2] = 0;
+    }
+  }
+  return normals;
+}
+
+
 export class PhysicsBridge {
   constructor(workerUrl) {
     this._worker = null;
@@ -85,7 +123,8 @@ export class PhysicsBridge {
           mesh: MEObject, startIndex,
           count: response?.count ?? 0,
           v2n: response?.vertexToNode || null,
-          off: response?.vertexOffsets || null
+          off: response?.vertexOffsets || null,
+          isSoftBody: true
         });
         return;
       }
@@ -389,6 +428,20 @@ export class PhysicsBridge {
               dst[i * 4 + 2] = src[s + 2] + (o ? o[i * 3 + 2] : 0);
             }
             app.device.queue.writeBuffer(buf, 0, dst);
+
+            if(meta.isSoftBody) {
+              const normalBuffer = meta.mesh.vertexNormalsBuffer;
+              const indices = meta.mesh.mesh?.indices;
+              if(normalBuffer && indices?.length) {
+                if(!meta._normalScratch || meta._normalScratch.length !== n * 3) {
+                  meta._normalScratch = new Float32Array(n * 3);
+                }
+                meta._normalScratch = calculateSoftBodyNormals(
+                  dst, indices, n, meta.mesh.mesh?.vertexNormals
+                );
+                app.device.queue.writeBuffer(normalBuffer, 0, meta._normalScratch);
+              }
+            }
           }
         }
         this._syncToObjects();
