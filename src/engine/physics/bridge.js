@@ -1,42 +1,5 @@
 import {mat4} from 'wgpu-matrix';
 
-function calculateSoftBodyNormals(positions, indices, vertexCount, fallbackNormals, normals) {
-  normals = normals || new Float32Array(vertexCount * 3);
-  normals.fill(0);
-  for(let i = 0;i + 2 < indices.length;i += 3) {
-    const ia = indices[i], ib = indices[i + 1], ic = indices[i + 2];
-    if(ia >= vertexCount || ib >= vertexCount || ic >= vertexCount) continue;
-    const ax = positions[ia * 4], ay = positions[ia * 4 + 1], az = positions[ia * 4 + 2];
-    const bx = positions[ib * 4], by = positions[ib * 4 + 1], bz = positions[ib * 4 + 2];
-    const cx = positions[ic * 4], cy = positions[ic * 4 + 1], cz = positions[ic * 4 + 2];
-    const abx = bx - ax, aby = by - ay, abz = bz - az;
-    const acx = cx - ax, acy = cy - ay, acz = cz - az;
-    const nx = aby * acz - abz * acy;
-    const ny = abz * acx - abx * acz;
-    const nz = abx * acy - aby * acx;
-    normals[ia * 3] += nx; normals[ia * 3 + 1] += ny; normals[ia * 3 + 2] += nz;
-    normals[ib * 3] += nx; normals[ib * 3 + 1] += ny; normals[ib * 3 + 2] += nz;
-    normals[ic * 3] += nx; normals[ic * 3 + 1] += ny; normals[ic * 3 + 2] += nz;
-  }
-  for(let i = 0;i < vertexCount;i++) {
-    const o = i * 3;
-    const len = Math.hypot(normals[o], normals[o + 1], normals[o + 2]);
-    if(len > 1e-10) {
-      normals[o] /= len;
-      normals[o + 1] /= len;
-      normals[o + 2] /= len;
-    } else if(fallbackNormals && fallbackNormals.length >= o + 3) {
-      normals[o] = fallbackNormals[o];
-      normals[o + 1] = fallbackNormals[o + 1];
-      normals[o + 2] = fallbackNormals[o + 2];
-    } else {
-      normals[o] = 0; normals[o + 1] = 1; normals[o + 2] = 0;
-    }
-  }
-  return normals;
-}
-
-
 export class PhysicsBridge {
   constructor(workerUrl) {
     this._worker = null;
@@ -117,16 +80,6 @@ export class PhysicsBridge {
     MEObject.isKinematic = pOptions.state === 4;
     this._send('addBody', {pOptions}).then((response) => {
       const startIndex = typeof response === 'object' ? response.idx : response;
-      if(pOptions.geometry === 'SoftBody') {
-        this._clothMap.set(startIndex, {
-          mesh: MEObject, startIndex,
-          count: response?.count ?? 0,
-          v2n: response?.vertexToNode || null,
-          off: response?.vertexOffsets || null,
-          isSoftBody: true
-        });
-        return;
-      }
       if(pOptions.geometry === 'Cloth') {
         const nx = response?.nx ?? pOptions.nx ?? 10;
         const ny = response?.ny ?? pOptions.ny ?? 10;
@@ -433,19 +386,6 @@ export class PhysicsBridge {
             }
             app.device.queue.writeBuffer(buf, 0, dst);
 
-            if(meta.isSoftBody) {
-              const normalBuffer = meta.mesh.vertexNormalsBuffer;
-              const indices = meta.mesh.mesh?.indices;
-              if(normalBuffer && indices?.length) {
-                if(!meta._normalScratch || meta._normalScratch.length !== n * 3) {
-                  meta._normalScratch = new Float32Array(n * 3);
-                }
-                meta._normalScratch = calculateSoftBodyNormals(
-                  dst, indices, n, meta.mesh.mesh?.vertexNormals, meta._normalScratch
-                );
-                app.device.queue.writeBuffer(normalBuffer, 0, meta._normalScratch);
-              }
-            }
           }
         }
         this._syncToObjects();
