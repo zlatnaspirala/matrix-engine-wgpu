@@ -395,6 +395,10 @@ export class PhysicsBridge {
     switch(data.cmd) {
       case 'ready':
       case 'bodyAdded':
+        // Jolt reallocates its shared snapshot whenever the body count grows.
+        // Rebind to the newest SAB returned with bodyAdded; otherwise the bridge
+        // can keep reading an obsolete/empty snapshot after later body creation.
+        if(data.sab) this._snapshot = new Float32Array(data.sab, 4);
         if(data.error) console.error('[PhysicsBridge] worker body creation failed:', data.error);
         const resolveFn = this._pending.get(data.id);
         if(resolveFn) {
