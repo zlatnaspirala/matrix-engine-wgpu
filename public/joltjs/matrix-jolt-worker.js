@@ -1080,31 +1080,32 @@ self.onmessage = async ({data}) => {
       break;
     }
     case 'addBody': {
-      try {
-        const idx = jolt.addBody(data.pOptions);
-        const meta = jolt.cloths.find(c => c.startIndex === idx);
-        self.postMessage({
-          cmd: 'bodyAdded',
-          id,
-          idx,
-          sab: jolt._sab,
-          count: meta ? meta.count : 1,
-          nx: meta?.nx,
-          ny: meta?.ny,
-          vertexToNode: meta?.v2n,
-          vertexOffsets: meta?.offsets
-        });
-      } catch(error) {
-        console.error('[jolt] addBody failed:', error);
-        self.postMessage({
-          cmd: 'bodyAdded',
-          id,
-          idx: -1,
-          error: error?.stack || error?.message || String(error)
-        });
-      }
+      const idx = jolt.addBody(data.pOptions);
+      const meta = jolt.cloths.find(c => c.startIndex === idx);
+      self.postMessage({
+        cmd: 'bodyAdded',
+        id,
+        idx,
+        sab: jolt._sab,
+        count: meta ? meta.count : 1,
+        nx: meta?.nx,
+        ny: meta?.ny,
+        vertexToNode: meta?.v2n,
+        vertexOffsets: meta?.offsets
+      });
       break;
     }
+    // case 'addBody': {
+    //   const idx = jolt.addBody(data.pOptions);
+    //   const sb = jolt.softBodies.find(s => s.idx === idx);
+    //   self.postMessage({
+    //     cmd: 'bodyAdded', id, idx, sab: jolt._sab,
+    //     count: sb ? sb.meshVertexCount : 1,
+    //     vertexToNode: sb ? sb.vertexToNode : undefined,
+    //     vertexOffsets: null
+    //   });
+    //   break;
+    // }
     case 'step': {
       jolt.step();
       if(jolt._snapshot) {
