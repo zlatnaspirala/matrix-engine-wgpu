@@ -117,6 +117,7 @@ class MatrixJolt {
     this._useSAB = false;
     this.cloths = [];
     this.clothDataPackets = [];
+    this.softBodies = [];
   }
 
   _allocBuffer(bodyCount) {
@@ -246,9 +247,114 @@ class MatrixJolt {
     this.bodyInterface.AddBody(groundBody.GetID(), Jolt.EActivation_DontActivate);
   }
 
+  _addSoftBody(pOptions) {
+    const Jolt = this.Jolt;
+    const src = pOptions.vertices;
+    const indices = pOptions.indices;
+    if(!src || !indices) {console.error('[jolt] SoftBody needs vertices + indices'); return null;}
+
+    const [sx, sy, sz] = pOptions.scale ?? [1, 1, 1];
+    const pos = pOptions.position || {x: 0, y: 0, z: 0};
+    const meshVertexCount = src.length / 3;
+
+    // 1. Weld duplicate vertices (UV seams) into nodes
+    const keyToNode = new Map();
+    const nodes = [];                          // flat xyz, local space
+    const vertexToNode = new Uint32Array(meshVertexCount);
+    for(let i = 0;i < meshVertexCount;i++) {
+      const x = src[i * 3] * sx, y = src[i * 3 + 1] * sy, z = src[i * 3 + 2] * sz;
+      const key = Math.round(x * 1e4) + '|' + Math.round(y * 1e4) + '|' + Math.round(z * 1e4);
+      let n = keyToNode.get(key);
+      if(n === undefined) {
+        n = nodes.length / 3;
+        keyToNode.set(key, n);
+        nodes.push(x, y, z);
+      }
+      vertexToNode[i] = n;
+    }
+    const nodeCount = nodes.length / 3;
+
+    // 2. Shared settings
+    const shared = new Jolt.SoftBodySharedSettings();
+    const invMass = nodeCount / (pOptions.mass || 1);
+    for(let i = 0;i < nodeCount;i++) {
+      const v = new Jolt.SoftBodySharedSettings_Vertex();
+      v.mPosition = new Jolt.Float3(nodes[i * 3], nodes[i * 3 + 1], nodes[i * 3 + 2]);
+      v.mInvMass = invMass;
+      shared.mVertices.push_back(v);
+      Jolt.destroy(v);
+    }
+    for(let i = 0;i + 2 < indices.length;i += 3) {
+      const a = vertexToNode[indices[i]], b = vertexToNode[indices[i + 1]], c = vertexToNode[indices[i + 2]];
+      if(a === b || b === c || a === c) continue; // degenerate after welding
+      const f = new Jolt.SoftBodySharedSettings_Face(a, b, c, 0);
+      shared.AddFace(f);
+      Jolt.destroy(f);
+    }
+
+    // 3. Constraints: smaller compliance = stiffer
+    const c = pOptions.compliance ?? 1e-4;
+    const attrs = new Jolt.SoftBodySharedSettings_VertexAttributes(c, c, pOptions.bendCompliance ?? 1e-3);
+    shared.CreateConstraints(attrs, 1);
+    Jolt.destroy(attrs);
+    shared.Optimize();
+
+    // 4. Body
+    const cs = new Jolt.SoftBodyCreationSettings(
+      shared, new Jolt.RVec3(pos.x, pos.y, pos.z), Jolt.Quat.prototype.sIdentity()
+    );
+    cs.mObjectLayer = LAYER_MOVING;
+    cs.mPressure = pOptions.pressure ?? 0;      // > 0 makes it balloon-like
+    cs.mNumIterations = pOptions.iterations ?? 5;
+    cs.mLinearDamping = pOptions.linearDamping ?? 0.1;
+    cs.mRestitution = pOptions.restitution ?? 0.1;
+    cs.mFriction = pOptions.friction ?? 0.5;
+
+    const body = this.bodyInterface.CreateSoftBody(cs);
+    Jolt.destroy(cs);
+    if(!body) {console.error('[jolt] CreateSoftBody failed'); return null;}
+    this.bodyInterface.AddBody(body.GetID(), Jolt.EActivation_Activate);
+    body.isKinematic = false;
+
+    const registered = this._registerBody(body, pOptions);
+    this.softBodies.push({
+      idx: this.rigidBodies.length - 1,
+      body,
+      nodeCount,
+      meshVertexCount,
+      vertexToNode
+    });
+    return registered;
+  }
+
+  _readSoftBodies() {
+    const Jolt = this.Jolt;
+    const packets = [];
+    for(const sb of this.softBodies) {
+      try {
+        const mp = Jolt.castObject(sb.body.GetMotionProperties(), Jolt.SoftBodyMotionProperties);
+        const verts = mp.GetVertices();
+        const com = sb.body.GetCenterOfMassPosition();
+        const cx = com.GetX(), cy = com.GetY(), cz = com.GetZ();
+        const out = new Float32Array(sb.nodeCount * 3);
+        for(let i = 0;i < sb.nodeCount;i++) {
+          const p = verts.at(i).mPosition;     // relative to COM
+          out[i * 3] = cx + p.GetX();
+          out[i * 3 + 1] = cy + p.GetY();
+          out[i * 3 + 2] = cz + p.GetZ();
+        }
+        packets.push({startIndex: sb.idx, positions: out});
+      } catch(e) {
+        console.error('[jolt] soft body read failed', e);
+      }
+    }
+    return packets;
+  }
+
   addBody(pOptions) {
     let body = null;
     switch(pOptions.geometry) {
+      case 'SoftBody': body = this._addSoftBody(pOptions); break;
       case 'Cloth': return this._addCloth(pOptions);
       case 'SoftBody': return this._addSoftBody(pOptions);
       case 'Sphere': body = this._addSphere(pOptions); break;
