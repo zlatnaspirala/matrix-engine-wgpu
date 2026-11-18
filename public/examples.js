@@ -51275,7 +51275,6 @@ var PhysicsBridge = class {
     for (const [idx, meObj] of this._bodyIndexMap) {
       if (!meObj.modelMatrix) continue;
       const b2 = idx * STRIDE;
-      if (snap[b2 + 7] !== 1) continue;
       const pos2 = snap.subarray(b2, b2 + 3);
       const quat = snap.subarray(b2 + 3, b2 + 7);
       mat4Impl.fromQuat(quat, meObj.modelMatrix);
@@ -51309,6 +51308,7 @@ var PhysicsBridge = class {
     switch (data.cmd) {
       case "ready":
       case "bodyAdded":
+        if (data.sab) this._snapshot = new Float32Array(data.sab, 4);
         if (data.error) console.error("[PhysicsBridge] worker body creation failed:", data.error);
         const resolveFn = this._pending.get(data.id);
         if (resolveFn) {

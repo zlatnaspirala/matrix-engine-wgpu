@@ -38,33 +38,6 @@ function getHingeAngle(bodyA, bodyB, axis) {
   return angle;
 }
 
-// function weldMesh(verts, indices, scale = [1, 1, 1], pos = {x: 0, y: 0, z: 0}, eps = 1e-4) {
-//   const q = 1 / eps, map = new Map(), nodePos = [];
-//   const vcount = verts.length / 3;
-//   const v2n = new Uint32Array(vcount);
-//   for(let i = 0;i < vcount;i++) {
-//     const x = verts[i * 3] * scale[0] + (pos.x || 0);
-//     const y = verts[i * 3 + 1] * scale[1] + (pos.y || 0);
-//     const z = verts[i * 3 + 2] * scale[2] + (pos.z || 0);
-//     const key = Math.round(x * q) + ',' + Math.round(y * q) + ',' + Math.round(z * q);
-//     let n = map.get(key);
-//     if(n === undefined) {n = nodePos.length / 3; map.set(key, n); nodePos.push(x, y, z);}
-//     v2n[i] = n;
-//   }
-//   const triCount = indices ? indices.length : vcount;
-//   const seen = new Set(), edges = [], tris = new Uint32Array(triCount);
-//   for(let i = 0;i < triCount;i++) tris[i] = v2n[indices ? indices[i] : i];
-//   const addEdge = (a, b) => {
-//     if(a === b) return;
-//     const k = a < b ? a + '_' + b : b + '_' + a;
-//     if(seen.has(k)) return;
-//     seen.add(k); edges.push(a, b);
-//   };
-//   for(let t = 0;t < triCount;t += 3) {
-//     addEdge(tris[t], tris[t + 1]); addEdge(tris[t + 1], tris[t + 2]); addEdge(tris[t + 2], tris[t]);
-//   }
-//   return {nodePos: Float32Array.from(nodePos), count: nodePos.length / 3, v2n, tris, edges: Uint32Array.from(edges)};
-// }
 function weldMesh(verts, indices, scale = [1, 1, 1], pos = {x: 0, y: 0, z: 0}, cell = 0) {
   const step = cell > 0 ? cell : 1e-4;
   const vcount = verts.length / 3;
@@ -1007,9 +980,6 @@ class MatrixCannon {
           positions[i * 3 + 1] = body.position.y;
           positions[i * 3 + 2] = body.position.z;
         }
-        // console.log("clothDataPackets pos[0]:", positions[0], positions[1], positions[2]);
-        // console.log("cloth.startIndex:", cloth.startIndex);
-
         this.clothDataPackets.push({startIndex: cloth.startIndex, positions});
       }
     }
