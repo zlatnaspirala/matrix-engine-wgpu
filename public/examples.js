@@ -50950,49 +50950,6 @@ var nanoPass = function() {
 };
 
 // src/engine/physics/bridge.js
-function calculateSoftBodyNormals(positions, indices, vertexCount, fallbackNormals, normals) {
-  normals = normals || new Float32Array(vertexCount * 3);
-  normals.fill(0);
-  for (let i2 = 0; i2 + 2 < indices.length; i2 += 3) {
-    const ia2 = indices[i2], ib = indices[i2 + 1], ic2 = indices[i2 + 2];
-    if (ia2 >= vertexCount || ib >= vertexCount || ic2 >= vertexCount) continue;
-    const ax = positions[ia2 * 4], ay = positions[ia2 * 4 + 1], az = positions[ia2 * 4 + 2];
-    const bx = positions[ib * 4], by = positions[ib * 4 + 1], bz = positions[ib * 4 + 2];
-    const cx = positions[ic2 * 4], cy = positions[ic2 * 4 + 1], cz = positions[ic2 * 4 + 2];
-    const abx = bx - ax, aby = by - ay, abz = bz - az;
-    const acx = cx - ax, acy = cy - ay, acz = cz - az;
-    const nx = aby * acz - abz * acy;
-    const ny = abz * acx - abx * acz;
-    const nz = abx * acy - aby * acx;
-    normals[ia2 * 3] += nx;
-    normals[ia2 * 3 + 1] += ny;
-    normals[ia2 * 3 + 2] += nz;
-    normals[ib * 3] += nx;
-    normals[ib * 3 + 1] += ny;
-    normals[ib * 3 + 2] += nz;
-    normals[ic2 * 3] += nx;
-    normals[ic2 * 3 + 1] += ny;
-    normals[ic2 * 3 + 2] += nz;
-  }
-  for (let i2 = 0; i2 < vertexCount; i2++) {
-    const o3 = i2 * 3;
-    const len2 = Math.hypot(normals[o3], normals[o3 + 1], normals[o3 + 2]);
-    if (len2 > 1e-10) {
-      normals[o3] /= len2;
-      normals[o3 + 1] /= len2;
-      normals[o3 + 2] /= len2;
-    } else if (fallbackNormals && fallbackNormals.length >= o3 + 3) {
-      normals[o3] = fallbackNormals[o3];
-      normals[o3 + 1] = fallbackNormals[o3 + 1];
-      normals[o3 + 2] = fallbackNormals[o3 + 2];
-    } else {
-      normals[o3] = 0;
-      normals[o3 + 1] = 1;
-      normals[o3 + 2] = 0;
-    }
-  }
-  return normals;
-}
 var PhysicsBridge = class {
   constructor(workerUrl) {
     this._worker = null;
@@ -51074,17 +51031,6 @@ var PhysicsBridge = class {
     MEObject.isKinematic = pOptions.state === 4;
     this._send("addBody", { pOptions }).then((response) => {
       const startIndex = typeof response === "object" ? response.idx : response;
-      if (pOptions.geometry === "SoftBody") {
-        this._clothMap.set(startIndex, {
-          mesh: MEObject,
-          startIndex,
-          count: response?.count ?? 0,
-          v2n: response?.vertexToNode || null,
-          off: response?.vertexOffsets || null,
-          isSoftBody: true
-        });
-        return;
-      }
       if (pOptions.geometry === "Cloth") {
         const nx = response?.nx ?? pOptions.nx ?? 10;
         const ny = response?.ny ?? pOptions.ny ?? 10;
@@ -51346,23 +51292,6 @@ var PhysicsBridge = class {
               dst[i2 * 4 + 2] = src[s2 + 2] + (o3 ? o3[i2 * 3 + 2] : 0);
             }
             app.device.queue.writeBuffer(buf, 0, dst);
-            if (meta.isSoftBody) {
-              const normalBuffer = meta.mesh.vertexNormalsBuffer;
-              const indices = meta.mesh.mesh?.indices;
-              if (normalBuffer && indices?.length) {
-                if (!meta._normalScratch || meta._normalScratch.length !== n3 * 3) {
-                  meta._normalScratch = new Float32Array(n3 * 3);
-                }
-                meta._normalScratch = calculateSoftBodyNormals(
-                  dst,
-                  indices,
-                  n3,
-                  meta.mesh.mesh?.vertexNormals,
-                  meta._normalScratch
-                );
-                app.device.queue.writeBuffer(normalBuffer, 0, meta._normalScratch);
-              }
-            }
           }
         }
         this._syncToObjects();
@@ -62113,27 +62042,6 @@ var testJolt = function() {
         },
         raycast: { enabled: true, radius: 1 }
       });
-      const jelly = physicsPlayground2.addMeshObj({
-        material: { type: "standard" },
-        position: { x: 0, y: 8, z: -10 },
-        scale: [1.5, 1.5, 1.5],
-        texturesPaths: ["./res/textures/floor1.webp"],
-        name: "jelly",
-        mesh: m2.ball,
-        physics: {
-          // radius: undefined,
-          enabled: true,
-          geometry: "SoftBody",
-          mass: 2,
-          nodeSpacing: 0,
-          group: 2,
-          mask: -1,
-          vertices: m2.ball.vertices,
-          indices: m2.ball.indices,
-          radius: 0.01
-        }
-      });
-      setTimeout(() => jelly.vertexAnim.enableCloth(1), 500);
       app.cameras.WASD.setYaw(-0.03);
       app.cameras.WASD.setPitch(-0.49);
       app.cameras.WASD.setZ(0);
