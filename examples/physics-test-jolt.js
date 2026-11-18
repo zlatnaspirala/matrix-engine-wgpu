@@ -72,6 +72,21 @@ export var testJolt = function() {
       });
 
 
+      const jelly = physicsPlayground.addMeshObj({
+        material: {type: 'standard'},
+        position: {x: 0, y: 8, z: -10},
+        scale: [1.5, 1.5, 1.5],
+        texturesPaths: ['./res/textures/floor1.webp'],
+        name: 'jelly', mesh: m.ball,
+        physics: {
+          // radius: undefined,
+          enabled: true, geometry: 'SoftBody', mass: 2,
+          nodeSpacing: 0, group: 2, mask: -1,
+          vertices: m.ball.vertices, indices: m.ball.indices, radius: 0.01
+        }
+      });
+      setTimeout(() => jelly.vertexAnim.enableCloth(1), 500);
+
       app.cameras.WASD.setYaw(-0.03);
       app.cameras.WASD.setPitch(-0.49);
       app.cameras.WASD.setZ(0);

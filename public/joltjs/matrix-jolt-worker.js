@@ -42,6 +42,66 @@ function buildConeVerts(radius, height, segments = 16) {
   return verts;
 }
 
+function weldSoftMesh(verts, indices, scale = [1, 1, 1], cell = 0) {
+  if(!verts || verts.length < 9) throw new Error('[jolt] SoftBody needs at least 3 vertices');
+  const step = cell > 0 ? cell : 1e-4;
+  const vertexCount = Math.floor(verts.length / 3);
+  const v2n = new Uint32Array(vertexCount);
+  const map = new Map(), sums = [], counts = [];
+  for(let i = 0;i < vertexCount;i++) {
+    const x = verts[i * 3] * scale[0];
+    const y = verts[i * 3 + 1] * scale[1];
+    const z = verts[i * 3 + 2] * scale[2];
+    const key = Math.floor(x / step) + ',' + Math.floor(y / step) + ',' + Math.floor(z / step);
+    let node = map.get(key);
+    if(node === undefined) {
+      node = counts.length;
+      map.set(key, node);
+      sums.push(0, 0, 0);
+      counts.push(0);
+    }
+    sums[node * 3] += x;
+    sums[node * 3 + 1] += y;
+    sums[node * 3 + 2] += z;
+    counts[node]++;
+    v2n[i] = node;
+  }
+
+  const count = counts.length;
+  const nodePos = new Float32Array(count * 3);
+  for(let i = 0;i < count;i++) {
+    nodePos[i * 3] = sums[i * 3] / counts[i];
+    nodePos[i * 3 + 1] = sums[i * 3 + 1] / counts[i];
+    nodePos[i * 3 + 2] = sums[i * 3 + 2] / counts[i];
+  }
+
+  const offsets = new Float32Array(vertexCount * 3);
+  for(let i = 0;i < vertexCount;i++) {
+    const n = v2n[i];
+    offsets[i * 3] = verts[i * 3] * scale[0] - nodePos[n * 3];
+    offsets[i * 3 + 1] = verts[i * 3 + 1] * scale[1] - nodePos[n * 3 + 1];
+    offsets[i * 3 + 2] = verts[i * 3 + 2] * scale[2] - nodePos[n * 3 + 2];
+  }
+
+  const sourceIndices = indices && indices.length ? indices : Array.from({length: vertexCount}, (_, i) => i);
+  const triCount = sourceIndices.length - (sourceIndices.length % 3);
+  const tris = [];
+  const edgeUse = new Map();
+  const addEdge = (a, b) => {
+    if(a === b) return;
+    const key = a < b ? a + '_' + b : b + '_' + a;
+    edgeUse.set(key, (edgeUse.get(key) || 0) + 1);
+  };
+  for(let i = 0;i < triCount;i += 3) {
+    const a = v2n[sourceIndices[i]], b = v2n[sourceIndices[i + 1]], c = v2n[sourceIndices[i + 2]];
+    if(a === b || b === c || c === a) continue;
+    tris.push(a, b, c);
+    addEdge(a, b); addEdge(b, c); addEdge(c, a);
+  }
+  const isClosed = edgeUse.size > 0 && Array.from(edgeUse.values()).every(n => n === 2);
+  return {nodePos, count, v2n, offsets, tris: Uint32Array.from(tris), isClosed};
+}
+
 class MatrixJolt {
   constructor() {
     this.rigidBodies = [];
@@ -190,6 +250,7 @@ class MatrixJolt {
     let body = null;
     switch(pOptions.geometry) {
       case 'Cloth': return this._addCloth(pOptions);
+      case 'SoftBody': return this._addSoftBody(pOptions);
       case 'Sphere': body = this._addSphere(pOptions); break;
       case 'Cube': body = this._addBox(pOptions); break;
       case 'Capsule': body = this._addCapsule(pOptions); break;
@@ -369,6 +430,112 @@ class MatrixJolt {
       this.bodyInterface.ActivateBody(body.GetID());
       this.bodyInterface.AddForce(body.GetID(), new this.Jolt.Vec3(fx, fy, fz));
     });
+  }
+
+  _addSoftBody(pOptions) {
+    const Jolt = this.Jolt;
+    if(!pOptions.vertices) {
+      console.warn('[jolt] SoftBody needs vertices');
+      return -1;
+    }
+
+    const position = pOptions.position || {x: 0, y: 0, z: 0};
+    const scale = pOptions.scale || [1, 1, 1];
+    const w = weldSoftMesh(
+      pOptions.vertices,
+      pOptions.indices,
+      scale,
+      pOptions.nodeSpacing || 0
+    );
+    if(w.count < 4 || w.tris.length < 12) {
+      console.warn('[jolt] SoftBody mesh needs at least 4 welded nodes and 4 triangles');
+      return -1;
+    }
+
+    const totalMass = Math.max(1e-6, pOptions.mass ?? 1);
+    const invMass = w.count / totalMass;
+    const shared = new Jolt.SoftBodySharedSettings();
+    const vertex = new Jolt.SoftBodySharedSettingsVertex();
+    for(let i = 0;i < w.count;i++) {
+      vertex.mPosition.x = w.nodePos[i * 3];
+      vertex.mPosition.y = w.nodePos[i * 3 + 1];
+      vertex.mPosition.z = w.nodePos[i * 3 + 2];
+      vertex.mInvMass = invMass;
+      shared.mVertices.push_back(vertex);
+    }
+    Jolt.destroy(vertex);
+
+    const face = new Jolt.SoftBodySharedSettingsFace(0, 0, 0, 0);
+    for(let i = 0;i < w.tris.length;i += 3) {
+      face.set_mVertex(0, w.tris[i]);
+      face.set_mVertex(1, w.tris[i + 1]);
+      face.set_mVertex(2, w.tris[i + 2]);
+      shared.AddFace(face);
+    }
+    Jolt.destroy(face);
+
+    const edgeCompliance = pOptions.compliance ?? 1e-5;
+    const bendCompliance = pOptions.bendCompliance ?? 1e-3;
+    const attributes = new Jolt.SoftBodySharedSettingsVertexAttributes(
+      edgeCompliance,
+      edgeCompliance,
+      bendCompliance
+    );
+    shared.CreateConstraints(
+      attributes,
+      1,
+      Jolt.SoftBodySharedSettingsEBendType_Distance
+    );
+    Jolt.destroy(attributes);
+
+    const creation = new Jolt.SoftBodyCreationSettings(
+      shared,
+      new Jolt.RVec3(position.x || 0, position.y || 0, position.z || 0),
+      Jolt.Quat.prototype.sIdentity(),
+      LAYER_MOVING
+    );
+    creation.mNumIterations = pOptions.iterations ?? 8;
+    creation.mLinearDamping = pOptions.linearDamping ?? 0.85;
+    creation.mFriction = pOptions.friction ?? 0.4;
+    creation.mRestitution = pOptions.restitution ?? 0;
+    creation.mVertexRadius = pOptions.radius ?? 0.05;
+    creation.mAllowSleeping = false;
+
+    // Jolt's pressure model is the native equivalent of Cannon's radial hub:
+    // it resists collapse while keeping the original surface topology.
+    // Only enable the default pressure for a closed mesh; open meshes remain cloth-like.
+    creation.mPressure = pOptions.pressure ?? (
+      pOptions.hub === false || !w.isClosed ? 0 : 2000
+    );
+
+    const softBody = this.bodyInterface.CreateSoftBody(creation);
+    Jolt.destroy(creation);
+    Jolt.destroy(shared);
+    if(!softBody) return -1;
+
+    softBody.name = pOptions.name || 'SoftBody';
+    this.bodyInterface.AddBody(softBody.GetID(), Jolt.EActivation_Activate);
+
+    const startIndex = this.rigidBodies.length;
+    for(let i = 0;i < w.count;i++) {
+      this.rigidBodies.push({
+        isSoft: true,
+        soft: softBody,
+        node: i,
+        name: `${pOptions.name || 'SoftBody'}_${i}`
+      });
+    }
+    this.bodyIDs = this.rigidBodies.map(b => b.isSoft ? null : b.GetID());
+    this._allocBuffer(this.rigidBodies.length);
+    this.cloths.push({
+      startIndex,
+      count: w.count,
+      sb: softBody,
+      v2n: w.v2n,
+      offsets: w.offsets,
+      isSoftBody: true
+    });
+    return startIndex;
   }
 
   _addCloth(pOptions) {
@@ -807,9 +974,29 @@ self.onmessage = async ({data}) => {
       break;
     }
     case 'addBody': {
-      const idx = jolt.addBody(data.pOptions);
-      const meta = jolt.cloths.find(c => c.startIndex === idx);
-      self.postMessage({cmd: 'bodyAdded', id, idx, sab: jolt._sab, count: meta ? meta.count : 1, nx: meta?.nx, ny: meta?.ny});
+      try {
+        const idx = jolt.addBody(data.pOptions);
+        const meta = jolt.cloths.find(c => c.startIndex === idx);
+        self.postMessage({
+          cmd: 'bodyAdded',
+          id,
+          idx,
+          sab: jolt._sab,
+          count: meta ? meta.count : 1,
+          nx: meta?.nx,
+          ny: meta?.ny,
+          vertexToNode: meta?.v2n,
+          vertexOffsets: meta?.offsets
+        });
+      } catch(error) {
+        console.error('[jolt] addBody failed:', error);
+        self.postMessage({
+          cmd: 'bodyAdded',
+          id,
+          idx: -1,
+          error: error?.stack || error?.message || String(error)
+        });
+      }
       break;
     }
     case 'step': {
