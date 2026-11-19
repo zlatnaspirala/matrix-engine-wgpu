@@ -396,8 +396,34 @@ export class PhysicsBridge {
           for(const packet of data.softBodyPackets) {
             const meta = this._softBodyMap.get(packet.startIndex);
             if(!meta) continue;
-            meta.positions = packet.positions;
-            this._softBodySnapshots.set(packet.startIndex, packet.positions);
+
+            const src = packet.positions;
+            meta.positions = src;
+            this._softBodySnapshots.set(packet.startIndex, src);
+
+            // Expand welded physics nodes back to the render mesh's vertex order.
+            // The shader reads one world-space vec4 per render vertex.
+            const vertexToNode = meta.vertexToNode;
+            const vertexOffsets = meta.vertexOffsets;
+            const vertexCount = vertexToNode?.length ?? meta.count;
+            const buffer = meta.mesh?.vertexAnim?.clothBuffer;
+            if(!buffer || !src || !vertexCount) continue;
+
+            if(!meta._renderPositions || meta._renderPositions.length !== vertexCount * 4) {
+              meta._renderPositions = new Float32Array(vertexCount * 4);
+            }
+            const dst = meta._renderPositions;
+            for(let i = 0;i < vertexCount;i++) {
+              const node = vertexToNode ? vertexToNode[i] : i;
+              const nodeOffset = node * 3;
+              const vertexOffset = i * 3;
+              const outOffset = i * 4;
+              dst[outOffset] = src[nodeOffset] + (vertexOffsets ? vertexOffsets[vertexOffset] : 0);
+              dst[outOffset + 1] = src[nodeOffset + 1] + (vertexOffsets ? vertexOffsets[vertexOffset + 1] : 0);
+              dst[outOffset + 2] = src[nodeOffset + 2] + (vertexOffsets ? vertexOffsets[vertexOffset + 2] : 0);
+              dst[outOffset + 3] = 1;
+            }
+            app.device.queue.writeBuffer(buffer, 0, dst);
           }
         }
         if(data.clothPackets) {
