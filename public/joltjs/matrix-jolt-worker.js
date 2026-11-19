@@ -439,7 +439,7 @@ class MatrixJolt {
     for(let i = 0;i < sourceIndices.length;i += 3) {
       const a = sourceIndices[i], b = sourceIndices[i + 1], c = sourceIndices[i + 2];
       if(!Number.isInteger(a) || !Number.isInteger(b) || !Number.isInteger(c) ||
-         a < 0 || b < 0 || c < 0 || a >= vertexCount || b >= vertexCount || c >= vertexCount) {
+        a < 0 || b < 0 || c < 0 || a >= vertexCount || b >= vertexCount || c >= vertexCount) {
         throw new Error(`SoftBody triangle ${i / 3} contains an invalid vertex index`);
       }
       const na = vertexToNode[a], nb = vertexToNode[b], nc = vertexToNode[c];
@@ -970,14 +970,35 @@ class MatrixJolt {
       const positions = new Float32Array(soft.count * 3);
       for(let i = 0;i < soft.count;i++) {
         const local = verts.at(i).mPosition;
-        const world = localToWorld(Jolt, soft.sb, [
+        // console.log('pos: ', local.GetX()," , " , local.GetY()," , " , local.GetZ() +
+        //  "COMPARE : posx: " + soft.sb.GetPosition().GetX() + " , posy:" + soft.sb.GetPosition().GetY() +
+        //   " , posz:" + soft.sb.GetPosition().GetZ() + 
+       //   " ROT : " +soft.sb.GetRotation())
+        // const bodyPos = soft.sb.GetPosition();
+        // const rot = soft.sb.GetRotation();
+
+        const world = localToWorld(this.Jolt, soft.sb, [
           local.GetX(), local.GetY(), local.GetZ()
         ]);
         positions[i * 3] = world.GetX();
         positions[i * 3 + 1] = world.GetY();
         positions[i * 3 + 2] = world.GetZ();
-        Jolt.destroy(world);
+        this.Jolt.destroy(world);
       }
+
+
+      // const local1 = verts.at(0).mPosition;
+      // const world1 = localToWorld(this.Jolt, soft.sb, [
+      //   local1.GetX(),
+      //   local1.GetY(),
+      //   local1.GetZ()
+      // ]);
+      // if (!this.XXX) this.XXX=1; console.log('[!JOLT NODE CHECK]', {
+      //   local: [local1.GetX(), local1.GetY(), local1.GetZ()],
+      //   converted: [world1.GetX(), world1.GetY(), world1.GetZ()],
+      //    packet: Array.from(positions.slice(0, 3))
+      // });
+
       this.softBodyDataPackets.push({startIndex: soft.startIndex, positions});
     }
   }
