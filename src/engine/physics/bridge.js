@@ -43,6 +43,8 @@ export class PhysicsBridge {
     this._kinematicCount = 0;
     this.c = 0;
     this._clothMap = new Map();
+    this._softBodyMap = new Map();
+    this._softBodySnapshots = new Map();
   }
 
   getBodyByName(name) {
@@ -80,6 +82,16 @@ export class PhysicsBridge {
     MEObject.isKinematic = pOptions.state === 4;
     this._send('addBody', {pOptions}).then((response) => {
       const startIndex = typeof response === 'object' ? response.idx : response;
+      if(pOptions.geometry === 'SoftBody') {
+        this._softBodyMap.set(startIndex, {
+          mesh: MEObject,
+          startIndex,
+          count: response?.count ?? 0,
+          vertexToNode: response?.vertexToNode || null,
+          vertexOffsets: response?.vertexOffsets || null
+        });
+        return;
+      }
       if(pOptions.geometry === 'Cloth') {
         const nx = response?.nx ?? pOptions.nx ?? 10;
         const ny = response?.ny ?? pOptions.ny ?? 10;
@@ -302,6 +314,17 @@ export class PhysicsBridge {
     this._worker.postMessage({cmd: 'applyClothForce', startIndex, x, y, z});
   }
 
+  getSoftBodySnapshot(startIndex) {
+    return this._softBodySnapshots.get(startIndex) || null;
+  }
+
+  getSoftBodyIndex(name) {
+    for(const [idx, meta] of this._softBodyMap) {
+      if(meta.mesh?.name === name) return idx;
+    }
+    return -1;
+  }
+
   _syncToObjects() {
     const snap = this._snapshot;
     if(!snap) return;
@@ -368,6 +391,14 @@ export class PhysicsBridge {
         break;
       case 'snapshot':
         this._snapshot = data.snap;
+        if(data.softBodyPackets) {
+          for(const packet of data.softBodyPackets) {
+            const meta = this._softBodyMap.get(packet.startIndex);
+            if(!meta) continue;
+            meta.positions = packet.positions;
+            this._softBodySnapshots.set(packet.startIndex, packet.positions);
+          }
+        }
         if(data.clothPackets) {
           for(const packet of data.clothPackets) {
             const meta = this._clothMap.get(packet.startIndex);
