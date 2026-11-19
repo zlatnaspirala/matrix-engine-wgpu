@@ -82,6 +82,7 @@ export class PhysicsBridge {
     MEObject.isKinematic = pOptions.state === 4;
     this._send('addBody', {pOptions}).then((response) => {
       const startIndex = typeof response === 'object' ? response.idx : response;
+      if(startIndex === undefined || startIndex < 0) return;
       if(pOptions.geometry === 'SoftBody') {
         this._softBodyMap.set(startIndex, {
           mesh: MEObject,
