@@ -117,6 +117,7 @@ export class PhysicsBridge {
     MEObject.isKinematic = pOptions.state === 4;
     this._send('addBody', {pOptions}).then((response) => {
       const startIndex = typeof response === 'object' ? response.idx : response;
+      if(startIndex === undefined || startIndex < 0) return;
       if(pOptions.geometry === 'SoftBody') {
         this._clothMap.set(startIndex, {
           mesh: MEObject, startIndex,
@@ -349,6 +350,18 @@ export class PhysicsBridge {
     this._worker.postMessage({cmd: 'applyClothForce', startIndex, x, y, z});
   }
 
+  getSoftBodyIndex(name) {
+    for(const [idx, meta] of this._clothMap) {
+      if(meta.isSoftBody && meta.mesh?.name === name) return idx;
+    }
+    return -1;
+  }
+
+  getSoftBodySnapshot(startIndex) {
+    const meta = this._clothMap.get(startIndex);
+    return meta?.isSoftBody ? (meta.positions || null) : null;
+  }
+
   _syncToObjects() {
     const snap = this._snapshot;
     if(!snap) return;
@@ -395,11 +408,9 @@ export class PhysicsBridge {
     switch(data.cmd) {
       case 'ready':
       case 'bodyAdded':
-        // Jolt reallocates its shared snapshot whenever the body count grows.
-        // Rebind to the newest SAB returned with bodyAdded; otherwise the bridge
-        // can keep reading an obsolete/empty snapshot after later body creation.
+        // Jolt may replace its shared snapshot buffer when bodies are added.
+        // Keep this optional so Cannon/Ammo/Matter worker responses remain unchanged.
         if(data.sab) this._snapshot = new Float32Array(data.sab, 4);
-        if(data.error) console.error('[PhysicsBridge] worker body creation failed:', data.error);
         const resolveFn = this._pending.get(data.id);
         if(resolveFn) {
           if(data.count && data.count > 1) {
@@ -415,12 +426,16 @@ export class PhysicsBridge {
         break;
       case 'snapshot':
         this._snapshot = data.snap;
-        if(data.clothPackets) {
-          for(const packet of data.clothPackets) {
+        // Cannon cloth/soft-body and Jolt SoftBody use the same mesh upload path.
+        // Keep the established _clothMap metadata and normal update logic shared.
+        if(data.clothPackets || data.softBodyPackets) {
+          const packets = [...(data.clothPackets || []), ...(data.softBodyPackets || [])];
+          for(const packet of packets) {
             const meta = this._clothMap.get(packet.startIndex);
             const buf = meta?.mesh?.vertexAnim?.clothBuffer;
             if(!buf) continue;
             const src = packet.positions, v2n = meta.v2n;
+            if(meta.isSoftBody) meta.positions = src;
             const n = v2n ? v2n.length : meta.count;
             if(!meta._scratch || meta._scratch.length !== n * 4) meta._scratch = new Float32Array(n * 4);
             const dst = meta._scratch;

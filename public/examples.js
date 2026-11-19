@@ -51074,6 +51074,7 @@ var PhysicsBridge = class {
     MEObject.isKinematic = pOptions.state === 4;
     this._send("addBody", { pOptions }).then((response) => {
       const startIndex = typeof response === "object" ? response.idx : response;
+      if (startIndex === void 0 || startIndex < 0) return;
       if (pOptions.geometry === "SoftBody") {
         this._clothMap.set(startIndex, {
           mesh: MEObject,
@@ -51268,6 +51269,16 @@ var PhysicsBridge = class {
   applyClothForce(startIndex, x3, y3, z2) {
     this._worker.postMessage({ cmd: "applyClothForce", startIndex, x: x3, y: y3, z: z2 });
   }
+  getSoftBodyIndex(name2) {
+    for (const [idx, meta] of this._clothMap) {
+      if (meta.isSoftBody && meta.mesh?.name === name2) return idx;
+    }
+    return -1;
+  }
+  getSoftBodySnapshot(startIndex) {
+    const meta = this._clothMap.get(startIndex);
+    return meta?.isSoftBody ? meta.positions || null : null;
+  }
   _syncToObjects() {
     const snap = this._snapshot;
     if (!snap) return;
@@ -51309,7 +51320,6 @@ var PhysicsBridge = class {
       case "ready":
       case "bodyAdded":
         if (data.sab) this._snapshot = new Float32Array(data.sab, 4);
-        if (data.error) console.error("[PhysicsBridge] worker body creation failed:", data.error);
         const resolveFn = this._pending.get(data.id);
         if (resolveFn) {
           if (data.count && data.count > 1) {
@@ -51329,12 +51339,14 @@ var PhysicsBridge = class {
         break;
       case "snapshot":
         this._snapshot = data.snap;
-        if (data.clothPackets) {
-          for (const packet of data.clothPackets) {
+        if (data.clothPackets || data.softBodyPackets) {
+          const packets = [...data.clothPackets || [], ...data.softBodyPackets || []];
+          for (const packet of packets) {
             const meta = this._clothMap.get(packet.startIndex);
             const buf = meta?.mesh?.vertexAnim?.clothBuffer;
             if (!buf) continue;
             const src = packet.positions, v2n = meta.v2n;
+            if (meta.isSoftBody) meta.positions = src;
             const n3 = v2n ? v2n.length : meta.count;
             if (!meta._scratch || meta._scratch.length !== n3 * 4) meta._scratch = new Float32Array(n3 * 4);
             const dst = meta._scratch;
@@ -62113,6 +62125,30 @@ var testJolt = function() {
         },
         raycast: { enabled: true, radius: 1 }
       });
+      const jelly = physicsPlayground2.addMeshObj({
+        material: { type: "standard" },
+        position: { x: 0, y: 8, z: -10 },
+        scale: [1.5, 1.5, 1.5],
+        texturesPaths: ["./res/textures/floor1.webp"],
+        name: "jelly",
+        mesh: m2.ball,
+        physics: {
+          enabled: true,
+          geometry: "SoftBody",
+          mass: 2,
+          nodeSpacing: 0,
+          group: 2,
+          mask: -1,
+          vertices: m2.ball.vertices,
+          indices: m2.ball.indices,
+          radius: 0.01
+        }
+      });
+      setTimeout(() => {
+        const startIndex = physicsPlayground2.matrixPhysics.getSoftBodyIndex(jelly.name);
+        if (startIndex >= 0) jelly.vertexAnim.enableCloth(startIndex);
+        else console.warn("[Jolt SoftBody] body registration is not available yet");
+      }, 500);
       app.cameras.WASD.setYaw(-0.03);
       app.cameras.WASD.setPitch(-0.49);
       app.cameras.WASD.setZ(0);
