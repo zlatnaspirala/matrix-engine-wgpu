@@ -1,5 +1,42 @@
 import {mat4} from 'wgpu-matrix';
 
+function calculateSoftBodyNormals(positions, indices, vertexCount, fallbackNormals, normals) {
+  normals = normals || new Float32Array(vertexCount * 3);
+  normals.fill(0);
+  for(let i = 0;i + 2 < indices.length;i += 3) {
+    const ia = indices[i], ib = indices[i + 1], ic = indices[i + 2];
+    if(ia >= vertexCount || ib >= vertexCount || ic >= vertexCount) continue;
+    const ax = positions[ia * 4], ay = positions[ia * 4 + 1], az = positions[ia * 4 + 2];
+    const bx = positions[ib * 4], by = positions[ib * 4 + 1], bz = positions[ib * 4 + 2];
+    const cx = positions[ic * 4], cy = positions[ic * 4 + 1], cz = positions[ic * 4 + 2];
+    const abx = bx - ax, aby = by - ay, abz = bz - az;
+    const acx = cx - ax, acy = cy - ay, acz = cz - az;
+    const nx = aby * acz - abz * acy;
+    const ny = abz * acx - abx * acz;
+    const nz = abx * acy - aby * acx;
+    normals[ia * 3] += nx; normals[ia * 3 + 1] += ny; normals[ia * 3 + 2] += nz;
+    normals[ib * 3] += nx; normals[ib * 3 + 1] += ny; normals[ib * 3 + 2] += nz;
+    normals[ic * 3] += nx; normals[ic * 3 + 1] += ny; normals[ic * 3 + 2] += nz;
+  }
+  for(let i = 0;i < vertexCount;i++) {
+    const o = i * 3;
+    const len = Math.hypot(normals[o], normals[o + 1], normals[o + 2]);
+    if(len > 1e-10) {
+      normals[o] /= len;
+      normals[o + 1] /= len;
+      normals[o + 2] /= len;
+    } else if(fallbackNormals && fallbackNormals.length >= o + 3) {
+      normals[o] = fallbackNormals[o];
+      normals[o + 1] = fallbackNormals[o + 1];
+      normals[o + 2] = fallbackNormals[o + 2];
+    } else {
+      normals[o] = 0; normals[o + 1] = 1; normals[o + 2] = 0;
+    }
+  }
+  return normals;
+}
+
+
 export class PhysicsBridge {
   constructor(workerUrl) {
     this._worker = null;
@@ -43,8 +80,6 @@ export class PhysicsBridge {
     this._kinematicCount = 0;
     this.c = 0;
     this._clothMap = new Map();
-    this._softBodyMap = new Map();
-    this._softBodySnapshots = new Map();
   }
 
   getBodyByName(name) {
@@ -82,14 +117,13 @@ export class PhysicsBridge {
     MEObject.isKinematic = pOptions.state === 4;
     this._send('addBody', {pOptions}).then((response) => {
       const startIndex = typeof response === 'object' ? response.idx : response;
-      if(startIndex === undefined || startIndex < 0) return;
       if(pOptions.geometry === 'SoftBody') {
-        this._softBodyMap.set(startIndex, {
-          mesh: MEObject,
-          startIndex,
+        this._clothMap.set(startIndex, {
+          mesh: MEObject, startIndex,
           count: response?.count ?? 0,
-          vertexToNode: response?.vertexToNode || null,
-          vertexOffsets: response?.vertexOffsets || null
+          v2n: response?.vertexToNode || null,
+          off: response?.vertexOffsets || null,
+          isSoftBody: true
         });
         return;
       }
@@ -315,15 +349,16 @@ export class PhysicsBridge {
     this._worker.postMessage({cmd: 'applyClothForce', startIndex, x, y, z});
   }
 
-  getSoftBodySnapshot(startIndex) {
-    return this._softBodySnapshots.get(startIndex) || null;
-  }
-
   getSoftBodyIndex(name) {
-    for(const [idx, meta] of this._softBodyMap) {
-      if(meta.mesh?.name === name) return idx;
+    for(const [idx, meta] of this._clothMap) {
+      if(meta.isSoftBody && meta.mesh?.name === name) return idx;
     }
     return -1;
+  }
+
+  getSoftBodySnapshot(startIndex) {
+    const meta = this._clothMap.get(startIndex);
+    return meta?.isSoftBody ? (meta.positions || null) : null;
   }
 
   _syncToObjects() {
@@ -372,11 +407,9 @@ export class PhysicsBridge {
     switch(data.cmd) {
       case 'ready':
       case 'bodyAdded':
-        // Jolt reallocates its shared snapshot whenever the body count grows.
-        // Rebind to the newest SAB returned with bodyAdded; otherwise the bridge
-        // can keep reading an obsolete/empty snapshot after later body creation.
+        // Jolt may replace its shared snapshot buffer when bodies are added.
+        // Keep this optional so Cannon/Ammo/Matter worker responses remain unchanged.
         if(data.sab) this._snapshot = new Float32Array(data.sab, 4);
-        if(data.error) console.error('[PhysicsBridge] worker body creation failed:', data.error);
         const resolveFn = this._pending.get(data.id);
         if(resolveFn) {
           if(data.count && data.count > 1) {
@@ -392,42 +425,11 @@ export class PhysicsBridge {
         break;
       case 'snapshot':
         this._snapshot = data.snap;
-        if(data.softBodyPackets) {
-          for(const packet of data.softBodyPackets) {
-            const meta = this._softBodyMap.get(packet.startIndex);
-            if(!meta) continue;
-
-            const src = packet.positions;
-            meta.positions = src;
-            this._softBodySnapshots.set(packet.startIndex, src);
-
-            // Expand welded physics nodes back to the render mesh's vertex order.
-            // The shader reads one world-space vec4 per render vertex.
-            const vertexToNode = meta.vertexToNode;
-            const vertexOffsets = meta.vertexOffsets;
-            const vertexCount = vertexToNode?.length ?? meta.count;
-            const buffer = meta.mesh?.vertexAnim?.clothBuffer;
-            if(!buffer || !src || !vertexCount) continue;
-
-            if(!meta._renderPositions || meta._renderPositions.length !== vertexCount * 4) {
-              meta._renderPositions = new Float32Array(vertexCount * 4);
-            }
-            const dst = meta._renderPositions;
-            for(let i = 0;i < vertexCount;i++) {
-              const node = vertexToNode ? vertexToNode[i] : i;
-              const nodeOffset = node * 3;
-              const vertexOffset = i * 3;
-              const outOffset = i * 4;
-              dst[outOffset] = src[nodeOffset] + (vertexOffsets ? vertexOffsets[vertexOffset] : 0);
-              dst[outOffset + 1] = src[nodeOffset + 1] + (vertexOffsets ? vertexOffsets[vertexOffset + 1] : 0);
-              dst[outOffset + 2] = src[nodeOffset + 2] + (vertexOffsets ? vertexOffsets[vertexOffset + 2] : 0);
-              dst[outOffset + 3] = 1;
-            }
-            app.device.queue.writeBuffer(buffer, 0, dst);
-          }
-        }
-        if(data.clothPackets) {
-          for(const packet of data.clothPackets) {
+        // Cannon cloth/soft-body and Jolt SoftBody use the same mesh upload path.
+        // Keep the established _clothMap metadata and normal update logic shared.
+        if(data.clothPackets || data.softBodyPackets) {
+          const packets = [...(data.clothPackets || []), ...(data.softBodyPackets || [])];
+          for(const packet of packets) {
             const meta = this._clothMap.get(packet.startIndex);
             const buf = meta?.mesh?.vertexAnim?.clothBuffer;
             if(!buf) continue;
@@ -444,6 +446,19 @@ export class PhysicsBridge {
             }
             app.device.queue.writeBuffer(buf, 0, dst);
 
+            if(meta.isSoftBody) {
+              const normalBuffer = meta.mesh.vertexNormalsBuffer;
+              const indices = meta.mesh.mesh?.indices;
+              if(normalBuffer && indices?.length) {
+                if(!meta._normalScratch || meta._normalScratch.length !== n * 3) {
+                  meta._normalScratch = new Float32Array(n * 3);
+                }
+                meta._normalScratch = calculateSoftBodyNormals(
+                  dst, indices, n, meta.mesh.mesh?.vertexNormals, meta._normalScratch
+                );
+                app.device.queue.writeBuffer(normalBuffer, 0, meta._normalScratch);
+              }
+            }
           }
         }
         this._syncToObjects();
