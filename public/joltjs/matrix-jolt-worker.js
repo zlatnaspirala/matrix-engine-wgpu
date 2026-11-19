@@ -57,6 +57,8 @@ class MatrixJolt {
     this._useSAB = false;
     this.cloths = [];
     this.clothDataPackets = [];
+    this.softBodies = [];
+    this.softBodyDataPackets = [];
   }
 
   _allocBuffer(bodyCount) {
@@ -189,6 +191,7 @@ class MatrixJolt {
   addBody(pOptions) {
     let body = null;
     switch(pOptions.geometry) {
+      case 'SoftBody': return this._addSoftBody(pOptions);
       case 'Cloth': return this._addCloth(pOptions);
       case 'Sphere': body = this._addSphere(pOptions); break;
       case 'Cube': body = this._addBox(pOptions); break;
@@ -369,6 +372,173 @@ class MatrixJolt {
       this.bodyInterface.ActivateBody(body.GetID());
       this.bodyInterface.AddForce(body.GetID(), new this.Jolt.Vec3(fx, fy, fz));
     });
+  }
+
+  _weldSoftMesh(pOptions) {
+    const verts = pOptions.vertices;
+    const indices = pOptions.indices;
+    if(!verts || verts.length < 9 || verts.length % 3 !== 0) {
+      throw new Error('SoftBody needs a flat vertices array with at least one triangle');
+    }
+
+    const scale = pOptions.scale || [1, 1, 1];
+    const spacing = pOptions.nodeSpacing > 0 ? pOptions.nodeSpacing : 1e-4;
+    const vertexCount = verts.length / 3;
+    const vertexToNode = new Uint32Array(vertexCount);
+    const map = new Map();
+    const sums = [];
+    const counts = [];
+    const localPositions = new Float32Array(vertexCount * 3);
+
+    for(let i = 0;i < vertexCount;i++) {
+      const x = verts[i * 3] * scale[0];
+      const y = verts[i * 3 + 1] * scale[1];
+      const z = verts[i * 3 + 2] * scale[2];
+      if(!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) {
+        throw new Error(`SoftBody vertex ${i} contains a non-finite coordinate`);
+      }
+      localPositions[i * 3] = x;
+      localPositions[i * 3 + 1] = y;
+      localPositions[i * 3 + 2] = z;
+      const key = `${Math.floor(x / spacing)},${Math.floor(y / spacing)},${Math.floor(z / spacing)}`;
+      let node = map.get(key);
+      if(node === undefined) {
+        node = counts.length;
+        map.set(key, node);
+        sums.push(0, 0, 0);
+        counts.push(0);
+      }
+      sums[node * 3] += x;
+      sums[node * 3 + 1] += y;
+      sums[node * 3 + 2] += z;
+      counts[node]++;
+      vertexToNode[i] = node;
+    }
+
+    const nodeCount = counts.length;
+    const nodePositions = new Float32Array(nodeCount * 3);
+    for(let i = 0;i < nodeCount;i++) {
+      nodePositions[i * 3] = sums[i * 3] / counts[i];
+      nodePositions[i * 3 + 1] = sums[i * 3 + 1] / counts[i];
+      nodePositions[i * 3 + 2] = sums[i * 3 + 2] / counts[i];
+    }
+
+    const vertexOffsets = new Float32Array(vertexCount * 3);
+    for(let i = 0;i < vertexCount;i++) {
+      const node = vertexToNode[i];
+      vertexOffsets[i * 3] = localPositions[i * 3] - nodePositions[node * 3];
+      vertexOffsets[i * 3 + 1] = localPositions[i * 3 + 1] - nodePositions[node * 3 + 1];
+      vertexOffsets[i * 3 + 2] = localPositions[i * 3 + 2] - nodePositions[node * 3 + 2];
+    }
+
+    const sourceIndices = indices || Array.from({length: vertexCount}, (_, i) => i);
+    if(sourceIndices.length < 3 || sourceIndices.length % 3 !== 0) {
+      throw new Error('SoftBody indices must contain complete triangles');
+    }
+    const triangles = [];
+    for(let i = 0;i < sourceIndices.length;i += 3) {
+      const a = sourceIndices[i], b = sourceIndices[i + 1], c = sourceIndices[i + 2];
+      if(!Number.isInteger(a) || !Number.isInteger(b) || !Number.isInteger(c) ||
+         a < 0 || b < 0 || c < 0 || a >= vertexCount || b >= vertexCount || c >= vertexCount) {
+        throw new Error(`SoftBody triangle ${i / 3} contains an invalid vertex index`);
+      }
+      const na = vertexToNode[a], nb = vertexToNode[b], nc = vertexToNode[c];
+      if(na !== nb && nb !== nc && nc !== na) triangles.push(na, nb, nc);
+    }
+    if(triangles.length === 0) throw new Error('SoftBody mesh has no valid triangles after vertex welding');
+
+    return {nodePositions, nodeCount, vertexToNode, vertexOffsets, triangles};
+  }
+
+  _addSoftBody(pOptions) {
+    const Jolt = this.Jolt;
+    let mesh;
+    try {
+      mesh = this._weldSoftMesh(pOptions);
+    } catch(error) {
+      console.error('[jolt] SoftBody creation failed:', error.message);
+      return -1;
+    }
+
+    const shared = new Jolt.SoftBodySharedSettings();
+    const mass = Math.max(1e-6, pOptions.mass ?? 1);
+    const invMass = mesh.nodeCount / mass;
+    for(let i = 0;i < mesh.nodeCount;i++) {
+      const v = new Jolt.SoftBodySharedSettingsVertex();
+      v.mPosition = new Jolt.Float3(
+        mesh.nodePositions[i * 3],
+        mesh.nodePositions[i * 3 + 1],
+        mesh.nodePositions[i * 3 + 2]
+      );
+      v.mInvMass = invMass;
+      shared.mVertices.push_back(v);
+      Jolt.destroy(v);
+    }
+
+    for(let i = 0;i < mesh.triangles.length;i += 3) {
+      shared.mFaces.push_back(new Jolt.SoftBodySharedSettingsFace(
+        mesh.triangles[i], mesh.triangles[i + 1], mesh.triangles[i + 2], 0
+      ));
+    }
+
+    const compliance = pOptions.compliance ?? 1e-4;
+    const attributes = new Jolt.SoftBodySharedSettingsVertexAttributes(
+      compliance, compliance, pOptions.bendCompliance ?? 1e-2
+    );
+    shared.CreateConstraints(attributes, 1, Jolt.SoftBodySharedSettingsEBendType_Distance);
+    shared.Optimize();
+
+    const position = pOptions.position || {x: 0, y: 0, z: 0};
+    const rotation = pOptions.rotation || {x: 0, y: 0, z: 0};
+    const rx = degToRad(rotation.x || 0), ry = degToRad(rotation.y || 0), rz = degToRad(rotation.z || 0);
+    const cx = Math.cos(rx * 0.5), sx = Math.sin(rx * 0.5);
+    const cy = Math.cos(ry * 0.5), sy = Math.sin(ry * 0.5);
+    const cz = Math.cos(rz * 0.5), sz = Math.sin(rz * 0.5);
+    const rotationQuat = new Jolt.Quat(
+      sx * cy * cz + cx * sy * sz,
+      cx * sy * cz - sx * cy * sz,
+      cx * cy * sz + sx * sy * cz,
+      cx * cy * cz - sx * sy * sz
+    );
+
+    const settings = new Jolt.SoftBodyCreationSettings(
+      shared,
+      new Jolt.RVec3(position.x, position.y, position.z),
+      rotationQuat,
+      LAYER_MOVING
+    );
+    settings.mNumIterations = pOptions.iterations ?? 8;
+    settings.mLinearDamping = pOptions.linearDamping ?? pOptions.damping ?? 0.1;
+    settings.mFriction = pOptions.friction ?? 0.4;
+    settings.mVertexRadius = pOptions.radius ?? 0.05;
+
+    const softBody = this.bodyInterface.CreateSoftBody(settings);
+    Jolt.destroy(settings);
+    if(!softBody) {
+      console.error('[jolt] SoftBody CreateSoftBody returned null');
+      return -1;
+    }
+    this.bodyInterface.AddBody(softBody.GetID(), Jolt.EActivation_Activate);
+
+    const startIndex = this.rigidBodies.length;
+    for(let i = 0;i < mesh.nodeCount;i++) {
+      this.rigidBodies.push({
+        isSoft: true,
+        soft: softBody,
+        node: i,
+        name: `${pOptions.name || 'softBody'}_${i}`
+      });
+    }
+    this.bodyIDs = this.rigidBodies.map(body => body.isSoft ? null : body.GetID());
+    this._allocBuffer(this.rigidBodies.length);
+    this.softBodies.push({
+      startIndex,
+      count: mesh.nodeCount,
+      sb: softBody,
+      vertexToNode: mesh.vertexToNode,
+      vertexOffsets: mesh.vertexOffsets
+    });
+    return startIndex;
   }
 
   _addCloth(pOptions) {
@@ -793,6 +963,23 @@ class MatrixJolt {
       }
       this.clothDataPackets.push({startIndex: c.startIndex, positions});
     }
+
+    this.softBodyDataPackets.length = 0;
+    for(const soft of this.softBodies) {
+      const verts = this._softVerts(soft.sb);
+      const positions = new Float32Array(soft.count * 3);
+      for(let i = 0;i < soft.count;i++) {
+        const local = verts.at(i).mPosition;
+        const world = localToWorld(Jolt, soft.sb, [
+          local.GetX(), local.GetY(), local.GetZ()
+        ]);
+        positions[i * 3] = world.GetX();
+        positions[i * 3 + 1] = world.GetY();
+        positions[i * 3 + 2] = world.GetZ();
+        Jolt.destroy(world);
+      }
+      this.softBodyDataPackets.push({startIndex: soft.startIndex, positions});
+    }
   }
 }
 
@@ -808,8 +995,15 @@ self.onmessage = async ({data}) => {
     }
     case 'addBody': {
       const idx = jolt.addBody(data.pOptions);
-      const meta = jolt.cloths.find(c => c.startIndex === idx);
-      self.postMessage({cmd: 'bodyAdded', id, idx, sab: jolt._sab, count: meta ? meta.count : 1, nx: meta?.nx, ny: meta?.ny});
+      const clothMeta = jolt.cloths.find(c => c.startIndex === idx);
+      const softMeta = jolt.softBodies.find(c => c.startIndex === idx);
+      self.postMessage({
+        cmd: 'bodyAdded', id, idx, sab: jolt._sab,
+        count: softMeta?.count ?? (clothMeta ? clothMeta.count : 1),
+        nx: clothMeta?.nx, ny: clothMeta?.ny,
+        vertexToNode: softMeta?.vertexToNode,
+        vertexOffsets: softMeta?.vertexOffsets
+      });
       break;
     }
     case 'step': {
@@ -819,14 +1013,16 @@ self.onmessage = async ({data}) => {
           self.postMessage({
             cmd: 'snapshot',
             snap: jolt._snapshot,
-            clothPackets: jolt.clothDataPackets
+            clothPackets: jolt.clothDataPackets,
+            softBodyPackets: jolt.softBodyDataPackets
           });
         } else {
           const copy = jolt._snapshot.slice();
           self.postMessage({
             cmd: 'snapshot',
             snap: copy,
-            clothPackets: jolt.clothDataPackets
+            clothPackets: jolt.clothDataPackets,
+            softBodyPackets: jolt.softBodyDataPackets
           }, [copy.buffer]);
         }
       }
