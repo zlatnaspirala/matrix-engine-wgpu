@@ -1002,7 +1002,8 @@ self.onmessage = async ({data}) => {
         count: softMeta?.count ?? (clothMeta ? clothMeta.count : 1),
         nx: clothMeta?.nx, ny: clothMeta?.ny,
         vertexToNode: softMeta?.vertexToNode,
-        vertexOffsets: softMeta?.vertexOffsets
+        vertexOffsets: softMeta?.vertexOffsets,
+        error: idx < 0 ? `Unable to create physics body for geometry "${data.pOptions.geometry}"` : undefined
       });
       break;
     }
