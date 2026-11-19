@@ -434,6 +434,7 @@ export class PhysicsBridge {
             const buf = meta?.mesh?.vertexAnim?.clothBuffer;
             if(!buf) continue;
             const src = packet.positions, v2n = meta.v2n;
+            if(meta.isSoftBody) meta.positions = src;
             const n = v2n ? v2n.length : meta.count;
             if(!meta._scratch || meta._scratch.length !== n * 4) meta._scratch = new Float32Array(n * 4);
             const dst = meta._scratch;
