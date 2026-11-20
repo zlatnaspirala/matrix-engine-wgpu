@@ -104,6 +104,7 @@ export class PhysicsBridge {
   constructor(workerUrl) {
     this._worker = null;
     this._isCannon = /cannon/i.test(workerUrl);
+    this._cannonStepPending = false;
     const isModule = workerUrl.indexOf('ammo') === -1 && workerUrl.indexOf('matter') === -1;
     const needsBlobBridge = new URL(workerUrl, location.href).origin !== location.origin;
     if(needsBlobBridge) {
@@ -241,7 +242,14 @@ export class PhysicsBridge {
   }
 
   updatePhysics() {
-    this._worker.postMessage({cmd: 'step'})
+    // Cannon SoftBody can take longer than one render frame to simulate. Do not
+    // enqueue unlimited step messages: queued steps produce stale snapshot bursts
+    // on the main thread and make input/raycasting feel delayed.
+    if(this._isCannon) {
+      if(this._cannonStepPending) return;
+      this._cannonStepPending = true;
+    }
+    this._worker.postMessage({cmd: 'step'});
   }
 
   setGravity(x, y, z) {this._worker.postMessage({cmd: 'setGravity', x, y, z})}
@@ -494,6 +502,7 @@ export class PhysicsBridge {
         }
         break;
       case 'snapshot':
+        if(this._isCannon) this._cannonStepPending = false;
         this._snapshot = data.snap;
         // Cannon cloth/soft-body and Jolt SoftBody use the same mesh upload path.
         // Keep the established _clothMap metadata and normal update logic shared.
