@@ -980,8 +980,6 @@ class MatrixJolt {
       snap[base + 5] = rot.GetZ();
       snap[base + 6] = rot.GetW();
       snap[base + 7] = 1;
-      this.Jolt.destroy(pos);
-      this.Jolt.destroy(rot);
     }
 
     this.clothDataPackets.length = 0;
@@ -997,7 +995,6 @@ class MatrixJolt {
         positions[o + 1] = py + p.GetY();
         positions[o + 2] = pz + p.GetZ();
       }
-      this.Jolt.destroy(bodyPosition);
       this.clothDataPackets.push(c.packet);
     }
 
@@ -1017,7 +1014,6 @@ class MatrixJolt {
         );
       }
       this.Jolt.destroy(bodyPosition);
-      this.Jolt.destroy(rotation);
       this.softBodyDataPackets.push(soft.packet);
     }
   }
