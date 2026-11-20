@@ -215,7 +215,6 @@ class MatrixCannon {
     this.rigidBodies.push(cannonBody);
     this.bodyMap.set(cannonBody, idx);
     this._allocBuffer(this.rigidBodies.length);
-    if(!deferAlloc) this._allocBuffer(this.rigidBodies.length);
     if(this._snapshot) {
       const base = idx * FLOATS_PER_BODY;
       this._snapshot[base + 0] = pOptions.position?.x ?? 0;
@@ -448,7 +447,8 @@ class MatrixCannon {
 
     this.world.broadphase.dirty = true;
     this.world.broadphase.needsUpdate = true;
-    this.cloths.push({startIndex, nx, ny, count: particles.length});
+    const positions = new Float32Array(particles.length * 3);
+    this.cloths.push({startIndex, nx, ny, count: particles.length, positions, packet: {startIndex, positions}});
     // console.log('worker cloths: ', this.cloths)
     return startIndex;
   }
@@ -541,7 +541,15 @@ class MatrixCannon {
     const b = this.rigidBodies[idx];
     if(!b) return;
     this.world.removeBody(b);
-    this.rigidBodies.slice(idx, 1);
+    this.bodyMap.delete(b);
+    this.rigidBodies[idx] = null;
+    for(let i = 0;i < this.constraints.length;i++) {
+      const constraint = this.constraints[i];
+      if(constraint && (constraint.bodyA === b || constraint.bodyB === b)) {
+        this.world.removeConstraint(constraint);
+        this.constraints[i] = null;
+      }
+    }
   }
 
   setGravity(x, y, z) {
@@ -694,7 +702,8 @@ class MatrixCannon {
     this.world.broadphase.dirty = true;
     this.world.broadphase.needsUpdate = true;
     // this.cloths.push({startIndex, nx: 0, ny: 0, count, v2n: w.v2n});
-    this.cloths.push({startIndex, nx: 0, ny: 0, count, v2n: w.v2n, offsets: w.offsets});
+    const positions = new Float32Array(count * 3);
+    this.cloths.push({startIndex, nx: 0, ny: 0, count, v2n: w.v2n, offsets: w.offsets, positions, packet: {startIndex, positions}});
     return startIndex;
   }
 
@@ -956,6 +965,7 @@ class MatrixCannon {
     for(let i = 0;i < count;i++) {
       const base = i * FLOATS_PER_BODY;
       const body = this.rigidBodies[i];
+      if(!body) {snap[base + 7] = 0; continue;}
       if(body.sleepState === body.SLEEPING) {
         snap[base + 7] = 0;
         continue;
@@ -973,14 +983,16 @@ class MatrixCannon {
     this.clothDataPackets.length = 0;
     if(this.cloths) {
       for(const cloth of this.cloths) {
-        const positions = new Float32Array(cloth.count * 3);
+        const positions = cloth.positions;
         for(let i = 0;i < cloth.count;i++) {
           const body = this.rigidBodies[cloth.startIndex + i];
-          positions[i * 3 + 0] = body.position.x;
-          positions[i * 3 + 1] = body.position.y;
-          positions[i * 3 + 2] = body.position.z;
+          const offset = i * 3;
+          if(!body) {positions[offset] = positions[offset + 1] = positions[offset + 2] = 0; continue;}
+          positions[offset] = body.position.x;
+          positions[offset + 1] = body.position.y;
+          positions[offset + 2] = body.position.z;
         }
-        this.clothDataPackets.push({startIndex: cloth.startIndex, positions});
+        this.clothDataPackets.push(cloth.packet);
       }
     }
   }
