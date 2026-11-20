@@ -31,6 +31,18 @@ function localToWorld(Jolt, body, localOffset) {
   );
 }
 
+function writeLocalToWorld(out, offset, px, py, pz, qx, qy, qz, qw, ox, oy, oz) {
+  // q * v
+  const tx = qw * ox + qy * oz - qz * oy;
+  const ty = qw * oy + qz * ox - qx * oz;
+  const tz = qw * oz + qx * oy - qy * ox;
+  const tw = -qx * ox - qy * oy - qz * oz;
+  // (q * v) * q^-1; write directly into the reusable packet buffer.
+  out[offset] = px + tx * qw + tw * (-qx) + ty * (-qz) - tz * (-qy);
+  out[offset + 1] = py + ty * qw + tw * (-qy) + tz * (-qx) - tx * (-qz);
+  out[offset + 2] = pz + tz * qw + tw * (-qz) + tx * (-qy) - ty * (-qx);
+}
+
 function buildConeVerts(radius, height, segments = 16) {
   const verts = [];
   const half = height / 2;
@@ -545,12 +557,16 @@ class MatrixJolt {
     }
     this.bodyIDs = this.rigidBodies.map(body => body.isSoft ? null : body.GetID());
     this._allocBuffer(this.rigidBodies.length);
+    const positions = new Float32Array(mesh.nodeCount * 3);
+    const packet = {startIndex, positions};
     this.softBodies.push({
       startIndex,
       count: mesh.nodeCount,
       sb: softBody,
       vertexToNode: mesh.vertexToNode,
-      vertexOffsets: mesh.vertexOffsets
+      vertexOffsets: mesh.vertexOffsets,
+      positions,
+      packet
     });
     return startIndex;
   }
@@ -604,7 +620,9 @@ class MatrixJolt {
     }
     this.bodyIDs = this.rigidBodies.map(b => b.isSoft ? null : b.GetID());
     this._allocBuffer(this.rigidBodies.length);
-    this.cloths.push({startIndex, nx, ny, count, sb});
+    const positions = new Float32Array(count * 3);
+    const packet = {startIndex, positions};
+    this.cloths.push({startIndex, nx, ny, count, sb, positions, packet});
     return startIndex;
   }
 
@@ -967,53 +985,35 @@ class MatrixJolt {
     this.clothDataPackets.length = 0;
     for(const c of this.cloths) {
       const verts = this._softVerts(c.sb);
-      const o = c.sb.GetPosition();
-      const positions = new Float32Array(c.count * 3);
+      const bodyPosition = c.sb.GetPosition();
+      const px = bodyPosition.GetX(), py = bodyPosition.GetY(), pz = bodyPosition.GetZ();
+      const positions = c.positions;
       for(let i = 0;i < c.count;i++) {
         const p = verts.at(i).mPosition;
-        positions[i * 3] = o.GetX() + p.GetX();
-        positions[i * 3 + 1] = o.GetY() + p.GetY();
-        positions[i * 3 + 2] = o.GetZ() + p.GetZ();
+        const o = i * 3;
+        positions[o] = px + p.GetX();
+        positions[o + 1] = py + p.GetY();
+        positions[o + 2] = pz + p.GetZ();
       }
-      this.clothDataPackets.push({startIndex: c.startIndex, positions});
+      this.clothDataPackets.push(c.packet);
     }
 
     this.softBodyDataPackets.length = 0;
     for(const soft of this.softBodies) {
       const verts = this._softVerts(soft.sb);
-      const positions = new Float32Array(soft.count * 3);
+      const bodyPosition = soft.sb.GetPosition();
+      const rotation = soft.sb.GetRotation();
+      const px = bodyPosition.GetX(), py = bodyPosition.GetY(), pz = bodyPosition.GetZ();
+      const qx = rotation.GetX(), qy = rotation.GetY(), qz = rotation.GetZ(), qw = rotation.GetW();
+      const positions = soft.positions;
       for(let i = 0;i < soft.count;i++) {
         const local = verts.at(i).mPosition;
-        // console.log('pos: ', local.GetX()," , " , local.GetY()," , " , local.GetZ() +
-        //  "COMPARE : posx: " + soft.sb.GetPosition().GetX() + " , posy:" + soft.sb.GetPosition().GetY() +
-        //   " , posz:" + soft.sb.GetPosition().GetZ() + 
-       //   " ROT : " +soft.sb.GetRotation())
-        // const bodyPos = soft.sb.GetPosition();
-        // const rot = soft.sb.GetRotation();
-
-        const world = localToWorld(this.Jolt, soft.sb, [
+        writeLocalToWorld(
+          positions, i * 3, px, py, pz, qx, qy, qz, qw,
           local.GetX(), local.GetY(), local.GetZ()
-        ]);
-        positions[i * 3] = world.GetX();
-        positions[i * 3 + 1] = world.GetY();
-        positions[i * 3 + 2] = world.GetZ();
-        this.Jolt.destroy(world);
+        );
       }
-
-
-      // const local1 = verts.at(0).mPosition;
-      // const world1 = localToWorld(this.Jolt, soft.sb, [
-      //   local1.GetX(),
-      //   local1.GetY(),
-      //   local1.GetZ()
-      // ]);
-      // if (!this.XXX) this.XXX=1; console.log('[!JOLT NODE CHECK]', {
-      //   local: [local1.GetX(), local1.GetY(), local1.GetZ()],
-      //   converted: [world1.GetX(), world1.GetY(), world1.GetZ()],
-      //    packet: Array.from(positions.slice(0, 3))
-      // });
-
-      this.softBodyDataPackets.push({startIndex: soft.startIndex, positions});
+      this.softBodyDataPackets.push(soft.packet);
     }
   }
 }
