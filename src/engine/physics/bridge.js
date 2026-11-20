@@ -50,7 +50,7 @@ function calculateSoftBodyNormals(positions, indices, vertexCount, fallbackNorma
 }
 
 
-function uploadClothPackets(packets, clothMap) {
+function uploadClothPackets(packets, clothMap, throttleSoftBodyNormals = false) {
   if(!packets?.length) return;
   const device = app.device;
   for(let p = 0;p < packets.length;p++) {
@@ -74,9 +74,14 @@ function uploadClothPackets(packets, clothMap) {
     device.queue.writeBuffer(buf, 0, dst);
 
     if(meta.isSoftBody) {
+      // CannonJS SoftBody vertex positions must stay current on every snapshot, but
+      // rebuilding every triangle normal on every snapshot can monopolize the main
+      // thread. Refresh Cannon normals every second packet; leave Jolt unchanged.
+      const updateNormals = !throttleSoftBodyNormals ||
+        ((meta._normalUpdateFrame = (meta._normalUpdateFrame || 0) + 1) & 1) === 1;
       const normalBuffer = meta.mesh.vertexNormalsBuffer;
       const indices = meta.mesh.mesh?.indices;
-      if(normalBuffer && indices?.length) {
+      if(updateNormals && normalBuffer && indices?.length) {
         if(!meta._normalScratch || meta._normalScratch.length !== n * 3) {
           meta._normalScratch = new Float32Array(n * 3);
         }
@@ -98,6 +103,7 @@ function uploadClothPackets(packets, clothMap) {
 export class PhysicsBridge {
   constructor(workerUrl) {
     this._worker = null;
+    this._isCannon = /cannon/i.test(workerUrl);
     const isModule = workerUrl.indexOf('ammo') === -1 && workerUrl.indexOf('matter') === -1;
     const needsBlobBridge = new URL(workerUrl, location.href).origin !== location.origin;
     if(needsBlobBridge) {
@@ -492,8 +498,8 @@ export class PhysicsBridge {
         // Cannon cloth/soft-body and Jolt SoftBody use the same mesh upload path.
         // Keep the established _clothMap metadata and normal update logic shared.
         // Process the two packet lists separately; do not allocate a combined array per snapshot.
-        uploadClothPackets(data.clothPackets, this._clothMap);
-        uploadClothPackets(data.softBodyPackets, this._clothMap);
+        uploadClothPackets(data.clothPackets, this._clothMap, this._isCannon);
+        uploadClothPackets(data.softBodyPackets, this._clothMap, this._isCannon);
         this._syncToObjects();
         break;
       case 'collision':
