@@ -597,7 +597,8 @@ class MatrixAmmoWorker {
       this.rigidBodies.push({isSoft: true, soft: sb, node: i, name: `${pOptions.name}_${i}`});
     }
     this._allocBuffer(this.rigidBodies.length);
-    this.cloths.push({startIndex, nx, ny, count, sb});
+    const positions = new Float32Array(count * 3);
+    this.cloths.push({startIndex, nx, ny, count, sb, positions, packet: {startIndex, positions}});
     return startIndex;
   }
 
@@ -651,12 +652,13 @@ class MatrixAmmoWorker {
     this.clothDataPackets.length = 0;
     for(const c of this.cloths) {
       const nodes = c.sb.get_m_nodes();
-      const positions = new Float32Array(c.count * 3);
+      const positions = c.positions;
       for(let i = 0;i < c.count;i++) {
         const p = nodes.at(i).get_m_x();
-        positions[i * 3] = p.x(); positions[i * 3 + 1] = p.y(); positions[i * 3 + 2] = p.z();
+        const offset = i * 3;
+        positions[offset] = p.x(); positions[offset + 1] = p.y(); positions[offset + 2] = p.z();
       }
-      this.clothDataPackets.push({startIndex: c.startIndex, positions});
+      this.clothDataPackets.push(c.packet);
     }
 
     this._detectCollision();
