@@ -50,6 +50,51 @@ function calculateSoftBodyNormals(positions, indices, vertexCount, fallbackNorma
 }
 
 
+function uploadClothPackets(packets, clothMap) {
+  if(!packets?.length) return;
+  const device = app.device;
+  for(let p = 0;p < packets.length;p++) {
+    const packet = packets[p];
+    const meta = clothMap.get(packet.startIndex);
+    const buf = meta?.mesh?.vertexAnim?.clothBuffer;
+    if(!buf) continue;
+    const src = packet.positions, v2n = meta.v2n;
+    if(meta.isSoftBody) meta.positions = src;
+    const n = v2n ? v2n.length : meta.count;
+    if(!meta._scratch || meta._scratch.length !== n * 4) meta._scratch = new Float32Array(n * 4);
+    const dst = meta._scratch;
+    const o = meta.off;
+    for(let i = 0;i < n;i++) {
+      const s = (v2n ? v2n[i] : i) * 3;
+      const d = i * 4;
+      dst[d] = src[s] + (o ? o[i * 3] : 0);
+      dst[d + 1] = src[s + 1] + (o ? o[i * 3 + 1] : 0);
+      dst[d + 2] = src[s + 2] + (o ? o[i * 3 + 2] : 0);
+    }
+    device.queue.writeBuffer(buf, 0, dst);
+
+    if(meta.isSoftBody) {
+      const normalBuffer = meta.mesh.vertexNormalsBuffer;
+      const indices = meta.mesh.mesh?.indices;
+      if(normalBuffer && indices?.length) {
+        if(!meta._normalScratch || meta._normalScratch.length !== n * 3) {
+          meta._normalScratch = new Float32Array(n * 3);
+        }
+        if(v2n && !meta._nodeAcc) {
+          let maxNode = 0;
+          for(let k = 0;k < v2n.length;k++) if(v2n[k] > maxNode) maxNode = v2n[k];
+          meta._nodeAcc = new Float32Array((maxNode + 1) * 3);
+        }
+        calculateSoftBodyNormals(
+          dst, indices, n, meta.mesh.mesh?.vertexNormals,
+          meta._normalScratch, v2n, meta._nodeAcc
+        );
+        device.queue.writeBuffer(normalBuffer, 0, meta._normalScratch);
+      }
+    }
+  }
+}
+
 export class PhysicsBridge {
   constructor(workerUrl) {
     this._worker = null;
@@ -86,6 +131,7 @@ export class PhysicsBridge {
     this.collisionPersisted = (e) => {};
     this.collisionRemoved = (e) => {};
     this.tempRot = mat4.create();
+    this._quatScratch = new Float32Array(4);
     this._paused = false;
     this.updates = [];
     this._kinematicIdx = new Uint16Array(1024);
@@ -384,18 +430,22 @@ export class PhysicsBridge {
     for(const [idx, meObj] of this._bodyIndexMap) {
       if(!meObj.modelMatrix) continue;
       const b = idx * STRIDE;
-      const pos = snap.subarray(b, b + 3);
-      const quat = snap.subarray(b + 3, b + 7);
+      const x = snap[b], y = snap[b + 1], z = snap[b + 2];
+      const quat = this._quatScratch;
+      quat[0] = snap[b + 3];
+      quat[1] = snap[b + 4];
+      quat[2] = snap[b + 5];
+      quat[3] = snap[b + 6];
       mat4.fromQuat(quat, meObj.modelMatrix);
-      meObj.modelMatrix[12] = pos[0];
-      meObj.modelMatrix[13] = pos[1];
-      meObj.modelMatrix[14] = pos[2];
+      meObj.modelMatrix[12] = x;
+      meObj.modelMatrix[13] = y;
+      meObj.modelMatrix[14] = z;
       mat4.scale(meObj.modelMatrix, meObj.scale, meObj.modelMatrix);
       meObj.modelMatrix[15] = 1;
       meObj.position.inMove = true;
-      meObj.position.x = pos[0];
-      meObj.position.y = pos[1];
-      meObj.position.z = pos[2];
+      meObj.position.x = x;
+      meObj.position.y = y;
+      meObj.position.z = z;
     }
   }
 
@@ -441,46 +491,9 @@ export class PhysicsBridge {
         this._snapshot = data.snap;
         // Cannon cloth/soft-body and Jolt SoftBody use the same mesh upload path.
         // Keep the established _clothMap metadata and normal update logic shared.
-        if(data.clothPackets || data.softBodyPackets) {
-          const packets = [...(data.clothPackets || []), ...(data.softBodyPackets || [])];
-          for(const packet of packets) {
-            const meta = this._clothMap.get(packet.startIndex);
-            const buf = meta?.mesh?.vertexAnim?.clothBuffer;
-            if(!buf) continue;
-            const src = packet.positions, v2n = meta.v2n;
-            if(meta.isSoftBody) meta.positions = src;
-            const n = v2n ? v2n.length : meta.count;
-            if(!meta._scratch || meta._scratch.length !== n * 4) meta._scratch = new Float32Array(n * 4);
-            const dst = meta._scratch;
-            const o = meta.off; // per-vertex offset from its node (null for cloth)
-            for(let i = 0;i < n;i++) {
-              const s = (v2n ? v2n[i] : i) * 3;
-              dst[i * 4] = src[s] + (o ? o[i * 3] : 0);
-              dst[i * 4 + 1] = src[s + 1] + (o ? o[i * 3 + 1] : 0);
-              dst[i * 4 + 2] = src[s + 2] + (o ? o[i * 3 + 2] : 0);
-            }
-            app.device.queue.writeBuffer(buf, 0, dst);
-
-            if(meta.isSoftBody) {
-              const normalBuffer = meta.mesh.vertexNormalsBuffer;
-              const indices = meta.mesh.mesh?.indices;
-              if(normalBuffer && indices?.length) {
-                if(!meta._normalScratch || meta._normalScratch.length !== n * 3) {
-                  meta._normalScratch = new Float32Array(n * 3);
-                }
-                if(v2n && !meta._nodeAcc) {
-                  let maxNode = 0;
-                  for(let k = 0;k < v2n.length;k++) if(v2n[k] > maxNode) maxNode = v2n[k];
-                  meta._nodeAcc = new Float32Array((maxNode + 1) * 3);
-                }
-                meta._normalScratch = calculateSoftBodyNormals(
-                  dst, indices, n, meta.mesh.mesh?.vertexNormals, meta._normalScratch, v2n, meta._nodeAcc
-                );
-                app.device.queue.writeBuffer(normalBuffer, 0, meta._normalScratch);
-              }
-            }
-          }
-        }
+        // Process the two packet lists separately; do not allocate a combined array per snapshot.
+        uploadClothPackets(data.clothPackets, this._clothMap);
+        uploadClothPackets(data.softBodyPackets, this._clothMap);
         this._syncToObjects();
         break;
       case 'collision':
