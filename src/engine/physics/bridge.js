@@ -1,6 +1,6 @@
 import {mat4} from 'wgpu-matrix';
 
-function calculateSoftBodyNormals(positions, indices, vertexCount, fallbackNormals, normals) {
+function calculateSoftBodyNormals(positions, indices, vertexCount, fallbackNormals, normals, v2n, nodeAcc) {
   normals = normals || new Float32Array(vertexCount * 3);
   normals.fill(0);
   for(let i = 0;i + 2 < indices.length;i += 3) {
@@ -17,6 +17,19 @@ function calculateSoftBodyNormals(positions, indices, vertexCount, fallbackNorma
     normals[ia * 3] += nx; normals[ia * 3 + 1] += ny; normals[ia * 3 + 2] += nz;
     normals[ib * 3] += nx; normals[ib * 3 + 1] += ny; normals[ib * 3 + 2] += nz;
     normals[ic * 3] += nx; normals[ic * 3 + 1] += ny; normals[ic * 3 + 2] += nz;
+  }
+  // OBJ meshes duplicate vertices at UV/normal seams. Share the accumulated normal between all
+  // vertices welded into the same physics node, otherwise seams show up as hard shading lines.
+  if(v2n && nodeAcc) {
+    nodeAcc.fill(0);
+    for(let i = 0;i < vertexCount;i++) {
+      const n = v2n[i] * 3, o = i * 3;
+      nodeAcc[n] += normals[o]; nodeAcc[n + 1] += normals[o + 1]; nodeAcc[n + 2] += normals[o + 2];
+    }
+    for(let i = 0;i < vertexCount;i++) {
+      const n = v2n[i] * 3, o = i * 3;
+      normals[o] = nodeAcc[n]; normals[o + 1] = nodeAcc[n + 1]; normals[o + 2] = nodeAcc[n + 2];
+    }
   }
   for(let i = 0;i < vertexCount;i++) {
     const o = i * 3;
@@ -455,8 +468,13 @@ export class PhysicsBridge {
                 if(!meta._normalScratch || meta._normalScratch.length !== n * 3) {
                   meta._normalScratch = new Float32Array(n * 3);
                 }
+                if(v2n && !meta._nodeAcc) {
+                  let maxNode = 0;
+                  for(let k = 0;k < v2n.length;k++) if(v2n[k] > maxNode) maxNode = v2n[k];
+                  meta._nodeAcc = new Float32Array((maxNode + 1) * 3);
+                }
                 meta._normalScratch = calculateSoftBodyNormals(
-                  dst, indices, n, meta.mesh.mesh?.vertexNormals, meta._normalScratch
+                  dst, indices, n, meta.mesh.mesh?.vertexNormals, meta._normalScratch, v2n, meta._nodeAcc
                 );
                 app.device.queue.writeBuffer(normalBuffer, 0, meta._normalScratch);
               }

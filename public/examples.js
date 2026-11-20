@@ -50950,7 +50950,7 @@ var nanoPass = function() {
 };
 
 // src/engine/physics/bridge.js
-function calculateSoftBodyNormals(positions, indices, vertexCount, fallbackNormals, normals) {
+function calculateSoftBodyNormals(positions, indices, vertexCount, fallbackNormals, normals, v2n, nodeAcc) {
   normals = normals || new Float32Array(vertexCount * 3);
   normals.fill(0);
   for (let i2 = 0; i2 + 2 < indices.length; i2 += 3) {
@@ -50973,6 +50973,21 @@ function calculateSoftBodyNormals(positions, indices, vertexCount, fallbackNorma
     normals[ic2 * 3] += nx;
     normals[ic2 * 3 + 1] += ny;
     normals[ic2 * 3 + 2] += nz;
+  }
+  if (v2n && nodeAcc) {
+    nodeAcc.fill(0);
+    for (let i2 = 0; i2 < vertexCount; i2++) {
+      const n3 = v2n[i2] * 3, o3 = i2 * 3;
+      nodeAcc[n3] += normals[o3];
+      nodeAcc[n3 + 1] += normals[o3 + 1];
+      nodeAcc[n3 + 2] += normals[o3 + 2];
+    }
+    for (let i2 = 0; i2 < vertexCount; i2++) {
+      const n3 = v2n[i2] * 3, o3 = i2 * 3;
+      normals[o3] = nodeAcc[n3];
+      normals[o3 + 1] = nodeAcc[n3 + 1];
+      normals[o3 + 2] = nodeAcc[n3 + 2];
+    }
   }
   for (let i2 = 0; i2 < vertexCount; i2++) {
     const o3 = i2 * 3;
@@ -51365,12 +51380,19 @@ var PhysicsBridge = class {
                 if (!meta._normalScratch || meta._normalScratch.length !== n3 * 3) {
                   meta._normalScratch = new Float32Array(n3 * 3);
                 }
+                if (v2n && !meta._nodeAcc) {
+                  let maxNode = 0;
+                  for (let k2 = 0; k2 < v2n.length; k2++) if (v2n[k2] > maxNode) maxNode = v2n[k2];
+                  meta._nodeAcc = new Float32Array((maxNode + 1) * 3);
+                }
                 meta._normalScratch = calculateSoftBodyNormals(
                   dst,
                   indices,
                   n3,
                   meta.mesh.mesh?.vertexNormals,
-                  meta._normalScratch
+                  meta._normalScratch,
+                  v2n,
+                  meta._nodeAcc
                 );
                 app.device.queue.writeBuffer(normalBuffer, 0, meta._normalScratch);
               }

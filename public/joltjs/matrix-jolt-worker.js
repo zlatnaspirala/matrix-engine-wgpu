@@ -450,6 +450,17 @@ class MatrixJolt {
     return {nodePositions, nodeCount, vertexToNode, vertexOffsets, triangles};
   }
 
+  // NOTE: in this jolt-physics build the VertexAttributes constructor IGNORES its arguments
+  // (ctor.length === 0): new VertexAttributes(c, c, b) silently gives compliance 0 (rigid edges)
+  // and bend compliance FLT_MAX (bend off). Always set the properties explicitly.
+  _makeVertexAttributes(compliance, bendCompliance) {
+    const a = new this.Jolt.SoftBodySharedSettingsVertexAttributes();
+    a.mCompliance = compliance;
+    a.mShearCompliance = compliance;
+    a.mBendCompliance = bendCompliance;
+    return a;
+  }
+
   _addSoftBody(pOptions) {
     const Jolt = this.Jolt;
     let mesh;
@@ -481,11 +492,14 @@ class MatrixJolt {
       ));
     }
 
-    const compliance = pOptions.compliance ?? 1e-4;
-    const attributes = new Jolt.SoftBodySharedSettingsVertexAttributes(
-      compliance, compliance, pOptions.bendCompliance ?? 1e-2
-    );
-    shared.CreateConstraints(attributes, 1, Jolt.SoftBodySharedSettingsEBendType_Distance);
+    // Tested headless on sphere-uv-cilinder-proj.obj: compliance <= 1e-3 is unstable (the mesh is
+    // over-constrained: quad diagonals + 32-edge poles) and explodes after ~10 steps even with no gravity.
+    const compliance = pOptions.compliance ?? 1e-2;
+    const attributes = this._makeVertexAttributes(compliance, pOptions.bendCompliance ?? 1e-2);
+    const bendDistance = Jolt.SoftBodySharedSettings_EBendType_Distance
+      ?? Jolt.SoftBodySharedSettingsEBendType_Distance ?? 1;
+    shared.CreateConstraints(attributes, 1, bendDistance);
+    Jolt.destroy(attributes);
     shared.Optimize();
 
     const position = pOptions.position || {x: 0, y: 0, z: 0};
@@ -507,7 +521,7 @@ class MatrixJolt {
       rotationQuat,
       LAYER_MOVING
     );
-    settings.mNumIterations = pOptions.iterations ?? 8;
+    settings.mNumIterations = pOptions.iterations ?? 16;
     settings.mLinearDamping = pOptions.linearDamping ?? pOptions.damping ?? 0.1;
     settings.mFriction = pOptions.friction ?? 0.4;
     settings.mVertexRadius = pOptions.radius ?? 0.05;
