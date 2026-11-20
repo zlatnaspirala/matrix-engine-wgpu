@@ -1013,7 +1013,6 @@ class MatrixJolt {
           local.GetX(), local.GetY(), local.GetZ()
         );
       }
-      this.Jolt.destroy(bodyPosition);
       this.softBodyDataPackets.push(soft.packet);
     }
   }
