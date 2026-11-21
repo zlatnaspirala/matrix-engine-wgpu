@@ -28,6 +28,8 @@ class MatrixAmmoWorker {
     this._keyColl = '';
     this.cloths = [];
     this.clothDataPackets = [];
+    this.softBodies = [];
+    this.softBodyDataPackets = [];
   }
 
   async init(options = {}) {
@@ -110,6 +112,7 @@ class MatrixAmmoWorker {
     let body = null;
     switch(pOptions.geometry) {
       case 'Cloth': return this._addCloth(pOptions);
+      case 'SoftBody': return this._addSoftBody(pOptions);
       case 'Sphere': body = this._addSphere(pOptions); break;
       case 'Cube': body = this._addBox(pOptions); break;
       case 'Capsule':
@@ -602,6 +605,170 @@ class MatrixAmmoWorker {
     return startIndex;
   }
 
+
+  _weldSoftMesh(pOptions) {
+    const verts = pOptions.vertices;
+    const indices = pOptions.indices;
+    if(!verts || verts.length < 9 || verts.length % 3 !== 0) {
+      throw new Error('SoftBody needs a flat vertices array with at least one triangle');
+    }
+    const scale = pOptions.scale || [1, 1, 1];
+    const spacing = pOptions.nodeSpacing > 0 ? pOptions.nodeSpacing : 1e-4;
+    const vertexCount = verts.length / 3;
+    const vertexToNode = new Uint32Array(vertexCount);
+    const map = new Map();
+    const sums = [], counts = [];
+    const localPositions = new Float32Array(vertexCount * 3);
+    for(let i = 0;i < vertexCount;i++) {
+      const x = verts[i * 3] * scale[0];
+      const y = verts[i * 3 + 1] * scale[1];
+      const z = verts[i * 3 + 2] * scale[2];
+      if(!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) {
+        throw new Error(`SoftBody vertex ${i} contains a non-finite coordinate`);
+      }
+      localPositions[i * 3] = x;
+      localPositions[i * 3 + 1] = y;
+      localPositions[i * 3 + 2] = z;
+      const key = `${Math.floor(x / spacing)},${Math.floor(y / spacing)},${Math.floor(z / spacing)}`;
+      let node = map.get(key);
+      if(node === undefined) {
+        node = counts.length;
+        map.set(key, node);
+        sums.push(0, 0, 0);
+        counts.push(0);
+      }
+      sums[node * 3] += x;
+      sums[node * 3 + 1] += y;
+      sums[node * 3 + 2] += z;
+      counts[node]++;
+      vertexToNode[i] = node;
+    }
+    const nodeCount = counts.length;
+    const nodePositions = new Float32Array(nodeCount * 3);
+    for(let i = 0;i < nodeCount;i++) {
+      nodePositions[i * 3] = sums[i * 3] / counts[i];
+      nodePositions[i * 3 + 1] = sums[i * 3 + 1] / counts[i];
+      nodePositions[i * 3 + 2] = sums[i * 3 + 2] / counts[i];
+    }
+    const vertexOffsets = new Float32Array(vertexCount * 3);
+    for(let i = 0;i < vertexCount;i++) {
+      const node = vertexToNode[i];
+      vertexOffsets[i * 3] = localPositions[i * 3] - nodePositions[node * 3];
+      vertexOffsets[i * 3 + 1] = localPositions[i * 3 + 1] - nodePositions[node * 3 + 1];
+      vertexOffsets[i * 3 + 2] = localPositions[i * 3 + 2] - nodePositions[node * 3 + 2];
+    }
+    const sourceIndices = indices || Array.from({length: vertexCount}, (_, i) => i);
+    if(sourceIndices.length < 3 || sourceIndices.length % 3 !== 0) {
+      throw new Error('SoftBody indices must contain complete triangles');
+    }
+    const triangles = [];
+    for(let i = 0;i < sourceIndices.length;i += 3) {
+      const a = sourceIndices[i], b = sourceIndices[i + 1], d = sourceIndices[i + 2];
+      if(!Number.isInteger(a) || !Number.isInteger(b) || !Number.isInteger(d) ||
+        a < 0 || b < 0 || d < 0 || a >= vertexCount || b >= vertexCount || d >= vertexCount) {
+        throw new Error(`SoftBody triangle ${i / 3} contains an invalid vertex index`);
+      }
+      const na = vertexToNode[a], nb = vertexToNode[b], nd = vertexToNode[d];
+      if(na !== nb && nb !== nd && nd !== na) triangles.push(na, nb, nd);
+    }
+    if(triangles.length === 0) throw new Error('SoftBody mesh has no valid triangles after vertex welding');
+    return {nodePositions, nodeCount, vertexToNode, vertexOffsets, triangles};
+  }
+
+  _addSoftBody(pOptions) {
+    const Ammo = this.Ammo;
+    let mesh;
+    try {
+      mesh = this._weldSoftMesh(pOptions);
+    } catch(error) {
+      console.error('[ammo] SoftBody creation failed:', error.message);
+      return -1;
+    }
+
+    // Ammo's CreateFromTriMesh expects flat world-space node positions and triangle indices.
+    // Apply the same object rotation/translation used by the rigid-body constructors.
+    const pos = pOptions.position || {x: 0, y: 0, z: 0};
+    const rot = pOptions.rotation || {x: 0, y: 0, z: 0};
+    const rx = degToRad(rot.x || 0), ry = degToRad(rot.y || 0), rz = degToRad(rot.z || 0);
+    const cx = Math.cos(rx), sx = Math.sin(rx);
+    const cy = Math.cos(ry), sy = Math.sin(ry);
+    const cz = Math.cos(rz), sz = Math.sin(rz);
+    const worldVertices = new Array(mesh.nodeCount * 3);
+    for(let i = 0;i < mesh.nodeCount;i++) {
+      const x = mesh.nodePositions[i * 3], y = mesh.nodePositions[i * 3 + 1], z = mesh.nodePositions[i * 3 + 2];
+      // XYZ Euler rotation, matching the engine's object rotation convention.
+      const y1 = y * cx - z * sx, z1 = y * sx + z * cx;
+      const x2 = x * cy + z1 * sy, z2 = -x * sy + z1 * cy;
+      const x3 = x2 * cz - y1 * sz, y3 = x2 * sz + y1 * cz;
+      worldVertices[i * 3] = x3 + pos.x;
+      worldVertices[i * 3 + 1] = y3 + pos.y;
+      worldVertices[i * 3 + 2] = z2 + pos.z;
+    }
+    let sb;
+    try {
+      sb = this.softHelpers.CreateFromTriMesh(
+        this.dynamicsWorld.getWorldInfo(),
+        worldVertices,
+        mesh.triangles,
+        mesh.triangles.length / 3,
+        true
+      );
+    } catch(error) {
+      console.error('[ammo] SoftBody mesh creation failed:', error);
+      return -1;
+    }
+    if(!sb) {
+      console.error('[ammo] SoftBody mesh creation returned null');
+      return -1;
+    }
+
+    const cfg = sb.get_m_cfg();
+    cfg.set_viterations(pOptions.iterations ?? 16);
+    cfg.set_piterations(pOptions.iterations ?? 16);
+    cfg.set_kDP(pOptions.damping ?? pOptions.linearDamping ?? 0.01);
+    cfg.set_kDF(pOptions.friction ?? 0.4);
+    cfg.set_collisions(pOptions.collisions ?? 0x11);
+    const material = sb.get_m_materials().at(0);
+    if(material) {
+      material.set_m_kLST(pOptions.stiffness ?? 0.9);
+      material.set_m_kAST(pOptions.stiffness ?? 0.9);
+    }
+    sb.setTotalMass(pOptions.mass ?? 1, false);
+    sb.getCollisionShape().setMargin(pOptions.margin ?? pOptions.radius ?? 0.05);
+
+    const pinned = new Set(pOptions.pinnedIndices || []);
+    if(pOptions.pinTop === true) {
+      // Pinning is explicit for arbitrary meshes; pinTop is supported for regular grids.
+      const topY = Math.max(...Array.from({length: mesh.nodeCount}, (_, i) => worldVertices[i * 3 + 1]));
+      for(let i = 0;i < mesh.nodeCount;i++) {
+        if(worldVertices[i * 3 + 1] >= topY - 1e-5) pinned.add(i);
+      }
+    }
+    for(const nodeIndex of pinned) {
+      if(Number.isInteger(nodeIndex) && nodeIndex >= 0 && nodeIndex < mesh.nodeCount) sb.setMass(nodeIndex, 0);
+    }
+    this.dynamicsWorld.addSoftBody(sb, pOptions.group ?? 1, pOptions.mask ?? -1);
+    sb.setActivationState(4);
+
+    const startIndex = this.rigidBodies.length;
+    for(let i = 0;i < mesh.nodeCount;i++) {
+      this.rigidBodies.push({
+        isSoft: true, soft: sb, node: i,
+        name: `${pOptions.name || 'softBody'}_${i}`
+      });
+    }
+    this._allocBuffer(this.rigidBodies.length);
+    const positions = new Float32Array(mesh.nodeCount * 3);
+    const packet = {startIndex, positions};
+    this.softBodies.push({
+      startIndex, count: mesh.nodeCount, sb,
+      vertexToNode: mesh.vertexToNode,
+      vertexOffsets: mesh.vertexOffsets,
+      positions, packet
+    });
+    return startIndex;
+  }
+
   _softNodeImpulse(b, x, y, z) {
     const node = b.soft.get_m_nodes().at(b.node);
     const im = node.get_m_im();
@@ -659,6 +826,18 @@ class MatrixAmmoWorker {
         positions[offset] = p.x(); positions[offset + 1] = p.y(); positions[offset + 2] = p.z();
       }
       this.clothDataPackets.push(c.packet);
+    }
+
+    this.softBodyDataPackets.length = 0;
+    for(const c of this.softBodies) {
+      const nodes = c.sb.get_m_nodes();
+      const positions = c.positions;
+      for(let i = 0;i < c.count;i++) {
+        const p = nodes.at(i).get_m_x();
+        const offset = i * 3;
+        positions[offset] = p.x(); positions[offset + 1] = p.y(); positions[offset + 2] = p.z();
+      }
+      this.softBodyDataPackets.push(c.packet);
     }
 
     this._detectCollision();
@@ -775,10 +954,14 @@ self.onmessage = async ({data}) => {
     }
     case 'addBody': {
       const idx = ammo.addBody(data.pOptions);
-      const meta = ammo.cloths.find(c => c.startIndex === idx);
+      const cloth = ammo.cloths.find(c => c.startIndex === idx);
+      const softBody = ammo.softBodies.find(c => c.startIndex === idx);
       self.postMessage({
         cmd: 'bodyAdded', id, idx, sab: ammo._sab,
-        count: meta ? meta.count : 1, nx: meta?.nx, ny: meta?.ny
+        count: softBody ? softBody.count : (cloth ? cloth.count : 1),
+        nx: cloth?.nx, ny: cloth?.ny,
+        vertexToNode: softBody?.vertexToNode,
+        vertexOffsets: softBody?.vertexOffsets
       });
       break;
     }
@@ -786,7 +969,11 @@ self.onmessage = async ({data}) => {
       ammo.step();
       if(!ammo._useSAB && ammo._snapshot) {
         const copy = ammo._snapshot.slice();
-        self.postMessage({cmd: 'snapshot', snap: copy, clothPackets: ammo.clothDataPackets}, [copy.buffer]);
+        self.postMessage({
+          cmd: 'snapshot', snap: copy,
+          clothPackets: ammo.clothDataPackets,
+          softBodyPackets: ammo.softBodyDataPackets
+        }, [copy.buffer]);
       }
       break;
     }
