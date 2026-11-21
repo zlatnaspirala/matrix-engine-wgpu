@@ -68,8 +68,8 @@ class MatrixAmmoWorker {
     this.dynamicsWorld.setGravity(g);
     this.dynamicsWorld.getWorldInfo().set_m_gravity(g);
     this.softHelpers = new Ammo.btSoftBodyHelpers();
-    this.dynamicsWorld.setGravity(new Ammo.btVector3(0, this.options.gravity, 0));
-    this.dynamicsWorld.getWorldInfo().set_m_gravity(this._origin2);
+    // Keep the soft-body world gravity aligned with the rigid-body world gravity.
+
     // Ground
     const groundShape = new Ammo.btBoxShape(
       new Ammo.btVector3(this.options.roundDimensionX, 1, this.options.roundDimensionY)
@@ -739,7 +739,10 @@ class MatrixAmmoWorker {
     const pinned = new Set(pOptions.pinnedIndices || []);
     if(pOptions.pinTop === true) {
       // Pinning is explicit for arbitrary meshes; pinTop is supported for regular grids.
-      const topY = Math.max(...Array.from({length: mesh.nodeCount}, (_, i) => worldVertices[i * 3 + 1]));
+      let topY = -Infinity;
+      for(let i = 0;i < mesh.nodeCount;i++) {
+        if(worldVertices[i * 3 + 1] > topY) topY = worldVertices[i * 3 + 1];
+      }
       for(let i = 0;i < mesh.nodeCount;i++) {
         if(worldVertices[i * 3 + 1] >= topY - 1e-5) pinned.add(i);
       }
@@ -967,13 +970,21 @@ self.onmessage = async ({data}) => {
     }
     case 'step': {
       ammo.step();
-      if(!ammo._useSAB && ammo._snapshot) {
-        const copy = ammo._snapshot.slice();
-        self.postMessage({
-          cmd: 'snapshot', snap: copy,
-          clothPackets: ammo.clothDataPackets,
-          softBodyPackets: ammo.softBodyDataPackets
-        }, [copy.buffer]);
+      if(ammo._snapshot) {
+        if(ammo._useSAB) {
+          self.postMessage({
+            cmd: 'snapshot', snap: ammo._snapshot,
+            clothPackets: ammo.clothDataPackets,
+            softBodyPackets: ammo.softBodyDataPackets
+          });
+        } else {
+          const copy = ammo._snapshot.slice();
+          self.postMessage({
+            cmd: 'snapshot', snap: copy,
+            clothPackets: ammo.clothDataPackets,
+            softBodyPackets: ammo.softBodyDataPackets
+          }, [copy.buffer]);
+        }
       }
       break;
     }
