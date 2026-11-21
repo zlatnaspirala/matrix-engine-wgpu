@@ -1,7 +1,7 @@
 import MatrixEngineWGPU from "../src/world.js";
 import {downloadMeshes} from '../src/engine/loader-obj.js';
 import {uploadGLBModel} from "../src/engine/loaders/webgpu-gltf.js";
-import {CameraPath} from "../src/engine/utils.js";
+import {CameraPath, loadTextureView} from "../src/engine/utils.js";
 /**
  * @Note
  * “Character and animation assets from Mixamo,
@@ -131,7 +131,7 @@ export function loadGLBLoader() {
     // });
     // })
 
-    function onGround(m) {
+    async function onGround(m) {
       TEST_ANIM.addLight();
       TEST_ANIM.addMeshObj({
         material: {type: 'standard'},
@@ -161,6 +161,20 @@ export function loadGLBLoader() {
       app.lightContainer[0].setPosY(35);
       app.lightContainer[0].setIntensity(6);
       app.activateBloomEffect();
+
+      app.activateVolumetricTexProj({
+        density: 1.3,
+        steps: 32,
+        scatterStrength: 1.2,
+        heightFalloff: 10.8,
+        lightColor: [3.0, 1.0, 1.0]
+      });
+      // app.volumetricPass.setDensity(2);
+      app.volumetricPass.setDensity(36);
+      const view = await loadTextureView(app.device, 'res/textures/shooter/hang3d.png');
+      app.volumetricPass.setProjectionTexture(view, app.lightContainer[0].viewProjMatrix);
+      app.volumetricPass.setTextureProjectionIntensity(121.0); // 0..2
+
       // app.activateVolumetricEffect();
       // app.bloomPass.setIntensity(0.25);
     }

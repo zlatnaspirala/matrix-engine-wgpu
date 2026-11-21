@@ -1,7 +1,7 @@
 import MatrixEngineWGPU from "../src/world.js";
 import {downloadMeshes} from '../src/engine/loader-obj.js';
 import {addRaycastsAABBListener} from "../src/engine/raycast.js";
-import {isMobile, randomIntFromTo} from "../src/engine/utils.js";
+import {isMobile, loadTextureView, randomIntFromTo} from "../src/engine/utils.js";
 import {GenGeoTexture2} from "../src/engine/effects/gen-tex2.js";
 import {FlameEmitter} from "../src/engine/effects/flame-emmiter.js";
 import {HPBarEffect} from "../src/engine/effects/energy-bar.js";
@@ -65,6 +65,20 @@ export var loadObjFile = function() {
     }
 
     async function onLoadObj(m) {
+      // loadObjFile.addMeshObj({
+      //   material: {type: 'standard', share: true},
+      //   position: {x: 0, y: 0, z: -20},
+      //   rotation: {x: 0, y: 0, z: 0},
+      //   scale: [55, 55, 55],
+      //   rotationSpeed: {x: 0, y: 0, z: 0},
+      //   texturesPaths: ['./res/textures/env-maps/sky1_lod_mid.webp'],
+      //   name: 'sky',
+      //   mesh: m.cube,
+      //   physics: {
+      //     enabled: false,
+      //     geometry: "Sphere"
+      //   }
+      // });
       // material: {type: 'mirror', share: true }, share: true if not defined it is false.
       let MYCUBE = loadObjFile.addMeshObj({
         material: {type: 'mirror'},
@@ -100,15 +114,44 @@ export var loadObjFile = function() {
         }
       })
 
-      loadObjFile.lightContainer[0].setIntensity(15);
+      loadObjFile.lightContainer[0].setIntensity(45);
       loadObjFile.activateBloomEffect();
+
+      app.activateVolumetricTexProj({
+        density: 0.01,
+        steps: 32,
+        scatterStrength: 0.1,
+        heightFalloff: 0.1,
+        lightColor: [1.0, 0.0, 0.0]
+      }
+      );
+      // app.volumetricPass.setDensity(34);
+      const view = await loadTextureView(app.device, './res/textures/cube-g1-extra_low.png');
+      app.volumetricPass.setProjectionTexture(view, app.lightContainer[0].viewProjMatrix);
+      app.volumetricPass.setTextureProjectionIntensity(111.0); // 0..2
+      // app.volumetricPass.disableTextureProjection();
+
+      // physicsPlayground.activateVolumetricClouds({
+      //   qualityScale: 0.35,
+      //   steps: 24,
+      //   coverage: 0.58,
+      //   cloudBase: 2,
+      //   cloudTop: 28,
+      //   noiseScale: 0.035,
+      //   windSpeed: 0.8,
+      //   scatterStrength: 0.2,
+      // })
+
+      // app.activateVolumetricClouds2({coverage: 0.55, cloudBase: 120, cloudThickness: 60})
+      // app.volumetricPass.setCloudLayer(-21, 100);
+
       loadObjFile.lightContainer[0].behavior.setOsc0(-2, 2, 0.01)
       loadObjFile.lightContainer[0].behavior.value_ = -1;
       loadObjFile.lightContainer[0].updater.push((light) => {
         light.setTargetX(light.behavior.setPath0());
         light.setPosX(light.behavior.setPath0());
       })
-      loadObjFile.lightContainer[0].setPosition(0, 15, -10);
+      loadObjFile.lightContainer[0].setPosition(0, 45, -10);
       loadObjFile.lightContainer[0].setTarget(0, 0, -10);
 
       setTimeout(() => {
