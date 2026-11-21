@@ -2,10 +2,8 @@ import MatrixEngineWGPU from "../../../src/world.js";
 import {downloadMeshes} from '../../../src/engine/loader-obj.js';
 import {addRaycastsAABBListener} from "../../../src/engine/raycast.js";
 import {FluidEffect} from "../../../src/engine/effects/fluid-.js";
-// import {InstancedKinematicOperations} from "../../../src/engine/procedures/InstancedKinematicOperations.js";
 import {KaleidoscopeEmitter} from "../../../src/engine/effects/kaleidoscopeEffectInstance.js";
 import {CameraPath, isMobile, mb, randomIntFromTo, sleep, urlQuery} from "../../../src/engine/utils.js";
-// import {GenGeoTexture2} from "../../../src/engine/effects/gen-tex2.js";
 import {adaptSlotConfig, fetchSlotConfig} from "./networking.js";
 import {SlotReel} from "./reel.js";
 import {SlotGame} from "./state.js";
@@ -13,126 +11,39 @@ import {LaserProjectile} from "../../../src/engine/effects/laser.js";
 import {loadAtlasFONT, MSDFTextEffect} from "../../../src/engine/effects/msdfText.js";
 import {MeshMorpher} from "../../../src/engine/procedural-mesh.js";
 
-/**
+export const SLOT_SIMULATOR_CONFIG_TOKEN = "SHITHAPPENS";
+
+export var loadFluidsSlot = function() {
+  /**
  * This example is open source.
  * Add your domain where you have installer or runned "slot-simulator" application.
  * Add you machine ID created from "slot-simulator".
  */
-const baseUrl = 'https://slot-simulator.onrender.com';
-const machineId1 = new URLSearchParams(window.location.search).get("machineId");
-console.log('machineId1', machineId1)
-const machineId = machineId1 || '6ac80510c453c7d32ec5364a';
-export const SLOT_SIMULATOR_CONFIG_TOKEN = "SHITHAPPENS";
+  const baseUrl = 'https://slot-simulator.onrender.com';
+  const machineId1 = new URLSearchParams(window.location.search).get("machineId");
+  console.log('machineId1', machineId1)
+  const machineId = machineId1 || '6ac80510c453c7d32ec5364a';
 
-let game, setConeMood;
-const ENABLE_REMOTE_SPIN_EVENTS = false;
-const SPACING = 6, SCALE = 3.5;
-const SYMBOL_REEL_RADIUS = 4.3;
-const SYMBOL_EFFECT_SCALE = 0.78;
-const reelX = (i, n) => ((n - 1) / 2 - i) * SPACING;
+  let game, setConeMood;
+  const ENABLE_REMOTE_SPIN_EVENTS = false;
+  const SPACING = 6, SCALE = 3.5;
+  const SYMBOL_REEL_RADIUS = 4.3;
+  const SYMBOL_EFFECT_SCALE = 0.78;
+  const reelX = (i, n) => ((n - 1) / 2 - i) * SPACING;
 
-let effectType = 'default';
+  let effectType = 'default';
 
-// Every physical symbol gets its own small fluid simulation and emitter preset.
-// The effect plane is positioned in reel-local space, so the parent reel rotation
-// naturally carries the complete ring around the cylinder.
-const FLUID_SYMBOL_PALETTE = [
-  [1.8, 0.28, 0.12],
-  [0.18, 1.55, 0.62],
-  [0.18, 0.62, 1.8],
-  [1.45, 0.2, 1.55],
-  [1.5, 1.1, 0.16],
-  [0.15, 1.35, 1.55]
-];
-
-function createSymbolEmitter(fluid, index) {
-  const palette = FLUID_SYMBOL_PALETTE[Math.floor(Math.random() * FLUID_SYMBOL_PALETTE.length)];
-  const variant = Math.floor(Math.random() * 4);
-  const common = {
-    color: palette,
-    colorScale: 1,
-    interval: 0.055 + (index % 3) * 0.012,
-    jitter: 0.18
-  };
-
-  if(variant === 0) {
-    fluid.addEmitter({
-      ...common,
-      spiral: {
-        cx: 0.5, cy: 0.5, rStart: 0.03, rEnd: 0.31,
-        speed: 2.2 + (index % 4) * 0.25,
-        duration: 2.2, pause: 0.15, strength: 230,
-        radial: 0.22, arms: 2, reverse: index % 2 === 0
-      }
-    });
-  } else if(variant === 1) {
-    fluid.addFire({
-      x: 0.32 + (index % 4) * 0.12, y: 0.08,
-      height: 0.55, duration: 0.75, pause: 0.25,
-      strength: 90, spread: 0.08, color: palette,
-      interval: common.interval, jitter: 0.3
-    });
-  } else if(variant === 2) {
-    fluid.addEmitter({
-      ...common,
-      orbit: {
-        cx: 0.5, cy: 0.5, r: 0.22,
-        speed: 1.2 + (index % 5) * 0.2, strength: 260
-      }
-    });
-  } else {
-    fluid.addEmitter({
-      ...common,
-      sweep: {
-        from: [0.12, 0.18 + (index % 3) * 0.08],
-        to: [0.88, 0.72 - (index % 3) * 0.06],
-        duration: 0.85, pause: 0.3,
-        strength: 110, spread: 0.07
-      }
-    });
-  }
-}
-
-async function initializeSymbolReel(mesh, engine, reelCfg) {
-  if(!mesh.effects) mesh.effects = {};
-  const effects = [];
-  const count = reelCfg.strip.length;
-  const radius = SYMBOL_REEL_RADIUS;
-
-  for(let index = 0;index < count;index++) {
-    const angle = (index / count) * Math.PI * 2;
-    const fluid = new FluidEffect(engine.device, {
-      simRes: 32,
-      dyeRes: 96,
-      pressureIterations: 4,
-      curl: 14,
-      densityDissipation: 0.985,
-      velocityDissipation: 0.18,
-      splatRadius: 0.12,
-      splatForce: 1700,
-      localOffset: [
-        0,
-        Math.cos(angle) * radius,
-        Math.sin(angle) * radius
-      ],
-      // [Math.cos(angle) * radius, Math.sin(angle) * radius, 0],
-      // FluidEffect uses radians and its quad normal is +Z. Turn it outward
-      // from the reel cylinder, then let the reel mesh supply parent rotation.
-      localRotation: [angle - Math.PI / 2, 0, 0], // [0, Math.PI / 2, angle],
-      scale: [SYMBOL_EFFECT_SCALE, SYMBOL_EFFECT_SCALE, 1]
-    });
-
-    createSymbolEmitter(fluid, index);
-    fluid.burst(0.5, 0.5, 3, 170, FLUID_SYMBOL_PALETTE[index % FLUID_SYMBOL_PALETTE.length]);
-
-    mesh.effects[`fluidSymbol${index}`] = fluid;
-    effects.push(fluid);
-  }
-
-  return effects;
-}
-
-export var loadFluidsSlot = function() {
+  // Every physical symbol gets its own small fluid simulation and emitter preset.
+  // The effect plane is positioned in reel-local space, so the parent reel rotation
+  // naturally carries the complete ring around the cylinder.
+  const FLUID_SYMBOL_PALETTE = [
+    [1.8, 0.28, 0.12],
+    [0.18, 1.55, 0.62],
+    [0.18, 0.62, 1.8],
+    [1.45, 0.2, 1.55],
+    [1.5, 1.1, 0.16],
+    [0.15, 1.35, 1.55]
+  ];
 
   mb.show("Please wait 10 sec to activate render.com hosted page.")
 
@@ -275,11 +186,11 @@ export var loadFluidsSlot = function() {
         app.cone2.setAmbient(...left);
       };
       const coneAmbient = {
-        idle:  [[-1, -1, -1]],
-        spin:  [[-2, -2, -2]],
-        win:   [[-2, 2, -2]]
+        idle: [[-1, -1, -1]],
+        spin: [[-2, -2, -2]],
+        win: [[-2, 2, -2]]
       };
-        setConeMood = mood => setConeAmbient(...coneAmbient[mood]);
+      setConeMood = mood => setConeAmbient(...coneAmbient[mood]);
       setConeMood('idle');
 
       let inputArg = {
@@ -625,4 +536,91 @@ export var loadFluidsSlot = function() {
     });
   })
   window.app = slotMachine;
+}
+
+function createSymbolEmitter(fluid, index) {
+  const palette = FLUID_SYMBOL_PALETTE[Math.floor(Math.random() * FLUID_SYMBOL_PALETTE.length)];
+  const variant = Math.floor(Math.random() * 4);
+  const common = {
+    color: palette,
+    colorScale: 1,
+    interval: 0.055 + (index % 3) * 0.012,
+    jitter: 0.18
+  };
+
+  if(variant === 0) {
+    fluid.addEmitter({
+      ...common,
+      spiral: {
+        cx: 0.5, cy: 0.5, rStart: 0.03, rEnd: 0.31,
+        speed: 2.2 + (index % 4) * 0.25,
+        duration: 2.2, pause: 0.15, strength: 230,
+        radial: 0.22, arms: 2, reverse: index % 2 === 0
+      }
+    });
+  } else if(variant === 1) {
+    fluid.addFire({
+      x: 0.32 + (index % 4) * 0.12, y: 0.08,
+      height: 0.55, duration: 0.75, pause: 0.25,
+      strength: 90, spread: 0.08, color: palette,
+      interval: common.interval, jitter: 0.3
+    });
+  } else if(variant === 2) {
+    fluid.addEmitter({
+      ...common,
+      orbit: {
+        cx: 0.5, cy: 0.5, r: 0.22,
+        speed: 1.2 + (index % 5) * 0.2, strength: 260
+      }
+    });
+  } else {
+    fluid.addEmitter({
+      ...common,
+      sweep: {
+        from: [0.12, 0.18 + (index % 3) * 0.08],
+        to: [0.88, 0.72 - (index % 3) * 0.06],
+        duration: 0.85, pause: 0.3,
+        strength: 110, spread: 0.07
+      }
+    });
+  }
+}
+
+async function initializeSymbolReel(mesh, engine, reelCfg) {
+  if(!mesh.effects) mesh.effects = {};
+  const effects = [];
+  const count = reelCfg.strip.length;
+  const radius = SYMBOL_REEL_RADIUS;
+
+  for(let index = 0;index < count;index++) {
+    const angle = (index / count) * Math.PI * 2;
+    const fluid = new FluidEffect(engine.device, {
+      simRes: 32,
+      dyeRes: 96,
+      pressureIterations: 4,
+      curl: 14,
+      densityDissipation: 0.985,
+      velocityDissipation: 0.18,
+      splatRadius: 0.12,
+      splatForce: 1700,
+      localOffset: [
+        0,
+        Math.cos(angle) * radius,
+        Math.sin(angle) * radius
+      ],
+      // [Math.cos(angle) * radius, Math.sin(angle) * radius, 0],
+      // FluidEffect uses radians and its quad normal is +Z. Turn it outward
+      // from the reel cylinder, then let the reel mesh supply parent rotation.
+      localRotation: [angle - Math.PI / 2, 0, 0], // [0, Math.PI / 2, angle],
+      scale: [SYMBOL_EFFECT_SCALE, SYMBOL_EFFECT_SCALE, 1]
+    });
+
+    createSymbolEmitter(fluid, index);
+    fluid.burst(0.5, 0.5, 3, 170, FLUID_SYMBOL_PALETTE[index % FLUID_SYMBOL_PALETTE.length]);
+
+    mesh.effects[`fluidSymbol${index}`] = fluid;
+    effects.push(fluid);
+  }
+
+  return effects;
 }

@@ -226,7 +226,7 @@ export var loadFreekyChat = function() {
         MYCUBE.rotation.emitY = MYCUBE.name;
         PLANE.vertexAnim.enableCloth(1);
         app.activateHZB();
-      }, 500)
+      }, 600)
 
       let cam = app.getCamera();
       cam.setYaw(-0.03);
@@ -235,23 +235,23 @@ export var loadFreekyChat = function() {
       cam.setY(3.76);
       cam._dirtyAngle = true;
 
-      freekyChat.addMeshObj({
-        material: {type: 'standard'},
-        position: {x: 0, y: 15, z: -20},
-        rotation: {x: 0, y: 0, z: 0},
-        rotationSpeed: {x: 0, y: 111, z: 0},
-        scale: [5, 5, 5],
-        texturesPaths: ['./res/meshes/obj/modelpack19/hand-logo.webp'],
-        name: 'ball1',
-        mesh: m.ball,
-        physics: {
-          enabled: true,
-          geometry: "Sphere",
-          group: 2,
-          mask: -1,
-        },
-        raycast: {enabled: true, radius: 1}
-      })
+      // freekyChat.addMeshObj({
+      //   material: {type: 'standard'},
+      //   position: {x: 0, y: 15, z: -20},
+      //   rotation: {x: 0, y: 0, z: 0},
+      //   rotationSpeed: {x: 0, y: 111, z: 0},
+      //   scale: [5, 5, 5],
+      //   texturesPaths: ['./res/meshes/obj/modelpack19/hand-logo.webp'],
+      //   name: 'ball1',
+      //   mesh: m.ball,
+      //   physics: {
+      //     enabled: true,
+      //     geometry: "Sphere",
+      //     group: 2,
+      //     mask: -1,
+      //   },
+      //   raycast: {enabled: true, radius: 1}
+      // })
 
       freekyChat.addMeshObj({
         position: {x: 0, y: -0.5, z: -10},

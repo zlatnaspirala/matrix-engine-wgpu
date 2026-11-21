@@ -50950,7 +50950,7 @@ var nanoPass = function() {
 };
 
 // src/engine/physics/bridge.js
-function calculateSoftBodyNormals(positions, indices, vertexCount, fallbackNormals, normals) {
+function calculateSoftBodyNormals(positions, indices, vertexCount, fallbackNormals, normals, v2n, nodeAcc) {
   normals = normals || new Float32Array(vertexCount * 3);
   normals.fill(0);
   for (let i2 = 0; i2 + 2 < indices.length; i2 += 3) {
@@ -50973,6 +50973,21 @@ function calculateSoftBodyNormals(positions, indices, vertexCount, fallbackNorma
     normals[ic2 * 3] += nx;
     normals[ic2 * 3 + 1] += ny;
     normals[ic2 * 3 + 2] += nz;
+  }
+  if (v2n && nodeAcc) {
+    nodeAcc.fill(0);
+    for (let i2 = 0; i2 < vertexCount; i2++) {
+      const n3 = v2n[i2] * 3, o3 = i2 * 3;
+      nodeAcc[n3] += normals[o3];
+      nodeAcc[n3 + 1] += normals[o3 + 1];
+      nodeAcc[n3 + 2] += normals[o3 + 2];
+    }
+    for (let i2 = 0; i2 < vertexCount; i2++) {
+      const n3 = v2n[i2] * 3, o3 = i2 * 3;
+      normals[o3] = nodeAcc[n3];
+      normals[o3 + 1] = nodeAcc[n3 + 1];
+      normals[o3 + 2] = nodeAcc[n3 + 2];
+    }
   }
   for (let i2 = 0; i2 < vertexCount; i2++) {
     const o3 = i2 * 3;
@@ -51074,6 +51089,7 @@ var PhysicsBridge = class {
     MEObject.isKinematic = pOptions.state === 4;
     this._send("addBody", { pOptions }).then((response) => {
       const startIndex = typeof response === "object" ? response.idx : response;
+      if (startIndex === void 0 || startIndex < 0) return;
       if (pOptions.geometry === "SoftBody") {
         this._clothMap.set(startIndex, {
           mesh: MEObject,
@@ -51268,6 +51284,16 @@ var PhysicsBridge = class {
   applyClothForce(startIndex, x3, y3, z2) {
     this._worker.postMessage({ cmd: "applyClothForce", startIndex, x: x3, y: y3, z: z2 });
   }
+  getSoftBodyIndex(name2) {
+    for (const [idx, meta] of this._clothMap) {
+      if (meta.isSoftBody && meta.mesh?.name === name2) return idx;
+    }
+    return -1;
+  }
+  getSoftBodySnapshot(startIndex) {
+    const meta = this._clothMap.get(startIndex);
+    return meta?.isSoftBody ? meta.positions || null : null;
+  }
   _syncToObjects() {
     const snap = this._snapshot;
     if (!snap) return;
@@ -51308,6 +51334,7 @@ var PhysicsBridge = class {
     switch (data.cmd) {
       case "ready":
       case "bodyAdded":
+        if (data.sab) this._snapshot = new Float32Array(data.sab, 4);
         const resolveFn = this._pending.get(data.id);
         if (resolveFn) {
           if (data.count && data.count > 1) {
@@ -51327,12 +51354,14 @@ var PhysicsBridge = class {
         break;
       case "snapshot":
         this._snapshot = data.snap;
-        if (data.clothPackets) {
-          for (const packet of data.clothPackets) {
+        if (data.clothPackets || data.softBodyPackets) {
+          const packets = [...data.clothPackets || [], ...data.softBodyPackets || []];
+          for (const packet of packets) {
             const meta = this._clothMap.get(packet.startIndex);
             const buf = meta?.mesh?.vertexAnim?.clothBuffer;
             if (!buf) continue;
             const src = packet.positions, v2n = meta.v2n;
+            if (meta.isSoftBody) meta.positions = src;
             const n3 = v2n ? v2n.length : meta.count;
             if (!meta._scratch || meta._scratch.length !== n3 * 4) meta._scratch = new Float32Array(n3 * 4);
             const dst = meta._scratch;
@@ -51351,12 +51380,19 @@ var PhysicsBridge = class {
                 if (!meta._normalScratch || meta._normalScratch.length !== n3 * 3) {
                   meta._normalScratch = new Float32Array(n3 * 3);
                 }
+                if (v2n && !meta._nodeAcc) {
+                  let maxNode = 0;
+                  for (let k2 = 0; k2 < v2n.length; k2++) if (v2n[k2] > maxNode) maxNode = v2n[k2];
+                  meta._nodeAcc = new Float32Array((maxNode + 1) * 3);
+                }
                 meta._normalScratch = calculateSoftBodyNormals(
                   dst,
                   indices,
                   n3,
                   meta.mesh.mesh?.vertexNormals,
-                  meta._normalScratch
+                  meta._normalScratch,
+                  v2n,
+                  meta._nodeAcc
                 );
                 app.device.queue.writeBuffer(normalBuffer, 0, meta._normalScratch);
               }
@@ -55805,9 +55841,9 @@ var MatrixEngineWGPU = class {
           for (const effectName in mesh.effects) {
             const effect = mesh.effects[effectName];
             if (effect === null) continue;
-            const effectType3 = effect.constructor;
-            if (!this.effectsByType.has(effectType3)) this.effectsByType.set(effectType3, []);
-            this.effectsByType.get(effectType3).push({ effect, mesh });
+            const effectType2 = effect.constructor;
+            if (!this.effectsByType.has(effectType2)) this.effectsByType.set(effectType2, []);
+            this.effectsByType.get(effectType2).push({ effect, mesh });
           }
         }
       }
@@ -62119,7 +62155,6 @@ var testJolt = function() {
         name: "jelly",
         mesh: m2.ball,
         physics: {
-          // radius: undefined,
           enabled: true,
           geometry: "SoftBody",
           mass: 2,
@@ -62131,7 +62166,11 @@ var testJolt = function() {
           radius: 0.01
         }
       });
-      setTimeout(() => jelly.vertexAnim.enableCloth(1), 500);
+      setTimeout(() => {
+        const startIndex = physicsPlayground2.matrixPhysics.getSoftBodyIndex(jelly.name);
+        if (startIndex >= 0) jelly.vertexAnim.enableCloth(startIndex);
+        else console.warn("[Jolt SoftBody] body registration is not available yet");
+      }, 500);
       app.cameras.WASD.setYaw(-0.03);
       app.cameras.WASD.setPitch(-0.49);
       app.cameras.WASD.setZ(0);
@@ -83138,11 +83177,11 @@ var loadPoseToGLB = function() {
 };
 
 // examples/games/slot-machine/networking.js
-async function fetchSlotConfig(baseUrl3, machineId3) {
+async function fetchSlotConfig(baseUrl2, machineId2) {
   const token2 = SLOT_SIMULATOR_CONFIG_TOKEN;
   const headers = token2 ? { "X-Local-Config-Token": token2 } : {};
   const res = await fetch(
-    `${baseUrl3}/slot-api/machines/${machineId3}/slot-config`,
+    `${baseUrl2}/slot-api/machines/${machineId2}/slot-config`,
     { credentials: "include", headers }
   );
   if (!res.ok) throw new Error(`slot-config HTTP ${res.status}`);
@@ -83592,7 +83631,6 @@ var SlotGame = class {
 // examples/games/slot-machine/slot.js
 var baseUrl = "https://slot-simulator.onrender.com";
 var machineId1 = new URLSearchParams(window.location.search).get("machineId");
-console.log("machineId1", machineId1);
 var machineId = machineId1 || "6ac80510c453c7d32ec5364a";
 var SLOT_SIMULATOR_CONFIG_TOKEN = "SHITHAPPENS";
 var game;
@@ -84420,11 +84458,11 @@ var loadFluidEffectExample = function() {
 };
 
 // examples/games/slot-fluid-mashine/networking.js
-async function fetchSlotConfig2(baseUrl3, machineId3) {
+async function fetchSlotConfig2(baseUrl2, machineId2) {
   const token2 = SLOT_SIMULATOR_CONFIG_TOKEN2;
   const headers = token2 ? { "X-Local-Config-Token": token2 } : {};
   const res = await fetch(
-    `${baseUrl3}/slot-api/machines/${machineId3}/slot-config`,
+    `${baseUrl2}/slot-api/machines/${machineId2}/slot-config`,
     { credentials: "include", headers }
   );
   if (!res.ok) throw new Error(`slot-config HTTP ${res.status}`);
@@ -84837,128 +84875,27 @@ var SlotGame2 = class {
 };
 
 // examples/games/slot-fluid-mashine/slot.js
-var baseUrl2 = "https://slot-simulator.onrender.com";
-var machineId12 = new URLSearchParams(window.location.search).get("machineId");
-console.log("machineId1", machineId12);
-var machineId2 = machineId12 || "6ac80510c453c7d32ec5364a";
 var SLOT_SIMULATOR_CONFIG_TOKEN2 = "SHITHAPPENS";
-var game2;
-var setConeMood;
-var ENABLE_REMOTE_SPIN_EVENTS2 = false;
-var SPACING2 = 6;
-var SCALE2 = 3.5;
-var SYMBOL_REEL_RADIUS = 4.3;
-var SYMBOL_EFFECT_SCALE = 0.78;
-var reelX2 = (i2, n3) => ((n3 - 1) / 2 - i2) * SPACING2;
-var effectType2 = "default";
-var FLUID_SYMBOL_PALETTE = [
-  [1.8, 0.28, 0.12],
-  [0.18, 1.55, 0.62],
-  [0.18, 0.62, 1.8],
-  [1.45, 0.2, 1.55],
-  [1.5, 1.1, 0.16],
-  [0.15, 1.35, 1.55]
-];
-function createSymbolEmitter(fluid, index) {
-  const palette = FLUID_SYMBOL_PALETTE[Math.floor(Math.random() * FLUID_SYMBOL_PALETTE.length)];
-  const variant = Math.floor(Math.random() * 4);
-  const common = {
-    color: palette,
-    colorScale: 1,
-    interval: 0.055 + index % 3 * 0.012,
-    jitter: 0.18
-  };
-  if (variant === 0) {
-    fluid.addEmitter({
-      ...common,
-      spiral: {
-        cx: 0.5,
-        cy: 0.5,
-        rStart: 0.03,
-        rEnd: 0.31,
-        speed: 2.2 + index % 4 * 0.25,
-        duration: 2.2,
-        pause: 0.15,
-        strength: 230,
-        radial: 0.22,
-        arms: 2,
-        reverse: index % 2 === 0
-      }
-    });
-  } else if (variant === 1) {
-    fluid.addFire({
-      x: 0.32 + index % 4 * 0.12,
-      y: 0.08,
-      height: 0.55,
-      duration: 0.75,
-      pause: 0.25,
-      strength: 90,
-      spread: 0.08,
-      color: palette,
-      interval: common.interval,
-      jitter: 0.3
-    });
-  } else if (variant === 2) {
-    fluid.addEmitter({
-      ...common,
-      orbit: {
-        cx: 0.5,
-        cy: 0.5,
-        r: 0.22,
-        speed: 1.2 + index % 5 * 0.2,
-        strength: 260
-      }
-    });
-  } else {
-    fluid.addEmitter({
-      ...common,
-      sweep: {
-        from: [0.12, 0.18 + index % 3 * 0.08],
-        to: [0.88, 0.72 - index % 3 * 0.06],
-        duration: 0.85,
-        pause: 0.3,
-        strength: 110,
-        spread: 0.07
-      }
-    });
-  }
-}
-async function initializeSymbolReel2(mesh, engine, reelCfg) {
-  if (!mesh.effects) mesh.effects = {};
-  const effects = [];
-  const count = reelCfg.strip.length;
-  const radius = SYMBOL_REEL_RADIUS;
-  for (let index = 0; index < count; index++) {
-    const angle2 = index / count * Math.PI * 2;
-    const fluid = new FluidEffect(engine.device, {
-      simRes: 32,
-      dyeRes: 96,
-      pressureIterations: 4,
-      curl: 14,
-      densityDissipation: 0.985,
-      velocityDissipation: 0.18,
-      splatRadius: 0.12,
-      splatForce: 1700,
-      localOffset: [
-        0,
-        Math.cos(angle2) * radius,
-        Math.sin(angle2) * radius
-      ],
-      // [Math.cos(angle) * radius, Math.sin(angle) * radius, 0],
-      // FluidEffect uses radians and its quad normal is +Z. Turn it outward
-      // from the reel cylinder, then let the reel mesh supply parent rotation.
-      localRotation: [angle2 - Math.PI / 2, 0, 0],
-      // [0, Math.PI / 2, angle],
-      scale: [SYMBOL_EFFECT_SCALE, SYMBOL_EFFECT_SCALE, 1]
-    });
-    createSymbolEmitter(fluid, index);
-    fluid.burst(0.5, 0.5, 3, 170, FLUID_SYMBOL_PALETTE[index % FLUID_SYMBOL_PALETTE.length]);
-    mesh.effects[`fluidSymbol${index}`] = fluid;
-    effects.push(fluid);
-  }
-  return effects;
-}
 var loadFluidsSlot = function() {
+  const baseUrl2 = "https://slot-simulator.onrender.com";
+  const machineId12 = new URLSearchParams(window.location.search).get("machineId");
+  console.log("machineId1", machineId12);
+  const machineId2 = machineId12 || "6ac80510c453c7d32ec5364a";
+  let game2, setConeMood;
+  const ENABLE_REMOTE_SPIN_EVENTS2 = false;
+  const SPACING2 = 6, SCALE2 = 3.5;
+  const SYMBOL_REEL_RADIUS2 = 4.3;
+  const SYMBOL_EFFECT_SCALE2 = 0.78;
+  const reelX2 = (i2, n3) => ((n3 - 1) / 2 - i2) * SPACING2;
+  let effectType2 = "default";
+  const FLUID_SYMBOL_PALETTE2 = [
+    [1.8, 0.28, 0.12],
+    [0.18, 1.55, 0.62],
+    [0.18, 0.62, 1.8],
+    [1.45, 0.2, 1.55],
+    [1.5, 1.1, 0.16],
+    [0.15, 1.35, 1.55]
+  ];
   mb.show("Please wait 10 sec to activate render.com hosted page.");
   let slotMachine = new MatrixEngineWGPU({
     canvasSize: "fullscreen",
@@ -85173,15 +85110,15 @@ var loadFluidsSlot = function() {
         framePoint(b2[0], b2[1], b2[2]),
         0
       );
-      const halfW = SYMBOL_EFFECT_SCALE * SCALE2;
-      const halfH = SYMBOL_EFFECT_SCALE * SCALE2;
+      const halfW = SYMBOL_EFFECT_SCALE2 * SCALE2;
+      const halfH = SYMBOL_EFFECT_SCALE2 * SCALE2;
       for (let i2 = 0; i2 < n3; i2++) {
         const cx = reelX2(i2, n3);
         const stripLength = slot.reels[i2].strip.length;
         const rowStep = Math.PI * 2 / stripLength;
         for (let row2 = 0; row2 < slot.visibleRows; row2++) {
           const rowOffset = row2 - Math.floor(slot.visibleRows / 2);
-          const cy = 15 + Math.sin(rowOffset * rowStep) * SYMBOL_REEL_RADIUS * SCALE2;
+          const cy = 15 + Math.sin(rowOffset * rowStep) * SYMBOL_REEL_RADIUS2 * SCALE2;
           const tiltX = -rowOffset * rowStep;
           const cosX = Math.cos(tiltX);
           const sinX = Math.sin(tiltX);
@@ -85349,6 +85286,105 @@ var loadFluidsSlot = function() {
   });
   window.app = slotMachine;
 };
+function createSymbolEmitter(fluid, index) {
+  const palette = FLUID_SYMBOL_PALETTE[Math.floor(Math.random() * FLUID_SYMBOL_PALETTE.length)];
+  const variant = Math.floor(Math.random() * 4);
+  const common = {
+    color: palette,
+    colorScale: 1,
+    interval: 0.055 + index % 3 * 0.012,
+    jitter: 0.18
+  };
+  if (variant === 0) {
+    fluid.addEmitter({
+      ...common,
+      spiral: {
+        cx: 0.5,
+        cy: 0.5,
+        rStart: 0.03,
+        rEnd: 0.31,
+        speed: 2.2 + index % 4 * 0.25,
+        duration: 2.2,
+        pause: 0.15,
+        strength: 230,
+        radial: 0.22,
+        arms: 2,
+        reverse: index % 2 === 0
+      }
+    });
+  } else if (variant === 1) {
+    fluid.addFire({
+      x: 0.32 + index % 4 * 0.12,
+      y: 0.08,
+      height: 0.55,
+      duration: 0.75,
+      pause: 0.25,
+      strength: 90,
+      spread: 0.08,
+      color: palette,
+      interval: common.interval,
+      jitter: 0.3
+    });
+  } else if (variant === 2) {
+    fluid.addEmitter({
+      ...common,
+      orbit: {
+        cx: 0.5,
+        cy: 0.5,
+        r: 0.22,
+        speed: 1.2 + index % 5 * 0.2,
+        strength: 260
+      }
+    });
+  } else {
+    fluid.addEmitter({
+      ...common,
+      sweep: {
+        from: [0.12, 0.18 + index % 3 * 0.08],
+        to: [0.88, 0.72 - index % 3 * 0.06],
+        duration: 0.85,
+        pause: 0.3,
+        strength: 110,
+        spread: 0.07
+      }
+    });
+  }
+}
+async function initializeSymbolReel2(mesh, engine, reelCfg) {
+  if (!mesh.effects) mesh.effects = {};
+  const effects = [];
+  const count = reelCfg.strip.length;
+  const radius = SYMBOL_REEL_RADIUS;
+  for (let index = 0; index < count; index++) {
+    const angle2 = index / count * Math.PI * 2;
+    const fluid = new FluidEffect(engine.device, {
+      simRes: 32,
+      dyeRes: 96,
+      pressureIterations: 4,
+      curl: 14,
+      densityDissipation: 0.985,
+      velocityDissipation: 0.18,
+      splatRadius: 0.12,
+      splatForce: 1700,
+      localOffset: [
+        0,
+        Math.cos(angle2) * radius,
+        Math.sin(angle2) * radius
+      ],
+      // [Math.cos(angle) * radius, Math.sin(angle) * radius, 0],
+      // FluidEffect uses radians and its quad normal is +Z. Turn it outward
+      // from the reel cylinder, then let the reel mesh supply parent rotation.
+      localRotation: [angle2 - Math.PI / 2, 0, 0],
+      // [0, Math.PI / 2, angle],
+      scale: [SYMBOL_EFFECT_SCALE, SYMBOL_EFFECT_SCALE, 1]
+    });
+    createSymbolEmitter(fluid, index);
+    fluid.burst(0.5, 0.5, 3, 170, FLUID_SYMBOL_PALETTE[index % FLUID_SYMBOL_PALETTE.length]);
+    mesh.effects[`fluidSymbol${index}`] = fluid;
+    effects.push(fluid);
+  }
+  return effects;
+}
 
 // examples.js
 var switchDemo = (id2) => {

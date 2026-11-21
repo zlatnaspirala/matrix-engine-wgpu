@@ -229,13 +229,33 @@ runBtn.addEventListener('click', () => {
 
   const logItem=document.createElement('div');
   logItem.className='p-1.5 rounded bg-slate-900/90 border border-emerald-900/80 flex flex-col gap-0.5';
-  logItem.innerHTML=`
-    <div class="flex items-center justify-between text-[9px]">
-      <span class="text-emerald-400 font-bold uppercase">[${selectedProvider}]</span>
-      <span class="text-emerald-700">${new Date().toLocaleTimeString()}</span>
-    </div>
-    <div class="text-emerald-200 truncate"><span class="text-emerald-600">&gt; Task:</span> ${taskValue||'(empty)'}</div>
-  `;
+
+  const logHeader=document.createElement('div');
+  logHeader.className='flex items-center justify-between text-[9px]';
+
+  const providerSpan=document.createElement('span');
+  providerSpan.className='text-emerald-400 font-bold uppercase';
+  providerSpan.textContent=`[${selectedProvider}]`;
+
+  const timeSpan=document.createElement('span');
+  timeSpan.className='text-emerald-700';
+  timeSpan.textContent=new Date().toLocaleTimeString();
+
+  logHeader.appendChild(providerSpan);
+  logHeader.appendChild(timeSpan);
+
+  const taskRow=document.createElement('div');
+  taskRow.className='text-emerald-200 truncate';
+
+  const taskLabel=document.createElement('span');
+  taskLabel.className='text-emerald-600';
+  taskLabel.textContent='> Task:';
+
+  taskRow.appendChild(taskLabel);
+  taskRow.appendChild(document.createTextNode(` ${taskValue||'(empty)'}`));
+
+  logItem.appendChild(logHeader);
+  logItem.appendChild(taskRow);
   logList.insertBefore(logItem, logList.firstChild);
 
   // Quick visual feedback on button

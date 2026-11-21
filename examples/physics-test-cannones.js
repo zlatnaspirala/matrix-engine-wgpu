@@ -172,25 +172,24 @@ export var testCannonES = function() {
         raycast: {enabled: true, radius: 1}
       });
 
-      console.log('....... ..d.. .. . .. ..d..d... ')
-      const jelly = physicsPlayground.addMeshObj({
-        material: {type: 'standard'},
-        position: {x: 0, y: 8, z: -10},
-        scale: [1, 1, 1],
-        texturesPaths: ['./res/textures/floor1.webp'],
-        name: 'jelly', mesh: m.ball,
-        physics: {
-          // radius: undefined,
-          enabled: true, geometry: 'SoftBody', mass: 2,
-          nodeSpacing: 0, group: 2, mask: -1,
-          vertices: m.ball.vertices, indices: m.ball.indices,
-            hub: false,  radius: 0.01
-        }
-      });
-      setTimeout(() => jelly.vertexAnim.enableCloth(1), 500);
+      // HEAVY !
+      // const jelly = physicsPlayground.addMeshObj({
+      //   material: {type: 'standard'},
+      //   position: {x: 0, y: 8, z: -10},
+      //   scale: [1, 1, 1],
+      //   texturesPaths: ['./res/textures/floor1.webp'],
+      //   name: 'jelly', mesh: m.ball,
+      //   physics: {
+      //     enabled: true, geometry: 'SoftBody', mass: 2,
+      //     nodeSpacing: 0, group: 2, mask: -1,
+      //     vertices: m.ball.vertices, indices: m.ball.indices,
+      //       hub: false,  radius: 0.01
+      //   }
+      // });
+      // setTimeout(() => jelly.vertexAnim.enableCloth(1), 500);
 
       app.activateBloomEffect();
-      app.activateVolumetricEffect();
+      // app.activateVolumetricEffect();
 
       physicsPlayground.lightContainer[0].setPosY(65);
       physicsPlayground.lightContainer[0].setIntensity(100);

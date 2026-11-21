@@ -4788,6 +4788,7 @@ const ANIM_NOISE: u32 = 16u;
 const ANIM_OCEAN: u32 = 32u;
 
 const ANIM_CLOTH: u32 = 128u;
+const ANIM_SOFT_BODY: u32 = 256u;
 
 fn applyWave(pos: vec3f) -> vec3f {
   let wave = sin(pos.x * vertexAnim.waveFrequency + vertexAnim.time * vertexAnim.waveSpeed) * 
@@ -4903,7 +4904,7 @@ fn main(
   let flags = u32(vertexAnim.flags);
 
   // If cloth simulation is active via flags, read position directly from the cloth storage buffer!
-  if ((flags & ANIM_CLOTH) != 0u) {
+  if ((flags & (ANIM_CLOTH | ANIM_SOFT_BODY)) != 0u) {
     basePosition = clothBuffer[vertexIndex].xyz;
   }
 
@@ -4911,13 +4912,18 @@ fn main(
   var finalPos  = skinned.position.xyz;
   var finalNorm = skinned.normal;
 
-  if ((flags & ~ANIM_CLOTH) != 0u && vertexAnim.globalIntensity > 0.0) {
+  if ((flags & ~(ANIM_CLOTH | ANIM_SOFT_BODY)) != 0u && vertexAnim.globalIntensity > 0.0) {
     let animated = applyVertexAnimation(finalPos, finalNorm);
     finalPos  = animated.position.xyz;
     finalNorm = animated.normal;
   }
 
-  let worldPos = model.modelMatrix * vec4f(finalPos, 1.0);
+  // SoftBody positions are already in world space from the physics worker.
+  let worldPos = select(
+    model.modelMatrix * vec4f(finalPos, 1.0),
+    vec4f(finalPos, 1.0),
+    (flags & ANIM_SOFT_BODY) != 0u
+  );
   let normalMatrix = mat3x3f(
     model.modelMatrix[0].xyz,
     model.modelMatrix[1].xyz,
@@ -4930,7 +4936,11 @@ fn main(
 
   // test
   // output.fragNorm = vec3f(0.0, 1.0, 0.0);
-  output.fragNorm  = normalize(normalMatrix * finalNorm);
+  output.fragNorm  = normalize(select(
+    normalMatrix * finalNorm,
+    finalNorm,
+    (flags & ANIM_SOFT_BODY) != 0u
+  ));
   
   output.uv        = uv * uvScale;
   return output;
@@ -13336,8 +13346,10 @@ var VERTEX_ANIM_FLAGS = {
   // 32
   DISPLACEMENT: 1 << 6,
   // 64
-  CLOTH: 1 << 7
+  CLOTH: 1 << 7,
   // 128
+  SOFT_BODY: 1 << 8
+  // 256
 };
 
 // src/shaders/standalone/pointer.effect.js
@@ -14282,7 +14294,7 @@ var MEMeshObj = class extends Materials {
     this.sceneBGL = o2.sceneBGL;
     this.materialBGL = o2.materialBGL;
     this.uniformBufferBindGroupLayout = o2.uniformBufferBindGroupLayout;
-    if (o2.physics.geometry !== "Cloth") {
+    if (o2.physics.geometry !== "Cloth" && o2.physics.geometry !== "SoftBody") {
       this.dummyClothBuffer = o2.dummyClothBuffer;
     }
     this.useScale = o2.useScale || false;
@@ -14553,7 +14565,7 @@ var MEMeshObj = class extends Materials {
       }
       this.vertexNormalsBuffer = this.device.createBuffer({
         size: this.mesh.vertexNormals.length * Float32Array.BYTES_PER_ELEMENT,
-        usage: GPUBufferUsage.VERTEX,
+        usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
         mappedAtCreation: true
       });
       {
@@ -14683,11 +14695,11 @@ var MEMeshObj = class extends Materials {
         size: this.vertexAnimParams.byteLength,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
-      if (o_.physics.geometry === "Cloth") {
-        const maxClothParticles = 384;
+      if (o_.physics.geometry === "Cloth" || o_.physics.geometry === "SoftBody") {
+        const vertexCount = o_.physics.geometry === "SoftBody" ? Math.max(1, Math.ceil((o_.physics.vertices?.length || 0) / 3)) : 384;
         this.clothBuffer = this.device.createBuffer({
-          label: "ClothPhysicsStorage",
-          size: maxClothParticles * 4 * Float32Array.BYTES_PER_ELEMENT,
+          label: o_.physics.geometry === "SoftBody" ? "SoftBody Physics Storage" : "ClothPhysicsStorage",
+          size: vertexCount * 4 * Float32Array.BYTES_PER_ELEMENT,
           usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
         });
       } else {
@@ -14698,12 +14710,13 @@ var MEMeshObj = class extends Materials {
         clothBuffer: this.clothBuffer,
         enableCloth: (startIndex = 0) => {
           this.vertexAnim.active = true;
-          this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.CLOTH;
+          const physicsFlag = o_.physics.geometry === "SoftBody" ? VERTEX_ANIM_FLAGS.SOFT_BODY : VERTEX_ANIM_FLAGS.CLOTH;
+          this.vertexAnimParams[1] |= physicsFlag;
           this.vertexAnimParams[28] = startIndex;
           this.updateVertexAnimBuffer();
         },
         disableCloth: () => {
-          this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.CLOTH;
+          this.vertexAnimParams[1] &= ~(VERTEX_ANIM_FLAGS.CLOTH | VERTEX_ANIM_FLAGS.SOFT_BODY);
           this.vertexAnim.clothBuffer = null;
           this.updateVertexAnimBuffer();
         },
@@ -35995,34 +36008,52 @@ function rayIntersectsAABB(rayOrigin, rayDirection, boxMin, boxMax) {
   return { t: t2, hitPoint };
 }
 function computeWorldVertsAndAABB(object) {
-  if (object._aabbCache && object._aabbCache.x === object.position.x && object._aabbCache.y === object.position.y && object._aabbCache.z === object.position.z) {
-    return object._aabbCache;
+  const mesh = object.meshA || object.mesh;
+  const verts = mesh?.vertices;
+  if (!verts?.length) return null;
+  let local2 = mesh._raycastLocalAABB;
+  if (!local2 || local2.vertices !== verts || local2.length !== verts.length) {
+    const min3 = [Infinity, Infinity, Infinity];
+    const max3 = [-Infinity, -Infinity, -Infinity];
+    for (let i = 0; i < verts.length; i += 3) {
+      const x2 = verts[i], y2 = verts[i + 1], z = verts[i + 2];
+      if (x2 < min3[0]) min3[0] = x2;
+      if (y2 < min3[1]) min3[1] = y2;
+      if (z < min3[2]) min3[2] = z;
+      if (x2 > max3[0]) max3[0] = x2;
+      if (y2 > max3[1]) max3[1] = y2;
+      if (z > max3[2]) max3[2] = z;
+    }
+    local2 = mesh._raycastLocalAABB = { vertices: verts, length: verts.length, min: min3, max: max3 };
   }
   const modelMatrix = object.getModelMatrix(object.position, true);
-  const min2 = [Infinity, Infinity, Infinity];
-  const max2 = [-Infinity, -Infinity, -Infinity];
-  const verts = object.meshA ? object.meshA.vertices : object.mesh.vertices;
-  for (let i = 0; i < verts.length; i += 3) {
-    const world = vec3Impl.transformMat4(
-      [verts[i], verts[i + 1], verts[i + 2]],
-      modelMatrix
-    );
-    min2[0] = Math.min(min2[0], world[0]);
-    min2[1] = Math.min(min2[1], world[1]);
-    min2[2] = Math.min(min2[2], world[2]);
-    max2[0] = Math.max(max2[0], world[0]);
-    max2[1] = Math.max(max2[1], world[1]);
-    max2[2] = Math.max(max2[2], world[2]);
+  const box = object._aabbCache || (object._aabbCache = {
+    boxMin: [Infinity, Infinity, Infinity],
+    boxMax: [-Infinity, -Infinity, -Infinity]
+  });
+  const min2 = box.boxMin, max2 = box.boxMax;
+  min2[0] = min2[1] = min2[2] = Infinity;
+  max2[0] = max2[1] = max2[2] = -Infinity;
+  const lx = local2.min, hx = local2.max;
+  for (let mask = 0; mask < 8; mask++) {
+    const x2 = mask & 1 ? hx[0] : lx[0];
+    const y2 = mask & 2 ? hx[1] : lx[1];
+    const z = mask & 4 ? hx[2] : lx[2];
+    const wx = modelMatrix[0] * x2 + modelMatrix[4] * y2 + modelMatrix[8] * z + modelMatrix[12];
+    const wy = modelMatrix[1] * x2 + modelMatrix[5] * y2 + modelMatrix[9] * z + modelMatrix[13];
+    const wz = modelMatrix[2] * x2 + modelMatrix[6] * y2 + modelMatrix[10] * z + modelMatrix[14];
+    if (wx < min2[0]) min2[0] = wx;
+    if (wy < min2[1]) min2[1] = wy;
+    if (wz < min2[2]) min2[2] = wz;
+    if (wx > max2[0]) max2[0] = wx;
+    if (wy > max2[1]) max2[1] = wy;
+    if (wz > max2[2]) max2[2] = wz;
   }
-  object._aabbCache = {
-    modelMatrix,
-    boxMin: min2,
-    boxMax: max2,
-    x: object.position.x,
-    y: object.position.y,
-    z: object.position.z
-  };
-  return object._aabbCache;
+  box.modelMatrix = modelMatrix;
+  box.x = object.position.x;
+  box.y = object.position.y;
+  box.z = object.position.z;
+  return box;
 }
 function dispatchRayHitEvent(canvas, data) {
   const e = data.eventName === "click" ? rayHitEventClick : data.eventName === "mousedown" ? rayHitEventMouseDown : rayHitEventMouseMove;
@@ -36108,7 +36139,7 @@ var ProceduralMeshObj = class extends Materials {
     this.sceneBGL = o2.sceneBGL;
     this.materialBGL = o2.materialBGL;
     this.uniformBufferBindGroupLayout = o2.uniformBufferBindGroupLayout;
-    if (o2.physics.geometry !== "Cloth") {
+    if (o2.physics.geometry !== "Cloth" && o2.physics.geometry !== "SoftBody") {
       this.dummyClothBuffer = o2.dummyClothBuffer;
     }
     this._o = o2;
@@ -36453,11 +36484,11 @@ var ProceduralMeshObj = class extends Materials {
         // morphBlend
       ]
     });
-    if (this.o_.physics.geometry === "Cloth") {
-      const maxClothParticles = 384;
+    if (this.o_.physics.geometry === "Cloth" || this.o_.physics.geometry === "SoftBody") {
+      const vertexCount = this.o_.physics.geometry === "SoftBody" ? Math.max(1, Math.ceil((this.o_.physics.vertices?.length || 0) / 3)) : 384;
       this.clothBuffer = this.device.createBuffer({
-        label: "Cloth Physics Storage Buffer",
-        size: maxClothParticles * 4 * Float32Array.BYTES_PER_ELEMENT,
+        label: this.o_.physics.geometry === "SoftBody" ? "SoftBody Physics Storage Buffer" : "Cloth Physics Storage Buffer",
+        size: vertexCount * 4 * Float32Array.BYTES_PER_ELEMENT,
         usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
       });
     } else {
@@ -36468,12 +36499,13 @@ var ProceduralMeshObj = class extends Materials {
       clothBuffer: this.clothBuffer,
       enableCloth: (startIndex = 0) => {
         this.vertexAnim.active = true;
-        this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.CLOTH;
+        const physicsFlag = this.o_.physics.geometry === "SoftBody" ? VERTEX_ANIM_FLAGS.SOFT_BODY : VERTEX_ANIM_FLAGS.CLOTH;
+        this.vertexAnimParams[1] |= physicsFlag;
         this.vertexAnimParams[28] = startIndex;
         this.updateVertexAnimBuffer();
       },
       disableCloth: () => {
-        this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.CLOTH;
+        this.vertexAnimParams[1] &= ~(VERTEX_ANIM_FLAGS.CLOTH | VERTEX_ANIM_FLAGS.SOFT_BODY);
         this.vertexAnim.clothBuffer = null;
         this.updateVertexAnimBuffer();
       },
@@ -39152,9 +39184,122 @@ var nanoPass = function() {
 };
 
 // src/engine/physics/bridge.js
+function calculateSoftBodyNormals(positions, indices, vertexCount, fallbackNormals, normals, v2n, nodeAcc) {
+  normals = normals || new Float32Array(vertexCount * 3);
+  normals.fill(0);
+  for (let i = 0; i + 2 < indices.length; i += 3) {
+    const ia = indices[i], ib = indices[i + 1], ic = indices[i + 2];
+    if (ia >= vertexCount || ib >= vertexCount || ic >= vertexCount) continue;
+    const ax = positions[ia * 4], ay = positions[ia * 4 + 1], az = positions[ia * 4 + 2];
+    const bx = positions[ib * 4], by = positions[ib * 4 + 1], bz = positions[ib * 4 + 2];
+    const cx = positions[ic * 4], cy = positions[ic * 4 + 1], cz = positions[ic * 4 + 2];
+    const abx = bx - ax, aby = by - ay, abz = bz - az;
+    const acx = cx - ax, acy = cy - ay, acz = cz - az;
+    const nx = aby * acz - abz * acy;
+    const ny = abz * acx - abx * acz;
+    const nz = abx * acy - aby * acx;
+    normals[ia * 3] += nx;
+    normals[ia * 3 + 1] += ny;
+    normals[ia * 3 + 2] += nz;
+    normals[ib * 3] += nx;
+    normals[ib * 3 + 1] += ny;
+    normals[ib * 3 + 2] += nz;
+    normals[ic * 3] += nx;
+    normals[ic * 3 + 1] += ny;
+    normals[ic * 3 + 2] += nz;
+  }
+  if (v2n && nodeAcc) {
+    nodeAcc.fill(0);
+    for (let i = 0; i < vertexCount; i++) {
+      const n2 = v2n[i] * 3, o2 = i * 3;
+      nodeAcc[n2] += normals[o2];
+      nodeAcc[n2 + 1] += normals[o2 + 1];
+      nodeAcc[n2 + 2] += normals[o2 + 2];
+    }
+    for (let i = 0; i < vertexCount; i++) {
+      const n2 = v2n[i] * 3, o2 = i * 3;
+      normals[o2] = nodeAcc[n2];
+      normals[o2 + 1] = nodeAcc[n2 + 1];
+      normals[o2 + 2] = nodeAcc[n2 + 2];
+    }
+  }
+  for (let i = 0; i < vertexCount; i++) {
+    const o2 = i * 3;
+    const len2 = Math.hypot(normals[o2], normals[o2 + 1], normals[o2 + 2]);
+    if (len2 > 1e-10) {
+      normals[o2] /= len2;
+      normals[o2 + 1] /= len2;
+      normals[o2 + 2] /= len2;
+    } else if (fallbackNormals && fallbackNormals.length >= o2 + 3) {
+      normals[o2] = fallbackNormals[o2];
+      normals[o2 + 1] = fallbackNormals[o2 + 1];
+      normals[o2 + 2] = fallbackNormals[o2 + 2];
+    } else {
+      normals[o2] = 0;
+      normals[o2 + 1] = 1;
+      normals[o2 + 2] = 0;
+    }
+  }
+  return normals;
+}
+function updateSoftBodyNormals(meta, positions, vertexCount, v2n) {
+  const normalBuffer = meta.mesh.vertexNormalsBuffer;
+  const indices = meta.mesh.mesh?.indices;
+  if (!normalBuffer || !indices?.length) return;
+  if (!meta._normalScratch || meta._normalScratch.length !== vertexCount * 3) {
+    meta._normalScratch = new Float32Array(vertexCount * 3);
+  }
+  if (v2n && !meta._nodeAcc) {
+    let maxNode = 0;
+    for (let k = 0; k < v2n.length; k++) if (v2n[k] > maxNode) maxNode = v2n[k];
+    meta._nodeAcc = new Float32Array((maxNode + 1) * 3);
+  }
+  calculateSoftBodyNormals(
+    positions,
+    indices,
+    vertexCount,
+    meta.mesh.mesh?.vertexNormals,
+    meta._normalScratch,
+    v2n,
+    meta._nodeAcc
+  );
+  app.device.queue.writeBuffer(normalBuffer, 0, meta._normalScratch);
+}
+function updateCannonSoftBodyNormals(meta, positions, vertexCount, v2n) {
+  meta._normalUpdateFrame = (meta._normalUpdateFrame || 0) + 1;
+  if (meta._normalUpdateFrame & 1) {
+    updateSoftBodyNormals(meta, positions, vertexCount, v2n);
+  }
+}
+function uploadClothPackets(packets, clothMap, softBodyNormalUpdater) {
+  if (!packets?.length) return;
+  const device2 = app.device;
+  for (let p = 0; p < packets.length; p++) {
+    const packet = packets[p];
+    const meta = clothMap.get(packet.startIndex);
+    const buf = meta?.mesh?.vertexAnim?.clothBuffer;
+    if (!buf) continue;
+    const src = packet.positions, v2n = meta.v2n;
+    if (meta.isSoftBody) meta.positions = src;
+    const n2 = v2n ? v2n.length : meta.count;
+    if (!meta._scratch || meta._scratch.length !== n2 * 4) meta._scratch = new Float32Array(n2 * 4);
+    const dst = meta._scratch;
+    const o2 = meta.off;
+    for (let i = 0; i < n2; i++) {
+      const s = (v2n ? v2n[i] : i) * 3;
+      const d = i * 4;
+      dst[d] = src[s] + (o2 ? o2[i * 3] : 0);
+      dst[d + 1] = src[s + 1] + (o2 ? o2[i * 3 + 1] : 0);
+      dst[d + 2] = src[s + 2] + (o2 ? o2[i * 3 + 2] : 0);
+    }
+    device2.queue.writeBuffer(buf, 0, dst);
+    if (meta.isSoftBody) softBodyNormalUpdater(meta, dst, n2, v2n);
+  }
+}
 var PhysicsBridge = class {
   constructor(workerUrl) {
     this._worker = null;
+    this._softBodyNormalUpdater = updateSoftBodyNormals;
     const isModule = workerUrl.indexOf("ammo") === -1 && workerUrl.indexOf("matter") === -1;
     const needsBlobBridge = new URL(workerUrl, location.href).origin !== location.origin;
     if (needsBlobBridge) {
@@ -39191,6 +39336,7 @@ var PhysicsBridge = class {
     this.collisionRemoved = (e) => {
     };
     this.tempRot = mat4Impl.create();
+    this._quatScratch = new Float32Array(4);
     this._paused = false;
     this.updates = [];
     this._kinematicIdx = new Uint16Array(1024);
@@ -39198,6 +39344,13 @@ var PhysicsBridge = class {
     this._kinematicCount = 0;
     this.c = 0;
     this._clothMap = /* @__PURE__ */ new Map();
+  }
+  get _PHYSICS_DRIVE() {
+    return this._physicsDrive;
+  }
+  set _PHYSICS_DRIVE(value) {
+    this._physicsDrive = value;
+    this._softBodyNormalUpdater = value === "CANNON" ? updateCannonSoftBodyNormals : updateSoftBodyNormals;
   }
   getBodyByName(name2) {
     for (const [idx, meObj] of this._bodyIndexMap) if (meObj.name === name2) return idx;
@@ -39229,54 +39382,27 @@ var PhysicsBridge = class {
     }
     this._doAddPhysics(MEObject, pOptions);
   }
-  // _doAddPhysics(MEObject, pOptions) {
-  //   MEObject.isKinematic = pOptions.state === 4;
-  //   this._send('addBody', {pOptions}).then((startIndex) => {
-  //     // Check if this specific body option was a Cloth
-  //     if(pOptions.geometry === 'Cloth') {
-  //       console.log("addBody cloth startIndex:", startIndex);
-  //       // nx: 15, // Must match your OBJ's width subdivisions + 1 (or match total vertex math)
-  //       // ny: 23, // Must match your OBJ's height subdivisions + 1
-  //       const nx = pOptions.nx || 15;
-  //       const ny = pOptions.ny || 23;
-  //       const count = (nx + 1) * (ny + 1);
-  //       if(!this._clothMap) this._clothMap = new Map();
-  //       this._clothMap.set(startIndex, {
-  //         mesh: MEObject,
-  //         startIndex: startIndex,
-  //         nx: nx,
-  //         ny: ny,
-  //         count: count
-  //       });
-  //       console.log("Cloth registered successfully:", {startIndex, nx, ny, count});
-  //     } else {
-  //       // Regular rigid body
-  //       this._bodyIndexMap.set(startIndex, MEObject);
-  //     }
-  //   });
-  // }
   _doAddPhysics(MEObject, pOptions) {
     MEObject.isKinematic = pOptions.state === 4;
     this._send("addBody", { pOptions }).then((response) => {
       const startIndex = typeof response === "object" ? response.idx : response;
+      if (startIndex === void 0 || startIndex < 0) return;
+      if (pOptions.geometry === "SoftBody") {
+        this._clothMap.set(startIndex, {
+          mesh: MEObject,
+          startIndex,
+          count: response?.count ?? 0,
+          v2n: response?.vertexToNode || null,
+          off: response?.vertexOffsets || null,
+          isSoftBody: true
+        });
+        return;
+      }
       if (pOptions.geometry === "Cloth") {
         const nx = response?.nx ?? pOptions.nx ?? 10;
         const ny = response?.ny ?? pOptions.ny ?? 10;
         const count = response?.count ?? (nx + 1) * (ny + 1);
-        this._clothMap.set(startIndex, {
-          mesh: MEObject,
-          startIndex,
-          nx,
-          ny,
-          count
-        });
-        console.log(
-          "[CLOTH REGISTERED]",
-          startIndex,
-          nx,
-          ny,
-          count
-        );
+        this._clothMap.set(startIndex, { mesh: MEObject, startIndex, nx, ny, count });
         return;
       }
       this._bodyIndexMap.set(startIndex, MEObject);
@@ -39455,6 +39581,16 @@ var PhysicsBridge = class {
   applyClothForce(startIndex, x2, y2, z) {
     this._worker.postMessage({ cmd: "applyClothForce", startIndex, x: x2, y: y2, z });
   }
+  getSoftBodyIndex(name2) {
+    for (const [idx, meta] of this._clothMap) {
+      if (meta.isSoftBody && meta.mesh?.name === name2) return idx;
+    }
+    return -1;
+  }
+  getSoftBodySnapshot(startIndex) {
+    const meta = this._clothMap.get(startIndex);
+    return meta?.isSoftBody ? meta.positions || null : null;
+  }
   _syncToObjects() {
     const snap = this._snapshot;
     if (!snap) return;
@@ -39462,18 +39598,22 @@ var PhysicsBridge = class {
     for (const [idx, meObj] of this._bodyIndexMap) {
       if (!meObj.modelMatrix) continue;
       const b = idx * STRIDE;
-      const pos2 = snap.subarray(b, b + 3);
-      const quat = snap.subarray(b + 3, b + 7);
+      const x2 = snap[b], y2 = snap[b + 1], z = snap[b + 2];
+      const quat = this._quatScratch;
+      quat[0] = snap[b + 3];
+      quat[1] = snap[b + 4];
+      quat[2] = snap[b + 5];
+      quat[3] = snap[b + 6];
       mat4Impl.fromQuat(quat, meObj.modelMatrix);
-      meObj.modelMatrix[12] = pos2[0];
-      meObj.modelMatrix[13] = pos2[1];
-      meObj.modelMatrix[14] = pos2[2];
+      meObj.modelMatrix[12] = x2;
+      meObj.modelMatrix[13] = y2;
+      meObj.modelMatrix[14] = z;
       mat4Impl.scale(meObj.modelMatrix, meObj.scale, meObj.modelMatrix);
       meObj.modelMatrix[15] = 1;
       meObj.position.inMove = true;
-      meObj.position.x = pos2[0];
-      meObj.position.y = pos2[1];
-      meObj.position.z = pos2[2];
+      meObj.position.x = x2;
+      meObj.position.y = y2;
+      meObj.position.z = z;
     }
   }
   _send(cmd, extra = {}) {
@@ -39495,10 +39635,18 @@ var PhysicsBridge = class {
     switch (data.cmd) {
       case "ready":
       case "bodyAdded":
+        if (data.sab) this._snapshot = new Float32Array(data.sab, 4);
         const resolveFn = this._pending.get(data.id);
         if (resolveFn) {
           if (data.count && data.count > 1) {
-            resolveFn({ idx: data.idx, count: data.count, nx: data.nx, ny: data.ny });
+            resolveFn({
+              idx: data.idx,
+              count: data.count,
+              nx: data.nx,
+              ny: data.ny,
+              vertexToNode: data.vertexToNode,
+              vertexOffsets: data.vertexOffsets
+            });
           } else {
             resolveFn(data.idx);
           }
@@ -39507,22 +39655,8 @@ var PhysicsBridge = class {
         break;
       case "snapshot":
         this._snapshot = data.snap;
-        if (data.clothPackets) {
-          for (const packet of data.clothPackets) {
-            const meta = this._clothMap.get(packet.startIndex);
-            const buf = meta?.mesh?.vertexAnim?.clothBuffer;
-            if (!buf) continue;
-            const count = meta.count, src = packet.positions;
-            if (!meta._scratch) meta._scratch = new Float32Array(count * 4);
-            const dst = meta._scratch;
-            for (let i = 0; i < count; i++) {
-              dst[i * 4] = src[i * 3];
-              dst[i * 4 + 1] = src[i * 3 + 1];
-              dst[i * 4 + 2] = src[i * 3 + 2];
-            }
-            app.device.queue.writeBuffer(buf, 0, dst);
-          }
-        }
+        uploadClothPackets(data.clothPackets, this._clothMap, this._softBodyNormalUpdater);
+        uploadClothPackets(data.softBodyPackets, this._clothMap, this._softBodyNormalUpdater);
         this._syncToObjects();
         break;
       case "collision":
@@ -44723,7 +44857,7 @@ var MatrixEngineWGPU = class {
     }
     if (typeof o2.physics.enabled === "undefined") o2.physics.enabled = true;
     if (typeof o2.physics.geometry === "undefined") o2.physics.geometry = "Cube";
-    if (typeof o2.physics.radius === "undefined") o2.physics.radius = o2.scale;
+    if (typeof o2.physics.radius === "undefined") o2.physics.radius = typeof o2.scale == Number ? o2.scale : o2.scale[0];
     if (typeof o2.physics.mass === "undefined") o2.physics.mass = 1;
     if (typeof o2.physics.name === "undefined") o2.physics.name = o2.name;
     if (typeof o2.physics.scale === "undefined") o2.physics.scale = o2.scale;
@@ -44746,7 +44880,7 @@ var MatrixEngineWGPU = class {
     o2.sceneBGL = this.sceneBGL;
     o2.materialBGL = this.materialBGL;
     o2.uniformBufferBindGroupLayout = this.uniformBufferBindGroupLayout;
-    if (o2.physics.enabled !== true || o2.physics.geometry !== "Cloth") {
+    if (o2.physics.enabled !== true || o2.physics.geometry !== "Cloth" && o2.physics.geometry !== "SoftBody") {
       o2.dummyClothBuffer = this.dummyClothBuffer;
     }
     let myMesh1 = new MEMeshObj(
@@ -44816,7 +44950,13 @@ var MatrixEngineWGPU = class {
     }
     if (typeof o2.physics.enabled === "undefined") o2.physics.enabled = true;
     if (typeof o2.physics.geometry === "undefined") o2.physics.geometry = "Cube";
-    if (typeof o2.physics.radius === "undefined") o2.physics.radius = o2.scale;
+    if (typeof o2.physics.radius === "undefined") {
+      if (o2.physics.geometry === "SoftBody") {
+        o2.physics.radius = 0.05;
+      } else {
+        o2.physics.radius = typeof o2.scale === "number" ? o2.scale : o2.scale[0];
+      }
+    }
     if (typeof o2.physics.mass === "undefined") o2.physics.mass = 1;
     if (typeof o2.physics.name === "undefined") o2.physics.name = o2.name;
     if (typeof o2.physics.scale === "undefined") o2.physics.scale = o2.scale;
@@ -44833,7 +44973,7 @@ var MatrixEngineWGPU = class {
     o2.sceneBGL = this.sceneBGL;
     o2.materialBGL = this.materialBGL;
     o2.uniformBufferBindGroupLayout = this.uniformBufferBindGroupLayout;
-    if (o2.physics.enabled !== true || o2.physics.geometry !== "Cloth") {
+    if (o2.physics.enabled !== true || o2.physics.geometry !== "Cloth" && o2.physics.geometry !== "SoftBody") {
       o2.dummyClothBuffer = this.dummyClothBuffer;
     }
     let myMesh = new ProceduralMeshObj(this.canvas, this.device, this.context, o2, this.inputHandler, AM, this.cameraBuffer);
@@ -45206,7 +45346,7 @@ var MatrixEngineWGPU = class {
     o2.sceneBGL = this.sceneBGL;
     let r2 = [];
     o2.textureCache = this.textureCache;
-    if (o2.physics.enabled !== true || o2.physics.geometry !== "Cloth") {
+    if (o2.physics.enabled !== true || o2.physics.geometry !== "Cloth" && o2.physics.geometry !== "SoftBody") {
       o2.dummyClothBuffer = this.dummyClothBuffer;
     }
     let skinnedNodeIndex = 0;
@@ -45335,7 +45475,7 @@ var MatrixEngineWGPU = class {
     o2.sceneBGL = this.sceneBGL;
     let results = [];
     let skinnedNodeIndex = 0;
-    if (o2.physics.enabled !== true || o2.physics.geometry !== "Cloth") {
+    if (o2.physics.enabled !== true || o2.physics.geometry !== "Cloth" && o2.physics.geometry !== "SoftBody") {
       o2.dummyClothBuffer = this.dummyClothBuffer;
     }
     for (const skinnedNode of glbFile.skinnedMeshNodes) {
@@ -46804,30 +46944,13 @@ var loadFreekyChat = function() {
         MYCUBE.rotation.emitY = MYCUBE.name;
         PLANE.vertexAnim.enableCloth(1);
         app.activateHZB();
-      }, 500);
+      }, 600);
       let cam2 = app.getCamera();
       cam2.setYaw(-0.03);
       cam2.setPitch(-0.49);
       cam2.setZ(0);
       cam2.setY(3.76);
       cam2._dirtyAngle = true;
-      freekyChat.addMeshObj({
-        material: { type: "standard" },
-        position: { x: 0, y: 15, z: -20 },
-        rotation: { x: 0, y: 0, z: 0 },
-        rotationSpeed: { x: 0, y: 111, z: 0 },
-        scale: [5, 5, 5],
-        texturesPaths: ["./res/meshes/obj/modelpack19/hand-logo.webp"],
-        name: "ball1",
-        mesh: m.ball,
-        physics: {
-          enabled: true,
-          geometry: "Sphere",
-          group: 2,
-          mask: -1
-        },
-        raycast: { enabled: true, radius: 1 }
-      });
       freekyChat.addMeshObj({
         position: { x: 0, y: -0.5, z: -10 },
         rotation: { x: 0, y: 0, z: 0 },

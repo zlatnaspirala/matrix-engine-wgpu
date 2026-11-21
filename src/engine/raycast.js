@@ -148,41 +148,58 @@ export function rayIntersectsAABB(rayOrigin, rayDirection, boxMin, boxMax) {
 }
 
 export function computeWorldVertsAndAABB(object) {
-  if(object._aabbCache &&
-    object._aabbCache.x === object.position.x &&
-    object._aabbCache.y === object.position.y &&
-    object._aabbCache.z === object.position.z) {
-    return object._aabbCache;
+  const mesh = object.meshA || object.mesh;
+  const verts = mesh?.vertices;
+  if(!verts?.length) return null;
+
+  // Mesh-local bounds are invariant while the vertex array is unchanged.
+  // Cache them once, then transform only the 8 AABB corners per raycast.
+  let local = mesh._raycastLocalAABB;
+  if(!local || local.vertices !== verts || local.length !== verts.length) {
+    const min = [Infinity, Infinity, Infinity];
+    const max = [-Infinity, -Infinity, -Infinity];
+    for(let i = 0;i < verts.length;i += 3) {
+      const x = verts[i], y = verts[i + 1], z = verts[i + 2];
+      if(x < min[0]) min[0] = x;
+      if(y < min[1]) min[1] = y;
+      if(z < min[2]) min[2] = z;
+      if(x > max[0]) max[0] = x;
+      if(y > max[1]) max[1] = y;
+      if(z > max[2]) max[2] = z;
+    }
+    local = mesh._raycastLocalAABB = {vertices: verts, length: verts.length, min, max};
   }
+
   const modelMatrix = object.getModelMatrix(object.position, true);
-  const min = [Infinity, Infinity, Infinity];
-  const max = [-Infinity, -Infinity, -Infinity];
-  const verts = object.meshA ? object.meshA.vertices : object.mesh.vertices;
-  // Compute AABB directly without building worldVerts array
-  for(let i = 0;i < verts.length;i += 3) {
-    const world = vec3.transformMat4(
-      [verts[i], verts[i + 1], verts[i + 2]],
-      modelMatrix
-    );
-    min[0] = Math.min(min[0], world[0]);
-    min[1] = Math.min(min[1], world[1]);
-    min[2] = Math.min(min[2], world[2]);
-    max[0] = Math.max(max[0], world[0]);
-    max[1] = Math.max(max[1], world[1]);
-    max[2] = Math.max(max[2], world[2]);
+  const box = object._aabbCache || (object._aabbCache = {
+    boxMin: [Infinity, Infinity, Infinity],
+    boxMax: [-Infinity, -Infinity, -Infinity]
+  });
+  const min = box.boxMin, max = box.boxMax;
+  min[0] = min[1] = min[2] = Infinity;
+  max[0] = max[1] = max[2] = -Infinity;
+
+  const lx = local.min, hx = local.max;
+  for(let mask = 0;mask < 8;mask++) {
+    const x = (mask & 1) ? hx[0] : lx[0];
+    const y = (mask & 2) ? hx[1] : lx[1];
+    const z = (mask & 4) ? hx[2] : lx[2];
+    const wx = modelMatrix[0] * x + modelMatrix[4] * y + modelMatrix[8] * z + modelMatrix[12];
+    const wy = modelMatrix[1] * x + modelMatrix[5] * y + modelMatrix[9] * z + modelMatrix[13];
+    const wz = modelMatrix[2] * x + modelMatrix[6] * y + modelMatrix[10] * z + modelMatrix[14];
+    if(wx < min[0]) min[0] = wx;
+    if(wy < min[1]) min[1] = wy;
+    if(wz < min[2]) min[2] = wz;
+    if(wx > max[0]) max[0] = wx;
+    if(wy > max[1]) max[1] = wy;
+    if(wz > max[2]) max[2] = wz;
   }
 
-  // Cache result with position snapshot
-  object._aabbCache = {
-    modelMatrix,
-    boxMin: min,
-    boxMax: max,
-    x: object.position.x,
-    y: object.position.y,
-    z: object.position.z
-  };
-
-  return object._aabbCache;
+  box.modelMatrix = modelMatrix;
+  box.x = object.position.x;
+  box.y = object.position.y;
+  box.z = object.position.z;
+  return box;
 }
 
 function dispatchRayHitEvent(canvas, data) {

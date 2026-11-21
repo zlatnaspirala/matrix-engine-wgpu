@@ -164,7 +164,7 @@ class MatterPhysicsWorker {
           body = this.Bodies.rectangle(mx, my, sw, sh, {...rest, name});
       }
     } catch(e) {
-      console.warn(`Failed to create body ${geometry}:`, e);
+      console.warn("Failed to create body:", geometry, e);
       return -1;
     }
 
@@ -246,7 +246,8 @@ class MatterPhysicsWorker {
       }
     }
     this._allocBuffer(this.rigidBodies.length);
-    this.cloths.push({startIndex, nx, ny, count: parts.length, z: p.z});
+    const positions = new Float32Array(parts.length * 3);
+    this.cloths.push({startIndex, nx, ny, count: parts.length, z: p.z, positions, packet: {startIndex, positions}});
     return startIndex;
   }
 
@@ -428,6 +429,8 @@ class MatterPhysicsWorker {
     if(body) {
       this.World.remove(this.engine.world, body);
       this.rigidBodies[idx] = null;
+      this.kinematicTargets.delete(idx);
+      if(this.bodyMap.get(body.name) === idx) this.bodyMap.delete(body.name);
     }
   }
 
@@ -447,23 +450,25 @@ class MatterPhysicsWorker {
       snap[base + 0] = body.position.x * this.TUNE;
       snap[base + 2] = 0;
       snap[base + 1] = -body.position.y * this.TUNE;
-      const quat = _eulerToQuat(0, 0, body.angle);
-      snap[base + 3] = quat[0];
-      snap[base + 4] = quat[1];
-      snap[base + 5] = quat[2];
-      snap[base + 6] = quat[3];
+      const halfAngle = body.angle * 0.5;
+      snap[base + 3] = 0;
+      snap[base + 4] = 0;
+      snap[base + 5] = Math.sin(halfAngle);
+      snap[base + 6] = Math.cos(halfAngle);
       snap[base + 7] = body.isStatic ? 0 : 1;
     }
     this.clothDataPackets.length = 0;
     for(const c of this.cloths) {
-      const positions = new Float32Array(c.count * 3);
+      const positions = c.positions;
       for(let i = 0;i < c.count;i++) {
         const b = this.rigidBodies[c.startIndex + i];
-        positions[i * 3] = b.position.x * this.TUNE;
-        positions[i * 3 + 1] = -b.position.y * this.TUNE;
-        positions[i * 3 + 2] = c.z;
+        const offset = i * 3;
+        if(!b) {positions[offset] = positions[offset + 1] = 0; positions[offset + 2] = c.z; continue;}
+        positions[offset] = b.position.x * this.TUNE;
+        positions[offset + 1] = -b.position.y * this.TUNE;
+        positions[offset + 2] = c.z;
       }
-      this.clothDataPackets.push({startIndex: c.startIndex, positions});
+      this.clothDataPackets.push(c.packet);
     }
   }
 

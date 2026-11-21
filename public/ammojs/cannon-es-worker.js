@@ -38,33 +38,6 @@ function getHingeAngle(bodyA, bodyB, axis) {
   return angle;
 }
 
-// function weldMesh(verts, indices, scale = [1, 1, 1], pos = {x: 0, y: 0, z: 0}, eps = 1e-4) {
-//   const q = 1 / eps, map = new Map(), nodePos = [];
-//   const vcount = verts.length / 3;
-//   const v2n = new Uint32Array(vcount);
-//   for(let i = 0;i < vcount;i++) {
-//     const x = verts[i * 3] * scale[0] + (pos.x || 0);
-//     const y = verts[i * 3 + 1] * scale[1] + (pos.y || 0);
-//     const z = verts[i * 3 + 2] * scale[2] + (pos.z || 0);
-//     const key = Math.round(x * q) + ',' + Math.round(y * q) + ',' + Math.round(z * q);
-//     let n = map.get(key);
-//     if(n === undefined) {n = nodePos.length / 3; map.set(key, n); nodePos.push(x, y, z);}
-//     v2n[i] = n;
-//   }
-//   const triCount = indices ? indices.length : vcount;
-//   const seen = new Set(), edges = [], tris = new Uint32Array(triCount);
-//   for(let i = 0;i < triCount;i++) tris[i] = v2n[indices ? indices[i] : i];
-//   const addEdge = (a, b) => {
-//     if(a === b) return;
-//     const k = a < b ? a + '_' + b : b + '_' + a;
-//     if(seen.has(k)) return;
-//     seen.add(k); edges.push(a, b);
-//   };
-//   for(let t = 0;t < triCount;t += 3) {
-//     addEdge(tris[t], tris[t + 1]); addEdge(tris[t + 1], tris[t + 2]); addEdge(tris[t + 2], tris[t]);
-//   }
-//   return {nodePos: Float32Array.from(nodePos), count: nodePos.length / 3, v2n, tris, edges: Uint32Array.from(edges)};
-// }
 function weldMesh(verts, indices, scale = [1, 1, 1], pos = {x: 0, y: 0, z: 0}, cell = 0) {
   const step = cell > 0 ? cell : 1e-4;
   const vcount = verts.length / 3;
@@ -242,7 +215,6 @@ class MatrixCannon {
     this.rigidBodies.push(cannonBody);
     this.bodyMap.set(cannonBody, idx);
     this._allocBuffer(this.rigidBodies.length);
-    if(!deferAlloc) this._allocBuffer(this.rigidBodies.length);
     if(this._snapshot) {
       const base = idx * FLOATS_PER_BODY;
       this._snapshot[base + 0] = pOptions.position?.x ?? 0;
@@ -475,7 +447,8 @@ class MatrixCannon {
 
     this.world.broadphase.dirty = true;
     this.world.broadphase.needsUpdate = true;
-    this.cloths.push({startIndex, nx, ny, count: particles.length});
+    const positions = new Float32Array(particles.length * 3);
+    this.cloths.push({startIndex, nx, ny, count: particles.length, positions, packet: {startIndex, positions}});
     // console.log('worker cloths: ', this.cloths)
     return startIndex;
   }
@@ -568,7 +541,15 @@ class MatrixCannon {
     const b = this.rigidBodies[idx];
     if(!b) return;
     this.world.removeBody(b);
-    this.rigidBodies.slice(idx, 1);
+    this.bodyMap.delete(b);
+    this.rigidBodies[idx] = null;
+    for(let i = 0;i < this.constraints.length;i++) {
+      const constraint = this.constraints[i];
+      if(constraint && (constraint.bodyA === b || constraint.bodyB === b)) {
+        this.world.removeConstraint(constraint);
+        this.constraints[i] = null;
+      }
+    }
   }
 
   setGravity(x, y, z) {
@@ -721,7 +702,8 @@ class MatrixCannon {
     this.world.broadphase.dirty = true;
     this.world.broadphase.needsUpdate = true;
     // this.cloths.push({startIndex, nx: 0, ny: 0, count, v2n: w.v2n});
-    this.cloths.push({startIndex, nx: 0, ny: 0, count, v2n: w.v2n, offsets: w.offsets});
+    const positions = new Float32Array(count * 3);
+    this.cloths.push({startIndex, nx: 0, ny: 0, count, v2n: w.v2n, offsets: w.offsets, positions, packet: {startIndex, positions}});
     return startIndex;
   }
 
@@ -983,6 +965,7 @@ class MatrixCannon {
     for(let i = 0;i < count;i++) {
       const base = i * FLOATS_PER_BODY;
       const body = this.rigidBodies[i];
+      if(!body) {snap[base + 7] = 0; continue;}
       if(body.sleepState === body.SLEEPING) {
         snap[base + 7] = 0;
         continue;
@@ -1000,17 +983,16 @@ class MatrixCannon {
     this.clothDataPackets.length = 0;
     if(this.cloths) {
       for(const cloth of this.cloths) {
-        const positions = new Float32Array(cloth.count * 3);
+        const positions = cloth.positions;
         for(let i = 0;i < cloth.count;i++) {
           const body = this.rigidBodies[cloth.startIndex + i];
-          positions[i * 3 + 0] = body.position.x;
-          positions[i * 3 + 1] = body.position.y;
-          positions[i * 3 + 2] = body.position.z;
+          const offset = i * 3;
+          if(!body) {positions[offset] = positions[offset + 1] = positions[offset + 2] = 0; continue;}
+          positions[offset] = body.position.x;
+          positions[offset + 1] = body.position.y;
+          positions[offset + 2] = body.position.z;
         }
-        // console.log("clothDataPackets pos[0]:", positions[0], positions[1], positions[2]);
-        // console.log("cloth.startIndex:", cloth.startIndex);
-
-        this.clothDataPackets.push({startIndex: cloth.startIndex, positions});
+        this.clothDataPackets.push(cloth.packet);
       }
     }
   }

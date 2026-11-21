@@ -1,7 +1,7 @@
 import MatrixEngineWGPU from "../src/world.js";
 import {downloadMeshes} from '../src/engine/loader-obj.js';
 import {uploadGLBModel} from "../src/engine/loaders/webgpu-gltf.js";
-import {CameraPath, isMobile, ORBIT} from '../src/engine/utils.js';
+import {CameraPath, isMobile, loadTextureView, ORBIT} from '../src/engine/utils.js';
 
 /**
  *
@@ -115,7 +115,7 @@ export var myLights = function() {
       const light = myLights.lightContainer[i];
       const angleOffset = (i / NUM_LIGHTS) * Math.PI * 2;
       const color = LIGHT_COLORS[i];
-      light.setIntensity(8.5);
+      light.setIntensity(318.5);
       light.color = color;
       // Orbit height varies slightly per light for more visual interest
       const heightOffset = Math.sin(angleOffset) * 2;
@@ -142,6 +142,34 @@ export var myLights = function() {
     if(isMobile() == false) {
       myLights.activateBloomEffect();
       myLights.activateHZB();
+
+      myLights.activateVolumetricTexProj({
+        density: 0.01,
+        steps: 32,
+        scatterStrength: 1.1,
+        heightFalloff: 1.1,
+        lightColor: [1.0, 1.0, 0.0]
+      }
+      );
+      myLights.volumetricPass.setDensity(62);
+      const view = await loadTextureView(myLights.device, './res/textures/shooter/hang3d.png');
+      myLights.volumetricPass.setProjectionTexture(view, myLights.lightContainer[0].viewProjMatrix);
+      myLights.volumetricPass.setTextureProjectionIntensity(1.0); // 0..2
+      // app.volumetricPass.disableTextureProjection();
+
+      // physicsPlayground.activateVolumetricClouds({
+      //   qualityScale: 0.35,
+      //   steps: 24,
+      //   coverage: 0.58,
+      //   cloudBase: 2,
+      //   cloudTop: 28,
+      //   noiseScale: 0.035,
+      //   windSpeed: 0.8,
+      //   scatterStrength: 0.2,
+      // })
+
+      // app.activateVolumetricClouds2({coverage: 0.55, cloudBase: 120, cloudThickness: 60})
+      // app.volumetricPass.setCloudLayer(-21, 100);
     }
 
     setTimeout(() => {

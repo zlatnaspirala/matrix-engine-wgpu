@@ -1,6 +1,6 @@
 import MatrixEngineWGPU from "../src/world.js";
 import {downloadMeshes, makeObjSeqArg} from '../src/engine/loader-obj.js';
-import {LOG_MATRIX} from "../src/engine/utils.js";
+import {loadTextureView, LOG_MATRIX} from "../src/engine/utils.js";
 
 /**
  *
@@ -26,17 +26,47 @@ export var loadObjsSequence = function() {
       type: 'WASD',
       responseCoef: 1000
     }
-  }, () => {
+  }, async () => {
 
     loadObjFile.addLight();
     loadObjFile.lightContainer[0].setPosZ(-20);
-    loadObjFile.lightContainer[0].setPosY(35);
-    loadObjFile.lightContainer[0].setIntensity(5);
+    loadObjFile.lightContainer[0].setPosY(45);
+    loadObjFile.lightContainer[0].setIntensity(15);
 
     downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, onGround, {scale: [20, 1, 20]});
 
     loadObjFile.activateBloomEffect();
-    loadObjFile.activateVolumetricEffect({density: 1.5, steps: 30, scatterStrength: 1, heightFalloff: 1.6, lightColor: [10, 1.8, 0]})
+
+    loadObjFile.activateVolumetricTexProj({
+      density: 0.03,
+      steps: 32,
+      scatterStrength: 0.2,
+      heightFalloff:  10.8,
+      lightColor: [3.0, 1.0, 1.0]
+    });
+    // loadObjFile.volumetricPass.setDensity(2);
+
+     app.volumetricPass.setDensity(16);
+    const view = await loadTextureView(loadObjFile.device, 'res/textures/shooter/hang3d.png');
+    loadObjFile.volumetricPass.setProjectionTexture(view, loadObjFile.lightContainer[0].viewProjMatrix);
+    loadObjFile.volumetricPass.setTextureProjectionIntensity(121.0); // 0..2
+    // app.volumetricPass.disableTextureProjection();
+
+    // physicsPlayground.activateVolumetricClouds({
+    //   qualityScale: 0.35,
+    //   steps: 24,
+    //   coverage: 0.58,
+    //   cloudBase: 2,
+    //   cloudTop: 28,
+    //   noiseScale: 0.035,
+    //   windSpeed: 0.8,
+    //   scatterStrength: 0.2,
+    // })
+
+    // app.activateVolumetricClouds2({coverage: 0.55, cloudBase: 120, cloudThickness: 60})
+    // app.volumetricPass.setCloudLayer(-21, 100);
+
+    // loadObjFile.activateVolumetricEffect({density: 1.5, steps: 30, scatterStrength: 1, heightFalloff: 1.6, lightColor: [10, 1.8, 0]})
 
     downloadMeshes(
       makeObjSeqArg({
@@ -84,7 +114,12 @@ export var loadObjsSequence = function() {
         objAnim: objAnim
       })
 
-      setTimeout(() => {
+      setTimeout(async () => {
+
+
+
+
+
         // Int 1 is max speed
         app.getSceneObjectByName('swat').objAnim.animations.walk.speed = 1;
 
@@ -96,7 +131,7 @@ export var loadObjsSequence = function() {
         cam._dirtyAngle = true;
 
         app.getSceneObjectByName('swat').objAnim.play('walk');
-      }, 200);
+      }, 300);
     }
 
     function onGround(m) {

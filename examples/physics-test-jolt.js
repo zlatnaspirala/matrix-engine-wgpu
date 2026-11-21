@@ -79,13 +79,16 @@ export var testJolt = function() {
         texturesPaths: ['./res/textures/floor1.webp'],
         name: 'jelly', mesh: m.ball,
         physics: {
-          // radius: undefined,
           enabled: true, geometry: 'SoftBody', mass: 2,
           nodeSpacing: 0, group: 2, mask: -1,
           vertices: m.ball.vertices, indices: m.ball.indices, radius: 0.01
         }
       });
-      setTimeout(() => jelly.vertexAnim.enableCloth(1), 500);
+      setTimeout(() => {
+        const startIndex = physicsPlayground.matrixPhysics.getSoftBodyIndex(jelly.name);
+        if(startIndex >= 0) jelly.vertexAnim.enableCloth(startIndex);
+        else console.warn('[Jolt SoftBody] body registration is not available yet');
+      }, 500);
 
       app.cameras.WASD.setYaw(-0.03);
       app.cameras.WASD.setPitch(-0.49);

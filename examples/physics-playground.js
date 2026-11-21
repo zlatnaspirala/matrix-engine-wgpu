@@ -1,6 +1,6 @@
 import MatrixEngineWGPU from "../src/world.js";
 import {downloadMeshes} from '../src/engine/loader-obj.js';
-import {isMobile, LOG_MATRIX} from "../src/engine/utils.js";
+import {isMobile, loadTextureView, LOG_MATRIX} from "../src/engine/utils.js";
 import {addRaycastsListener} from "../src/engine/raycast.js";
 import {MeshMorpher} from "../src/engine/procedural-mesh.js";
 // import {uploadGLBModel} from "../src/engine/loaders/webgpu-gltf.js";
@@ -31,7 +31,7 @@ export var physicsPlayground = function() {
       physicsPlayground.matrixPhysics.speedUpSimulation(4);
 
       app.activateBloomEffect();
-      app.activateVolumetricEffect({density: 0.5, steps: 30, scatterStrength: 2, heightFalloff: 0.2, lightColor: [0, 1.8, 10]})
+      // app.activateVolumetricEffect({density: 0.5, steps: 30, scatterStrength: 2, heightFalloff: 0.2, lightColor: [0, 1.8, 10]})
       // physicsPlayground.physicsBodiesGenerator(
       //   "standard",
       //   {x: 0, y: 0, z: -20},
@@ -228,8 +228,60 @@ export var physicsPlayground = function() {
       // physicsPlayground.lightContainer[0].updater.push((light) => {
       //   light.setPosX(light.behavior.setPath0())
       // })
-      physicsPlayground.lightContainer[0].setPosY(14);
-      physicsPlayground.lightContainer[0].setIntensity(24);
+      physicsPlayground.lightContainer[0].setPosY(75);
+      physicsPlayground.lightContainer[0].setIntensity(50);
+
+
+      // app.activateVolumetricEffect({
+      //   density: 11,
+      //   steps: 64,
+      //   scatterStrength: 0.3,
+      //   heightFalloff: 4.5,
+      //   lightColor: [50, 1, 0]
+      // })
+
+      // const jelly = physicsPlayground.addMeshObj({
+      //   material: {type: 'standard'},
+      //   position: {x: 0, y: 8, z: -10},
+      //   scale: [1, 1, 1],
+      //   texturesPaths: ['./res/textures/floor1.webp'],
+      //   name: 'jelly', mesh: m.ball,
+      //   physics: {
+      //     enabled: true, geometry: 'SoftBody', mass: 2,
+      //     nodeSpacing: 0, group: 2, mask: -1,
+      //     vertices: m.ball.vertices, indices: m.ball.indices,
+      //     hub: false, radius: 0.1
+      //   }
+      // });
+      // setTimeout(() => jelly.vertexAnim.enableCloth(1), 500);
+
+      app.activateVolumetricTexProj({
+        density: 0.03,
+        steps: 32,
+        scatterStrength: 0.2,
+        heightFalloff: 10.8,
+        lightColor: [1.0, 1.0, 1.0]}
+      );
+      app.volumetricPass.setDensity(34);
+      const view = await loadTextureView(app.device, 'res/textures/shooter/hang3d.png');
+      app.volumetricPass.setProjectionTexture(view, app.lightContainer[0].viewProjMatrix);
+      app.volumetricPass.setTextureProjectionIntensity(11.0); // 0..2
+      // app.volumetricPass.disableTextureProjection();
+
+      // physicsPlayground.activateVolumetricClouds({
+      //   qualityScale: 0.35,
+      //   steps: 24,
+      //   coverage: 0.58,
+      //   cloudBase: 2,
+      //   cloudTop: 28,
+      //   noiseScale: 0.035,
+      //   windSpeed: 0.8,
+      //   scatterStrength: 0.2,
+      // })
+
+      // app.activateVolumetricClouds2({coverage: 0.55, cloudBase: 120, cloudThickness: 60})
+      // app.volumetricPass.setCloudLayer(-21, 100);
+
     }
 
     function onLoadObj(m) {
