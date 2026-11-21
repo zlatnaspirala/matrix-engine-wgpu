@@ -50,7 +50,35 @@ function calculateSoftBodyNormals(positions, indices, vertexCount, fallbackNorma
 }
 
 
-function uploadClothPackets(packets, clothMap, throttleSoftBodyNormals = false) {
+function updateSoftBodyNormals(meta, positions, vertexCount, v2n) {
+  const normalBuffer = meta.mesh.vertexNormalsBuffer;
+  const indices = meta.mesh.mesh?.indices;
+  if(!normalBuffer || !indices?.length) return;
+  if(!meta._normalScratch || meta._normalScratch.length !== vertexCount * 3) {
+    meta._normalScratch = new Float32Array(vertexCount * 3);
+  }
+  if(v2n && !meta._nodeAcc) {
+    let maxNode = 0;
+    for(let k = 0;k < v2n.length;k++) if(v2n[k] > maxNode) maxNode = v2n[k];
+    meta._nodeAcc = new Float32Array((maxNode + 1) * 3);
+  }
+  calculateSoftBodyNormals(
+    positions, indices, vertexCount, meta.mesh.mesh?.vertexNormals,
+    meta._normalScratch, v2n, meta._nodeAcc
+  );
+  app.device.queue.writeBuffer(normalBuffer, 0, meta._normalScratch);
+}
+
+function updateCannonSoftBodyNormals(meta, positions, vertexCount, v2n) {
+  // Cannon keeps vertex positions current on every snapshot, while normal rebuilding
+  // is deliberately amortized across snapshots to reduce main-thread work.
+  meta._normalUpdateFrame = (meta._normalUpdateFrame || 0) + 1;
+  if(meta._normalUpdateFrame & 1) {
+    updateSoftBodyNormals(meta, positions, vertexCount, v2n);
+  }
+}
+
+function uploadClothPackets(packets, clothMap, softBodyNormalUpdater) {
   if(!packets?.length) return;
   const device = app.device;
   for(let p = 0;p < packets.length;p++) {
@@ -73,38 +101,14 @@ function uploadClothPackets(packets, clothMap, throttleSoftBodyNormals = false) 
     }
     device.queue.writeBuffer(buf, 0, dst);
 
-    if(meta.isSoftBody) {
-      // CannonJS SoftBody vertex positions must stay current on every snapshot, but
-      // rebuilding every triangle normal on every snapshot can monopolize the main
-      // thread. Refresh Cannon normals every second packet; leave Jolt unchanged.
-      const updateNormals = !throttleSoftBodyNormals ||
-        ((meta._normalUpdateFrame = (meta._normalUpdateFrame || 0) + 1) & 1) === 1;
-      const normalBuffer = meta.mesh.vertexNormalsBuffer;
-      const indices = meta.mesh.mesh?.indices;
-      if(updateNormals && normalBuffer && indices?.length) {
-        if(!meta._normalScratch || meta._normalScratch.length !== n * 3) {
-          meta._normalScratch = new Float32Array(n * 3);
-        }
-        if(v2n && !meta._nodeAcc) {
-          let maxNode = 0;
-          for(let k = 0;k < v2n.length;k++) if(v2n[k] > maxNode) maxNode = v2n[k];
-          meta._nodeAcc = new Float32Array((maxNode + 1) * 3);
-        }
-        calculateSoftBodyNormals(
-          dst, indices, n, meta.mesh.mesh?.vertexNormals,
-          meta._normalScratch, v2n, meta._nodeAcc
-        );
-        device.queue.writeBuffer(normalBuffer, 0, meta._normalScratch);
-      }
-    }
+    if(meta.isSoftBody) softBodyNormalUpdater(meta, dst, n, v2n);
   }
 }
 
 export class PhysicsBridge {
   constructor(workerUrl) {
     this._worker = null;
-    this._isCannon = /cannon/i.test(workerUrl);
-    this._cannonStepPending = false;
+    this._softBodyNormalUpdater = updateSoftBodyNormals;
     const isModule = workerUrl.indexOf('ammo') === -1 && workerUrl.indexOf('matter') === -1;
     const needsBlobBridge = new URL(workerUrl, location.href).origin !== location.origin;
     if(needsBlobBridge) {
@@ -146,6 +150,19 @@ export class PhysicsBridge {
     this._kinematicCount = 0;
     this.c = 0;
     this._clothMap = new Map();
+  }
+
+  get _PHYSICS_DRIVE() {
+    return this._physicsDrive;
+  }
+
+  set _PHYSICS_DRIVE(value) {
+    this._physicsDrive = value;
+    // Select the engine-specific implementation once when world.js assigns its
+    // existing driver identifier. The snapshot hot path does not branch on engine.
+    this._softBodyNormalUpdater = value === 'CANNON'
+      ? updateCannonSoftBodyNormals
+      : updateSoftBodyNormals;
   }
 
   getBodyByName(name) {
@@ -242,13 +259,6 @@ export class PhysicsBridge {
   }
 
   updatePhysics() {
-    // Cannon SoftBody can take longer than one render frame to simulate. Do not
-    // enqueue unlimited step messages: queued steps produce stale snapshot bursts
-    // on the main thread and make input/raycasting feel delayed.
-    if(this._isCannon) {
-      if(this._cannonStepPending) return;
-      this._cannonStepPending = true;
-    }
     this._worker.postMessage({cmd: 'step'});
   }
 
@@ -502,13 +512,12 @@ export class PhysicsBridge {
         }
         break;
       case 'snapshot':
-        if(this._isCannon) this._cannonStepPending = false;
         this._snapshot = data.snap;
         // Cannon cloth/soft-body and Jolt SoftBody use the same mesh upload path.
         // Keep the established _clothMap metadata and normal update logic shared.
         // Process the two packet lists separately; do not allocate a combined array per snapshot.
-        uploadClothPackets(data.clothPackets, this._clothMap, this._isCannon);
-        uploadClothPackets(data.softBodyPackets, this._clothMap, this._isCannon);
+        uploadClothPackets(data.clothPackets, this._clothMap, this._softBodyNormalUpdater);
+        uploadClothPackets(data.softBodyPackets, this._clothMap, this._softBodyNormalUpdater);
         this._syncToObjects();
         break;
       case 'collision':
