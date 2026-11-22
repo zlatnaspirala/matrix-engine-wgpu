@@ -57,6 +57,7 @@ import {loadSlot} from "./examples/games/slot-machine/slot.js";
 import {volumetrixTexProj} from "./examples/volumetric-tex-projection.js";
 import {loadFluidEffectExample} from "./examples/fluid-effects.js";
 import {loadFluidsSlot} from "./examples/games/slot-fluid-mashine/slot.js";
+import {carAmmo} from "./examples/physics-car-ammo.js";
 
 const switchDemo = (id) => {
   const url = new URL(window.location.href);
@@ -232,7 +233,9 @@ if(urlQuery['demo'] === '1') {
   volumetrixTexProj();
 } else if(urlQuery['demo'] === '52') {
   loadFluidsSlot();
-} else {
+} else if (urlQuery['demo'] === '53') {
+  carAmmo();
+}  else {
   loadObjFile();
 }
 

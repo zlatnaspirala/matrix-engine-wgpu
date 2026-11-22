@@ -382,6 +382,24 @@ export class PhysicsBridge {
     this._worker.postMessage({cmd: 'enableAngularMotor', constraintIdx, enable, targetVelocity, maxMotorImpulse});
   }
 
+  // Ammo only. Meshes are created with physics: {enabled: false}; the vehicle registers the bodies.
+  addVehicle(chassisObj, wheelObjs, pOptions) {
+    return this._send('addVehicle', {pOptions}).then(({idx, vid, wheelStart}) => {
+      for(const [i, obj] of [[idx, chassisObj], ...wheelObjs.map((w, k) => [wheelStart + k, w])]) {
+        obj.isKinematic = false;
+        obj.itIsPhysicsBody = true; // otherwise getModelMatrix() rebuilds the matrix and drops the physics rotation
+        this._bodyIndexMap.set(i, obj);
+      }
+      return vid;
+    });
+  }
+
+  vehicleControl(vid, engine, steering, brake = 0) {
+    this._worker.postMessage({cmd: 'vehicleControl', vid, engine, steering, brake});
+  }
+
+  getVehicleSpeed(vid) {return this._send('getVehicleSpeed', {vid});}
+
   getPosition(idx) {
     return this._send('getPosition', {idx: idx});
   }
@@ -544,6 +562,15 @@ export class PhysicsBridge {
         break;
       case 'getPosition':
         this._pending.get(data.id)?.(data.position);
+        this._pending.delete(data.id);
+        break;
+      case 'vehicleAdded':
+        if(data.sab) this._snapshot = new Float32Array(data.sab, 4);
+        this._pending.get(data.id)?.(data);
+        this._pending.delete(data.id);
+        break;
+      case 'getVehicleSpeed':
+        this._pending.get(data.id)?.(data.speed);
         this._pending.delete(data.id);
         break;
       case 'getQuaternion':
