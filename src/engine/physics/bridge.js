@@ -382,6 +382,25 @@ export class PhysicsBridge {
     this._worker.postMessage({cmd: 'enableAngularMotor', constraintIdx, enable, targetVelocity, maxMotorImpulse});
   }
 
+  // Ammo heightfield terrain. heightData is a row-major Float32Array (rows * columns).
+  // The worker owns the native shape and its backing WASM memory for the worker lifetime.
+  addHeightfield({heightData, columns, rows, elementSize = 1, position = {x: 0, y: 0, z: 0}, minHeight, maxHeight, friction = 1, name = 'heightfield'} = {}) {
+    if(!(heightData instanceof Float32Array)) throw new TypeError('heightData must be a Float32Array');
+    if(!Number.isInteger(columns) || !Number.isInteger(rows) || columns < 2 || rows < 2) {
+      throw new RangeError('Heightfield columns and rows must both be integers >= 2');
+    }
+    if(heightData.length !== columns * rows) {
+      throw new RangeError(`heightData length must equal columns * rows (${columns * rows})`);
+    }
+    if(!Number.isFinite(elementSize) || elementSize <= 0) throw new RangeError('elementSize must be > 0');
+    return this._send('addBody', {
+      pOptions: {
+        geometry: 'Heightfield', heightData, columns, rows, elementSize,
+        position, minHeight, maxHeight, friction, mass: 0, name
+      }
+    }).then(({idx}) => idx);
+  }
+
   // Ammo only. Meshes are created with physics: {enabled: false}; the vehicle registers the bodies.
   addVehicle(chassisObj, wheelObjs, pOptions) {
     return this._send('addVehicle', {pOptions}).then(({idx, vid, wheelStart}) => {

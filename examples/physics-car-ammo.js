@@ -24,30 +24,57 @@ export var carAmmo = function() {
     });
 
     async function onLoad(m) {
-      carDemo.addMeshObj({
+      // Shared row-major heightmap used by both the rendered mesh and Ammo's native
+      // btHeightfieldTerrainShape. Samples are world-space height units.
+      const terrainColumns = 65, terrainRows = 65, terrainElementSize = 2;
+      const terrainHeights = new Float32Array(terrainColumns * terrainRows);
+      for(let z = 0;z < terrainRows;z++) {
+        for(let x = 0;x < terrainColumns;x++) {
+          const nx = (x - (terrainColumns - 1) * 0.5) / ((terrainColumns - 1) * 0.5);
+          const nz = (z - (terrainRows - 1) * 0.5) / ((terrainRows - 1) * 0.5);
+          const hills = Math.sin(nx * 5.2) * Math.cos(nz * 4.4) * 1.15;
+          const ridge = Math.sin((nx + nz) * 3.1) * 0.55;
+          const bowl = Math.max(0, 1 - (nx * nx + nz * nz)) * 0.8;
+          terrainHeights[z * terrainColumns + x] = hills + ridge + bowl;
+        }
+      }
+      carDemo.addProceduralMeshObj({
+        name: 'car-terrain',
         position: {x: 0, y: 0, z: -10},
-        scale: [50, 0.01, 50],
-        texturesPaths: ['res/icons/editor/chatgpt-gen-bg-inv.webp'],
-        name: 'ground', mesh: m.cube,
+        scale: [1, 1, 1],
+        geometryA: {
+          type: 'heightfield', size: 1, segments: terrainColumns - 1,
+          options: {
+            heightData: terrainHeights, columns: terrainColumns, rows: terrainRows,
+            elementSize: terrainElementSize
+          }
+        },
+        texturesPaths: ['./res/textures/grass.jpg'],
+        material: {type: 'standard'},
         physics: {enabled: false}
+      });
+      await carDemo.matrixPhysics.addHeightfield({
+        heightData: terrainHeights, columns: terrainColumns, rows: terrainRows,
+        elementSize: terrainElementSize, position: {x: 0, y: 0, z: -10},
+        friction: 1, name: 'car-terrain'
       });
 
       // Physics is disabled on the meshes: the vehicle registers the bodies in the worker.
       const chassis = carDemo.addMeshObj({
-        position: {x: 0, y: 3, z: -10}, scale: [1, 0.5, 2],
+        position: {x: 0, y: 6, z: -10}, scale: [1, 0.5, 2],
         texturesPaths: ['./res/textures/rust.jpg'],
         name: 'car', mesh: m.cube, physics: {enabled: false}
       });
       // Cube wheels so the spin is visible. Swap m.cube for a wheel mesh with its axle along X.
       const wheels = [0, 1, 2, 3].map(i => carDemo.addMeshObj({
-        position: {x: 0, y: 3, z: -10}, scale: [0.25, 0.5, 0.5],
+        position: {x: 0, y: 6, z: -10}, scale: [0.25, 0.5, 0.5],
         texturesPaths: ['./res/textures/gold-1.webp'],
         name: 'wheel' + i, mesh: m.cube, physics: {enabled: false}
       }));
 
       // The vehicle's forward axis is +Z. Rotated 180 deg so W drives away from the chase camera (-Z).
       const vid = await carDemo.matrixPhysics.addVehicle(chassis, wheels, {
-        name: 'car', position: {x: 0, y: 3, z: -10}, rotation: {x: 0, y: 180, z: 0},
+        name: 'car', position: {x: 0, y: 6, z: -10}, rotation: {x: 0, y: 180, z: 0},
         scale: [1, 0.5, 2], mass: 800,
         vehicle: {wheelRadius: 0.5}
       });
