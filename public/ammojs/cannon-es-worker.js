@@ -247,6 +247,7 @@ class MatrixCannon {
       const wheel = wheels[i];
       vehicle.addWheel({
         chassisConnectionPointLocal: new CANNON.Vec3(wheel.pos[0], wheel.pos[1], wheel.pos[2]),
+        isFrontWheel: !!wheel.front,
         directionLocal: new CANNON.Vec3(0, -1, 0),
         axleLocal: new CANNON.Vec3(-1, 0, 0),
         radius: wheel.radius ?? radius,
