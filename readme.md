@@ -1137,6 +1137,21 @@ if (this.teams.length > 0)
  - It will be deeply integrated with rocketcraftingserver NodeJS MongoDB.
 
 
+### Physics support 
+
+AMMO    - primitives, cloths, Vehicle, softbodys(heavy cpu)
+JOLT    - primitives, cloths, softbodys
+CANNOJS - primitives, cloths, softbodys
+
+Examples for ammo:
+```js
+const vid = await carDemo.matrixPhysics.addVehicle(chassis, wheels, {
+  name: 'car', position: {x: 0, y: 3, z: -10}, rotation: {x: 0, y: 180, z: 0},
+  scale: [1, 0.5, 2], mass: 800,
+  vehicle: {wheelRadius: 0.5}
+});
+```
+
 ### About URLParams
 
 Built-in URL parameter checks support multilingual settings. Multilingual support is also available as a built-in option.
@@ -1471,6 +1486,9 @@ You may use, modify, and sell projects based on this code, provided that you kee
 
   Buildin FluidEffect class inspired by great job of Pavel (super fast solution):
   https://github.com/PavelDoGreat/WebGL-Fluid-Simulation
+
+
+  https://www.artstation.com/marketplace/library/VRl2A/638221/free-zbrush-model-alien-high-poly-ztl
 
 ---
 
