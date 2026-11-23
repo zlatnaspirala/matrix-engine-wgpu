@@ -204,6 +204,7 @@ class MatrixCannon {
       case 'BvhMesh': body = this._addBvhMesh(pOptions); break;
       case 'Chain': body = this._createChain(pOptions); break;
       case 'Cloth': body = this._addCloth(pOptions); break;
+      case 'Heightfield': body = this._addHeightfield(pOptions); break;
       default: return -1;
     }
     return body ? this.rigidBodies.length - 1 : -1;
@@ -359,6 +360,53 @@ class MatrixCannon {
     const pos = pOptions.position || {x: 0, y: 0, z: 0};
     body.position.set(pos.x, pos.y, pos.z);
     this.world.addBody(body);
+    return this._registerBody(body, pOptions);
+  }
+
+  _addHeightfield(pOptions) {
+    const CANNON = this.CANNON;
+    const {heightData, columns, rows} = pOptions;
+    const elementSize = pOptions.elementSize ?? 1;
+    if(!(heightData instanceof Float32Array) || !Number.isInteger(columns) ||
+      !Number.isInteger(rows) || columns < 2 || rows < 2 ||
+      heightData.length !== columns * rows || !Number.isFinite(elementSize) || elementSize <= 0) {
+      throw new TypeError('Invalid Cannon heightfield data or dimensions');
+    }
+
+    // cannon-es Heightfield uses local XY as its grid and local Z as elevation.
+    // Rotate it into the engine's Y-up world, and reverse rows so +local Y maps to +world Z.
+    const data = new Array(columns);
+    for(let x = 0;x < columns;x++) {
+      data[x] = new Array(rows);
+      for(let z = 0;z < rows;z++) {
+        data[x][z] = heightData[(rows - 1 - z) * columns + x];
+      }
+    }
+
+    const shape = new CANNON.Heightfield(data, {elementSize});
+    const body = new CANNON.Body({mass: 0});
+    const orientation = new CANNON.Quaternion();
+    orientation.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
+    body.addShape(shape, new CANNON.Vec3(0, 0, 0), orientation);
+
+    const pos = pOptions.position || {x: 0, y: 0, z: 0};
+    const width = (columns - 1) * elementSize;
+    const depth = (rows - 1) * elementSize;
+    body.position.set(pos.x - width * 0.5, pos.y, pos.z + depth * 0.5);
+    body.name = pOptions.name || 'heightfield';
+
+    if(pOptions.friction !== undefined) {
+      const terrainMaterial = new CANNON.Material('heightfield-' + body.name);
+      body.material = terrainMaterial;
+      this.world.addContactMaterial(new CANNON.ContactMaterial(
+        this.world.defaultMaterial, terrainMaterial,
+        {friction: pOptions.friction, restitution: pOptions.restitution ?? 0}
+      ));
+    }
+
+    this.world.addBody(body);
+    this.world.broadphase.dirty = true;
+    this.world.broadphase.needsUpdate = true;
     return this._registerBody(body, pOptions);
   }
 
