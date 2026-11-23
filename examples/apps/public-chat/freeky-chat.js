@@ -194,7 +194,7 @@ export var loadFreekyChat = function() {
       }
 
       MYCUBE = freekyChat.addMeshObj({
-        material: {type: 'mirror'},
+        material: {type: 'standard'},
         position: {x: 0, y: 1, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
@@ -222,6 +222,8 @@ export var loadFreekyChat = function() {
       })
 
       setTimeout(() => {
+
+        //  subMesh.position.netObject = subMesh.name;
         MYCUBE.position.netObject = MYCUBE.name;
         MYCUBE.rotation.emitY = MYCUBE.name;
         PLANE.vertexAnim.enableCloth(1);
