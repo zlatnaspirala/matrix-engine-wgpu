@@ -47,7 +47,11 @@ export class GeometryFactory {
     }
     const positions = new Float32Array(columns * rows * 3);
     const uvs = new Float32Array(columns * rows * 2);
-    const indices = new Uint32Array((columns - 1) * (rows - 1) * 6);
+    const vertexCount = columns * rows;
+    if(vertexCount > 65535) {
+      throw new RangeError('ProceduralMeshObj currently uses uint16 indices; heightfield must contain <= 65535 vertices');
+    }
+    const indices = new Uint16Array((columns - 1) * (rows - 1) * 6);
     const halfX = (columns - 1) * elementSize * 0.5;
     const halfZ = (rows - 1) * elementSize * 0.5;
     for(let z = 0;z < rows;z++) {
