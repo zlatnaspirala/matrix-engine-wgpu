@@ -382,8 +382,8 @@ export class PhysicsBridge {
     this._worker.postMessage({cmd: 'enableAngularMotor', constraintIdx, enable, targetVelocity, maxMotorImpulse});
   }
 
-  // Ammo heightfield terrain. heightData is a row-major Float32Array (rows * columns).
-  // The worker owns the native shape and its backing WASM memory for the worker lifetime.
+  // Heightfield terrain for Ammo and Cannon. heightData is a row-major Float32Array (rows * columns).
+  // The selected physics worker owns the native heightfield shape for its lifetime.
   addHeightfield({heightData, columns, rows, elementSize = 1, position = {x: 0, y: 0, z: 0}, minHeight, maxHeight, friction = 1, name = 'heightfield'} = {}) {
     if(!(heightData instanceof Float32Array)) throw new TypeError('heightData must be a Float32Array');
     if(!Number.isInteger(columns) || !Number.isInteger(rows) || columns < 2 || rows < 2) {
