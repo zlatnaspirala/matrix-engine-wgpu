@@ -136,9 +136,7 @@ export async function GPUIndirectDraws() {
     for(const [pipeline, meshes] of this.transparentBuckets) {
       pass.setPipeline(pipeline);
       for(const mesh of meshes) {
-        // chatgpt SUGGESTION START
         if(mesh.isVideo && !mesh.videoFrameReady) continue;
-        // chatgpt SUGGESTION end
         pass.setBindGroup(1, mesh.materialBindGroup);
         pass.setBindGroup(2, mesh.modelBindGroup);
         if(mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
@@ -169,7 +167,6 @@ export async function GPUIndirectDraws() {
     }
     pass.end();
 
-    // POST PROCESSING
     if(this.ssrPass.enabled === true) {
       mat4.invert(camera.VP, this._invViewProj);
       this.ssrPass.updateConfig(this._invViewProj, camera.projectionMatrix);
@@ -199,19 +196,6 @@ export async function GPUIndirectDraws() {
       }
     }
 
-    // const canvasTexture = this.context.getCurrentTexture();
-    // if(this._lastCanvasTex !== canvasTexture) {
-    //   this._lastCanvasTex = canvasTexture;
-    //   this._canvasView = canvasTexture.createView();
-    // }
-    // if(this.bloomPass.enabled === true) this.bloomPass.render(commandEncoder, this.bloomOutputTex.createView());
-
-    // this.finalPS.colorAttachments[0].view = this._canvasView;
-    // pass = commandEncoder.beginRenderPass(this.finalPS);
-    // pass.setPipeline(this.presentPipeline);
-    // pass.setBindGroup(0, this._activeBindGroup);
-    // pass.draw(6);
-    // pass.end();
     const canvasTexture = this.context.getCurrentTexture();
     if(this._lastCanvasTex !== canvasTexture) {
       this._lastCanvasTex = canvasTexture;
@@ -230,7 +214,8 @@ export async function GPUIndirectDraws() {
       pass.draw(6);
       pass.end();
     }
-    this.device.queue.submit([commandEncoder.finish()]);
+    this.submitQueue[0] = commandEncoder.finish();
+    this.device.queue.submit(this.submitQueue);
     if(this.collisionSystem) this.collisionSystem.update();
     // this.graphUpdate(this.now);
     // this.blendQueue.length = 0;

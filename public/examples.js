@@ -50724,8 +50724,8 @@ var cullingPass = function() {
           l2 = mesh.materialBindGroup;
         }
         pass.setBindGroup(2, mesh.modelBindGroup);
-        if (mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
-        if (mesh.material.type === "water") pass.setBindGroup(3, mesh.waterBindGroup);
+        if (mesh.mirrorBindGroup) pass.setBindGroup(3, mesh.mirrorBindGroup);
+        if (mesh.waterBindGroup) pass.setBindGroup(3, mesh.waterBindGroup);
         mesh.drawElements(pass);
       }
     }
@@ -50735,8 +50735,8 @@ var cullingPass = function() {
         if (mesh.isVideo && !mesh.videoFrameReady) continue;
         pass.setBindGroup(1, mesh.materialBindGroup);
         pass.setBindGroup(2, mesh.modelBindGroup);
-        if (mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
-        if (mesh.material.type === "water") pass.setBindGroup(3, mesh.waterBindGroup);
+        if (mesh.mirrorBindGroup) pass.setBindGroup(3, mesh.mirrorBindGroup);
+        if (mesh.waterBindGroup) pass.setBindGroup(3, mesh.waterBindGroup);
         mesh.drawElements(pass);
       }
     }
@@ -50858,8 +50858,8 @@ var noShadowPass = function() {
           l2 = mesh.materialBindGroup;
         }
         pass.setBindGroup(2, mesh.modelBindGroup);
-        if (mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
-        if (mesh.material.type === "water") pass.setBindGroup(3, mesh.waterBindGroup);
+        if (mesh.mirrorBindGroup) pass.setBindGroup(3, mesh.mirrorBindGroup);
+        if (mesh.waterBindGroup) pass.setBindGroup(3, mesh.waterBindGroup);
         mesh.drawElements(pass);
       }
     }
@@ -50869,8 +50869,8 @@ var noShadowPass = function() {
         if (mesh.isVideo && !mesh.videoFrameReady) continue;
         pass.setBindGroup(1, mesh.materialBindGroup);
         pass.setBindGroup(2, mesh.modelBindGroup);
-        if (mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
-        if (mesh.material.type === "water") pass.setBindGroup(3, mesh.waterBindGroup);
+        if (mesh.mirrorBindGroup) pass.setBindGroup(3, mesh.mirrorBindGroup);
+        if (mesh.waterBindGroup) pass.setBindGroup(3, mesh.waterBindGroup);
         mesh.drawElements(pass);
       }
     }
@@ -51603,8 +51603,8 @@ var mobile1 = function() {
           l2 = mesh.materialBindGroup;
         }
         pass.setBindGroup(2, mesh.modelBindGroup);
-        if (mesh.material.type == "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
-        if (mesh.material.type == "water") pass.setBindGroup(3, mesh.waterBindGroup);
+        if (mesh.mirrorBindGroup) pass.setBindGroup(3, mesh.mirrorBindGroup);
+        if (mesh.waterBindGroup) pass.setBindGroup(3, mesh.waterBindGroup);
         mesh.drawElements(pass);
       }
     }
@@ -51622,7 +51622,8 @@ var mobile1 = function() {
       for (const mesh of meshes) {
         pass.setBindGroup(1, mesh.materialBindGroup);
         pass.setBindGroup(2, mesh.modelBindGroup);
-        if (mesh.material.type == "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
+        if (mesh.mirrorBindGroup) pass.setBindGroup(3, mesh.mirrorBindGroup);
+        if (mesh.waterBindGroup) pass.setBindGroup(3, mesh.waterBindGroup);
         mesh.drawElements(pass);
       }
     }
@@ -53331,7 +53332,8 @@ async function GPUIndirectDraws() {
       pass.draw(6);
       pass.end();
     }
-    this.device.queue.submit([commandEncoder.finish()]);
+    this.submitQueue[0] = commandEncoder.finish();
+    this.device.queue.submit(this.submitQueue);
     if (this.collisionSystem) this.collisionSystem.update();
   } catch (err) {
     if (this.logLoopError) console.log(`%cLoop(warn): ${err} Info: ${err.stack}`, LOG_WARN);
@@ -57142,8 +57144,8 @@ var MatrixEngineWGPU = class {
             l2 = mesh.materialBindGroup;
           }
           pass.setBindGroup(2, mesh.modelBindGroup);
-          if (mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
-          if (mesh.material.type === "water") pass.setBindGroup(3, mesh.waterBindGroup);
+          if (mesh.mirrorBindGroup) pass.setBindGroup(3, mesh.mirrorBindGroup);
+          if (mesh.waterBindGroup) pass.setBindGroup(3, mesh.waterBindGroup);
           mesh.drawElements(pass, this.lightContainer);
         }
       }
@@ -57153,8 +57155,8 @@ var MatrixEngineWGPU = class {
           if (mesh.isVideo && !mesh.videoFrameReady) continue;
           pass.setBindGroup(1, mesh.materialBindGroup);
           pass.setBindGroup(2, mesh.modelBindGroup);
-          if (mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
-          if (mesh.material.type === "water") pass.setBindGroup(3, mesh.waterBindGroup);
+          if (mesh.mirrorBindGroup) pass.setBindGroup(3, mesh.mirrorBindGroup);
+          if (mesh.waterBindGroup) pass.setBindGroup(3, mesh.waterBindGroup);
           mesh.drawElements(pass, this.lightContainer);
         }
       }
@@ -57242,7 +57244,6 @@ var MatrixEngineWGPU = class {
       }
       this.submitQueue[0] = commandEncoder.finish();
       this.device.queue.submit(this.submitQueue);
-      this.submitQueue[0] = null;
       if (this.collisionSystem) this.collisionSystem.update();
       this.graphUpdate(this.now);
       this.blendQueue.length = 0;

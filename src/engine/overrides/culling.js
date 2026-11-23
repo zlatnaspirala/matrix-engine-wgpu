@@ -62,9 +62,7 @@ export let cullingPass = function() {
       mesh.updateModelUniformBuffer(i);
       if(mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
       if(mesh.update) mesh.update(now2);
-      // chatgpt SUGGESTION START
       if(mesh.isVideo) mesh.updateVideoTexture();
-      // chatgpt SUGGESTION end
       if(mesh.sourceCanvas) mesh.updateCanvasInlineTexture();
       mesh.updateBoundingSphere?.();
     }
@@ -76,29 +74,25 @@ export let cullingPass = function() {
       pass.setPipeline(pipeline);
       let l = null;
       for(const mesh of meshes) {
-        // chatgpt SUGGESTION START
         if(mesh.isVideo && !mesh.videoFrameReady) continue;
-        // chatgpt SUGGESTION end
         if(mesh.materialBindGroup !== l) {
           pass.setBindGroup(1, mesh.materialBindGroup);
           l = mesh.materialBindGroup;
         }
         pass.setBindGroup(2, mesh.modelBindGroup);
-        if(mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
-        if(mesh.material.type === "water") pass.setBindGroup(3, mesh.waterBindGroup);
+        if(mesh.mirrorBindGroup) pass.setBindGroup(3, mesh.mirrorBindGroup);
+        if(mesh.waterBindGroup) pass.setBindGroup(3, mesh.waterBindGroup);
         mesh.drawElements(pass);
       }
     }
     for(const [pipeline, meshes] of this.culledRenderPass.visibleTransparentMeshes) {
       pass.setPipeline(pipeline);
       for(const mesh of meshes) {
-        // chatgpt SUGGESTION START
         if(mesh.isVideo && !mesh.videoFrameReady) continue;
-        // chatgpt SUGGESTION end
         pass.setBindGroup(1, mesh.materialBindGroup);
         pass.setBindGroup(2, mesh.modelBindGroup);
-        if(mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
-        if(mesh.material.type === "water") pass.setBindGroup(3, mesh.waterBindGroup);
+        if(mesh.mirrorBindGroup) pass.setBindGroup(3, mesh.mirrorBindGroup);
+        if(mesh.waterBindGroup) pass.setBindGroup(3, mesh.waterBindGroup);
         mesh.drawElements(pass);
       }
     }
@@ -206,9 +200,7 @@ export let noShadowPass = function() {
       mesh.updateModelUniformBuffer(i);
       if(mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
       if(mesh.update) mesh.update(now2);
-      // chatgpt SUGGESTION START
       if(mesh.isVideo) mesh.updateVideoTexture();
-      // chatgpt SUGGESTION end
       if(mesh.sourceCanvas) mesh.updateCanvasInlineTexture();
       mesh.updateBoundingSphere?.();
     }
@@ -222,43 +214,29 @@ export let noShadowPass = function() {
       pass.setPipeline(pipeline);
       let l = null;
       for(const mesh of meshes) {
-        // chatgpt SUGGESTION START
         if(mesh.isVideo && !mesh.videoFrameReady) continue;
-        // chatgpt SUGGESTION end
         if(mesh.materialBindGroup !== l) {
           pass.setBindGroup(1, mesh.materialBindGroup);
           l = mesh.materialBindGroup;
         }
         pass.setBindGroup(2, mesh.modelBindGroup);
-        if(mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
-        if(mesh.material.type === "water") pass.setBindGroup(3, mesh.waterBindGroup);
+        if(mesh.mirrorBindGroup) pass.setBindGroup(3, mesh.mirrorBindGroup);
+        if(mesh.waterBindGroup) pass.setBindGroup(3, mesh.waterBindGroup);
         mesh.drawElements(pass);
       }
     }
     for(const [pipeline, meshes] of this.culledRenderPass.visibleTransparentMeshes) {
       pass.setPipeline(pipeline);
       for(const mesh of meshes) {
-        // chatgpt SUGGESTION START
         if(mesh.isVideo && !mesh.videoFrameReady) continue;
-        // chatgpt SUGGESTION end
         pass.setBindGroup(1, mesh.materialBindGroup);
         pass.setBindGroup(2, mesh.modelBindGroup);
-        if(mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
-        if(mesh.material.type === "water") pass.setBindGroup(3, mesh.waterBindGroup);
+        if(mesh.mirrorBindGroup) pass.setBindGroup(3, mesh.mirrorBindGroup);
+        if(mesh.waterBindGroup) pass.setBindGroup(3, mesh.waterBindGroup);
         mesh.drawElements(pass);
       }
     }
-    // for(let meshIndex = 0;meshIndex < this.mainRenderBundle.length;meshIndex++) {
-    //   const mesh = this.mainRenderBundle[meshIndex];
-    //   if(mesh.effects) {
-    //     for(const effectName in mesh.effects) {
-    //       const effect = mesh.effects[effectName];
-    //       if(effect === null || effect.enabled === false) continue;
-    //       if(effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
-    //       effect.render(pass, mesh, camera.VP);
-    //     }
-    //   }
-    // }
+
     for(const pile of this.effectsByType.values()) {
       if(pile.length === 0) continue;
       if(pile[0].effect.constructor.managesRenderPipeline === true) {

@@ -1319,6 +1319,7 @@ export default class MatrixEngineWGPU {
       let commandEncoder = this.device.createCommandEncoder();
       if(this.matrixPhysics) this.matrixPhysics.updatePhysics();
       this.updateLights();
+
       this._sceneData[44] = (performance.now() - this.startTime) / 1000;
       this.device.queue.writeBuffer(this.globalSceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
 
@@ -1363,10 +1364,7 @@ export default class MatrixEngineWGPU {
         mesh.updateModelUniformBuffer(i);
         if(mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
         if(mesh.update) mesh.update(now2);
-        // chatgpt SUGGESTION START
-        // Import each external video frame before encoding the render pass.
         if(mesh.isVideo) mesh.updateVideoTexture();
-        // chatgpt SUGGESTION end
         if(mesh.sourceCanvas) mesh.updateCanvasInlineTexture();
         if(mesh.effects) {
           for(const effectName in mesh.effects) {
@@ -1389,8 +1387,8 @@ export default class MatrixEngineWGPU {
             l = mesh.materialBindGroup;
           }
           pass.setBindGroup(2, mesh.modelBindGroup);
-          if(mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
-          if(mesh.material.type === "water") pass.setBindGroup(3, mesh.waterBindGroup);
+          if(mesh.mirrorBindGroup) pass.setBindGroup(3, mesh.mirrorBindGroup);
+          if(mesh.waterBindGroup) pass.setBindGroup(3, mesh.waterBindGroup);
           mesh.drawElements(pass, this.lightContainer);
         }
       }
@@ -1406,13 +1404,11 @@ export default class MatrixEngineWGPU {
         // });
         pass.setPipeline(pipeline);
         for(const mesh of meshes) {
-          // chatgpt SUGGESTION START
           if(mesh.isVideo && !mesh.videoFrameReady) continue;
-          // chatgpt SUGGESTION end
           pass.setBindGroup(1, mesh.materialBindGroup);
           pass.setBindGroup(2, mesh.modelBindGroup);
-          if(mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
-          if(mesh.material.type === "water") pass.setBindGroup(3, mesh.waterBindGroup);
+          if(mesh.mirrorBindGroup) pass.setBindGroup(3, mesh.mirrorBindGroup);
+          if(mesh.waterBindGroup) pass.setBindGroup(3, mesh.waterBindGroup);
           mesh.drawElements(pass, this.lightContainer);
         }
       }
@@ -1476,10 +1472,8 @@ export default class MatrixEngineWGPU {
         this._lastCanvasTex = canvasTexture;
         this._canvasView = canvasTexture.createView();
       }
-      // if(this.bloomPass.enabled === true) this.bloomPass.render(commandEncoder, this.bloomOutputTex.createView());
+
       if(this.bloomPass.enabled === true) this.bloomPass.render(commandEncoder, this._bloomOutputView);
-
-
       this.finalPS.colorAttachments[0].view = this._canvasView;
       const hdrView = this.bloomPass.enabled ? this._bloomOutputView : this.sceneTextureView;
       const ssrView = this.ssrPass.enabled ? this.ssrPass.ssrOutputView : this._dummySSRView;
@@ -1499,22 +1493,9 @@ export default class MatrixEngineWGPU {
         pass.draw(6);
         pass.end();
       }
-      // this.finalPS.colorAttachments[0].view = this._canvasView;
-      // if(this.fxaaPass.enabled === true) {
-      //   const hdrView = this.bloomPass.enabled ? this._bloomOutputView : this.sceneTextureView;
-      //   const ssrView = this.ssrPass.enabled ? this.ssrPass.ssrOutputView : this._dummySSRView;
-      //   this.fxaaPass.render(commandEncoder, hdrView, ssrView, this._canvasView);
-      // } else {
-      //   pass = commandEncoder.beginRenderPass(this.finalPS);
-      //   pass.setPipeline(this.presentPipeline);
-      //   pass.setBindGroup(0, this._activeBindGroup);
-      //   pass.draw(6);
-      //   pass.end();
-      // }
-
       this.submitQueue[0] = commandEncoder.finish();
       this.device.queue.submit(this.submitQueue);
-      this.submitQueue[0] = null;
+      // this.submitQueue[0] = null;
       if(this.collisionSystem) this.collisionSystem.update();
       this.graphUpdate(this.now);
       this.blendQueue.length = 0;
