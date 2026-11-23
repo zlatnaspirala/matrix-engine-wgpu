@@ -49,7 +49,7 @@ export var carAmmo = function() {
             elementSize: terrainElementSize
           }
         },
-        texturesPaths: ['./res/textures/grass.jpg'],
+        texturesPaths: ['res/icons/editor/chatgpt-gen-bg-inv.webp'],
         material: {type: 'standard'},
         physics: {enabled: false}
       });
