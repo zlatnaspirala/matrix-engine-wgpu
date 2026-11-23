@@ -40,8 +40,8 @@ import {AdvancedVolumetricPass} from "./engine/postprocessing/volumetric-advance
 import {CloudsVolumetric} from "./engine/postprocessing/clouds-volumetric.js";
 import {CloudsVolumetric2} from "./engine/postprocessing/cloudes-volumetric-2.js";
 import {FXAAPass} from "./engine/postprocessing/fxaa.js";
-import {MotionBlurPass} from "./engine/postprocessing/motion-blur,js";
 import {GradePass} from "./engine/postprocessing/grade.js";
+import {MotionBlurPass} from "./engine/postprocessing/motion-blur.js";
 
 /**
  * The world of Beast.
