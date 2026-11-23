@@ -398,7 +398,7 @@ export class PhysicsBridge {
         geometry: 'Heightfield', heightData, columns, rows, elementSize,
         position, minHeight, maxHeight, friction, mass: 0, name
       }
-    }).then(({idx}) => idx);
+    }).then(idx => idx);
   }
 
   // Ammo only. Meshes are created with physics: {enabled: false}; the vehicle registers the bodies.

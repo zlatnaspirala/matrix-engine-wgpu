@@ -35,7 +35,7 @@ export var carAmmo = function() {
           const hills = Math.sin(nx * 5.2) * Math.cos(nz * 4.4) * 1.15;
           const ridge = Math.sin((nx + nz) * 3.1) * 0.55;
           const bowl = Math.max(0, 1 - (nx * nx + nz * nz)) * 0.8;
-          terrainHeights[z * terrainColumns + x] = hills + ridge + bowl;
+          terrainHeights[z * terrainColumns + x] = 2.5 + hills + ridge + bowl;
         }
       }
       carDemo.addProceduralMeshObj({
@@ -61,7 +61,7 @@ export var carAmmo = function() {
 
       // Physics is disabled on the meshes: the vehicle registers the bodies in the worker.
       const chassis = carDemo.addMeshObj({
-        position: {x: 0, y: 6, z: -10}, scale: [1, 0.5, 2],
+        position: {x: 0, y: 7, z: -10}, scale: [1, 0.5, 2],
         texturesPaths: ['./res/textures/rust.jpg'],
         name: 'car', mesh: m.cube, physics: {enabled: false}
       });
