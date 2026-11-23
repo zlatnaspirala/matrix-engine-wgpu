@@ -401,7 +401,7 @@ export class PhysicsBridge {
     }).then(idx => idx);
   }
 
-  // Ammo only. Meshes are created with physics: {enabled: false}; the vehicle registers the bodies.
+  // Ammo and Cannon raycast vehicles register chassis and wheel snapshot slots here.
   addVehicle(chassisObj, wheelObjs, pOptions) {
     return this._send('addVehicle', {pOptions}).then(({idx, vid, wheelStart}) => {
       for(const [i, obj] of [[idx, chassisObj], ...wheelObjs.map((w, k) => [wheelStart + k, w])]) {

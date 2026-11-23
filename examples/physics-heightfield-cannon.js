@@ -53,26 +53,61 @@ export var heightfieldCannon = function() {
         friction: 0.9, name: 'cannon-heightfield'
       });
 
-      // Drop a small cluster of dynamic bodies to demonstrate native terrain collision.
-      for(let i = 0;i < 10;i++) {
-        const x = ((i % 5) - 2) * 2.2;
-        const z = -10 + (Math.floor(i / 5) - 0.5) * 5;
-        world.addMeshObj({
-          position: {x, y: 12 + (i % 3) * 2, z},
-          scale: [0.65, 0.65, 0.65],
-          texturesPaths: ['./res/textures/rust.jpg'],
-          name: 'terrain-box-' + i,
-          mesh: meshes.cube,
-          physics: {enabled: true, geometry: 'Cube', mass: 2, friction: 0.8}
-        });
-      }
+      // Chassis and wheel meshes are registered by the native Cannon RaycastVehicle.
+      const chassis = world.addMeshObj({
+        position: {x: 0, y: 5.2, z: -10},
+        scale: [1, 0.5, 2],
+        texturesPaths: ['./res/textures/rust.jpg'],
+        name: 'cannon-car-chassis',
+        mesh: meshes.cube,
+        physics: {enabled: false}
+      });
+      const wheelMeshes = [0, 1, 2, 3].map(i => world.addMeshObj({
+        position: {x: 0, y: 4.5, z: -10},
+        scale: [0.25, 0.5, 0.5],
+        texturesPaths: ['./res/textures/gold-1.webp'],
+        name: 'cannon-car-wheel-' + i,
+        mesh: meshes.cube,
+        physics: {enabled: false}
+      }));
 
-      const camera = world.getCamera();
+      const vehicleId = await world.matrixPhysics.addVehicle(chassis, wheelMeshes, {
+        name: 'cannon-heightfield-car',
+        position: {x: 0, y: 5.2, z: -10},
+        rotation: {x: 0, y: 180, z: 0},
+        scale: [1, 0.5, 2],
+        mass: 800,
+        friction: 0.5,
+        vehicle: {
+          wheelRadius: 0.5,
+          suspensionRestLength: 0.6,
+          wheelConnectionY: -0.45,
+          suspensionStiffness: 30,
+          frictionSlip: 5,
+          rollInfluence: 0.01
+        }
+      });
+
+      const camera = world.cameras.WASD;
       camera.setYaw(0);
-      camera.setPitch(-0.42);
-      camera.setZ(24);
-      camera.setY(18);
-      camera._dirtyAngle = true;
+      camera.setPitch(-0.35);
+      camera.setFollow(chassis.position, [0, 6, 14], 0.08);
+
+      let lastEngine = 0, lastSteering = 0, lastBrake = 0;
+      world.autoUpdate.push({
+        update: () => {
+          camera.updateFollow();
+          const digital = camera._digital;
+          const engine = digital & 1 ? 1500 : digital & 2 ? -800 : 0;
+          const steering = digital & 4 ? 0.4 : digital & 8 ? -0.4 : 0;
+          const brake = digital & 16 ? 60 : 0;
+          if(engine === lastEngine && steering === lastSteering && brake === lastBrake) return;
+          lastEngine = engine;
+          lastSteering = steering;
+          lastBrake = brake;
+          world.matrixPhysics.vehicleControl(vehicleId, engine, steering, brake);
+        }
+      });
 
       world.lightContainer[0].setPosY(40);
       world.lightContainer[0].setIntensity(70);

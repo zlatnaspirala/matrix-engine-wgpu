@@ -100,6 +100,7 @@ class MatrixCannon {
     this.bodyMap = new Map();
     this.clothDataPackets = [];
     this.cloths = [];
+    this.vehicles = [];
   }
 
   _allocBuffer(bodyCount) {
@@ -208,6 +209,101 @@ class MatrixCannon {
       default: return -1;
     }
     return body ? this.rigidBodies.length - 1 : -1;
+  }
+
+  addVehicle(pOptions) {
+    const CANNON = this.CANNON;
+    const cfg = pOptions.vehicle || {};
+    const s = pOptions.scale || [1, 0.5, 2];
+    const chassisShape = new CANNON.Box(new CANNON.Vec3(s[0], s[1], s[2]));
+    const chassis = this._createBody({
+      ...pOptions,
+      geometry: 'Cube',
+      mass: pOptions.mass ?? 800
+    }, chassisShape);
+    chassis.allowSleep = false;
+    chassis.wakeUp();
+    chassis.angularDamping = cfg.angularDamping ?? 0.35;
+    chassis.linearDamping = cfg.linearDamping ?? 0.05;
+    const chassisIdx = this.rigidBodies.length - 1;
+
+    const vehicle = new CANNON.RaycastVehicle({
+      chassisBody: chassis,
+      indexRightAxis: 0,
+      indexUpAxis: 1,
+      indexForwardAxis: 2
+    });
+    const radius = cfg.wheelRadius ?? 0.5;
+    const rest = cfg.suspensionRestLength ?? 0.6;
+    const wx = s[0] * 0.9, wy = cfg.wheelConnectionY ?? -s[1] * 0.9, wz = s[2] * 0.7;
+    const wheels = cfg.wheels ?? [
+      {pos: [wx, wy, wz], front: true},
+      {pos: [-wx, wy, wz], front: true},
+      {pos: [wx, wy, -wz], front: false},
+      {pos: [-wx, wy, -wz], front: false}
+    ];
+    const frontIdx = [], rearIdx = [];
+    for(let i = 0;i < wheels.length;i++) {
+      const wheel = wheels[i];
+      vehicle.addWheel({
+        chassisConnectionPointLocal: new CANNON.Vec3(wheel.pos[0], wheel.pos[1], wheel.pos[2]),
+        directionLocal: new CANNON.Vec3(0, -1, 0),
+        axleLocal: new CANNON.Vec3(-1, 0, 0),
+        radius: wheel.radius ?? radius,
+        suspensionStiffness: cfg.suspensionStiffness ?? 30,
+        suspensionRestLength: wheel.suspensionRestLength ?? rest,
+        frictionSlip: cfg.frictionSlip ?? 5,
+        dampingRelaxation: cfg.dampingRelaxation ?? 2.3,
+        dampingCompression: cfg.dampingCompression ?? 4.4,
+        maxSuspensionForce: cfg.maxSuspensionForce ?? 100000,
+        rollInfluence: cfg.rollInfluence ?? 0.01,
+        maxSuspensionTravel: cfg.maxSuspensionTravel ?? 1,
+        customSlidingRotationalSpeed: cfg.customSlidingRotationalSpeed ?? -30,
+        useCustomSlidingRotationalSpeed: cfg.useCustomSlidingRotationalSpeed ?? true
+      });
+      (wheel.front ? frontIdx : rearIdx).push(i);
+    }
+    vehicle.addToWorld(this.world);
+
+    const wheelStart = this.rigidBodies.length;
+    for(let i = 0;i < wheels.length;i++) this.rigidBodies.push(null);
+    this._allocBuffer(this.rigidBodies.length);
+
+    const vid = this.vehicles.length;
+    this.vehicles.push({vehicle, chassisIdx, wheelStart, count: wheels.length, frontIdx, rearIdx});
+    return {idx: chassisIdx, vid, wheelStart, count: wheels.length, sab: this._useSAB ? this._sab : undefined};
+  }
+
+  vehicleControl(vid, engine = 0, steering = 0, brake = 0) {
+    const v = this.vehicles[vid];
+    if(!v) return;
+    for(const i of v.frontIdx) v.vehicle.setSteeringValue(steering, i);
+    for(const i of v.rearIdx) v.vehicle.applyEngineForce(engine, i);
+    for(let i = 0;i < v.count;i++) v.vehicle.setBrake(brake, i);
+    this.rigidBodies[v.chassisIdx]?.wakeUp();
+  }
+
+  getVehicleSpeed(vid, msgID) {
+    const v = this.vehicles[vid];
+    self.postMessage({
+      cmd: 'getVehicleSpeed',
+      id: msgID,
+      speed: v ? v.vehicle.currentVehicleSpeedKmHour : 0
+    });
+  }
+
+  _writeVehicleWheels(snap) {
+    for(const v of this.vehicles) {
+      for(let i = 0;i < v.count;i++) {
+        v.vehicle.updateWheelTransform(i);
+        const transform = v.vehicle.wheelInfos[i].worldTransform;
+        const p = transform.position, q = transform.quaternion;
+        const base = (v.wheelStart + i) * FLOATS_PER_BODY;
+        snap[base + 0] = p.x; snap[base + 1] = p.y; snap[base + 2] = p.z;
+        snap[base + 3] = q.x; snap[base + 4] = q.y; snap[base + 5] = q.z; snap[base + 6] = q.w;
+        snap[base + 7] = 1;
+      }
+    }
   }
 
   _registerBody(cannonBody, pOptions, deferAlloc = false) {
@@ -1028,6 +1124,8 @@ class MatrixCannon {
       snap[base + 7] = 1;
     }
 
+    this._writeVehicleWheels(snap);
+
     this.clothDataPackets.length = 0;
     if(this.cloths) {
       for(const cloth of this.cloths) {
@@ -1074,6 +1172,17 @@ self.onmessage = async ({data}) => {
 
       break;
     }
+    case 'addVehicle': {
+      const result = cannon.addVehicle(data.pOptions);
+      self.postMessage({cmd: 'vehicleAdded', id, ...result});
+      break;
+    }
+    case 'vehicleControl':
+      cannon.vehicleControl(data.vid, data.engine, data.steering, data.brake);
+      break;
+    case 'getVehicleSpeed':
+      cannon.getVehicleSpeed(data.vid, id);
+      break;
     case 'step': {
       cannon.step();
       if(cannon._snapshot) {
