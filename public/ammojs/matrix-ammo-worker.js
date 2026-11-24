@@ -955,9 +955,14 @@ class MatrixAmmoWorker {
     const numBodies = bodies.length;
     for(let i = 0;i < numBodies;i++) {
       const body = bodies[i];
-      if(!body) continue; // vehicle wheel slot
       const base = i * FLOATS_PER_BODY;
-      if(body.isSoft) {snap[base + 7] = 0; continue;}
+      if(!body || body.isSoft) {snap[base + 7] = 0; continue;} // wheel and soft-body slots
+      // Dynamic Ammo bodies become inactive when they sleep. Kinematic bodies
+      // are intentionally kept in the active snapshot path.
+      if(!body.isKinematic && !body.isActive()) {
+        snap[base + 7] = 0;
+        continue;
+      }
       if(body.isKinematic) {
         body.getWorldTransform(this._trans);
       } else {
@@ -1013,14 +1018,10 @@ class MatrixAmmoWorker {
     body.setGravity(this._origin2);
   }
 
-  isSleeping() {
+  isSleeping(idx, msgID) {
     const body = this.rigidBodies[idx];
     if(!body) return;
-    if(body.isActive()) {
-      self.postMessage({cmd: 'isSleeping', id: msgID, isSleeping: false});
-    } else {
-      self.postMessage({cmd: 'isSleeping', id: msgID, isSleeping: true});
-    }
+    self.postMessage({cmd: 'isSleeping', id: msgID, isSleeping: !body.isActive()});
   }
 
   setCollisionFlags(idx, flags) {
