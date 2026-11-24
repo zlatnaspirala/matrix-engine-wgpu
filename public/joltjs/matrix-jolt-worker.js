@@ -71,6 +71,9 @@ class MatrixJolt {
     this.clothDataPackets = [];
     this.softBodies = [];
     this.softBodyDataPackets = [];
+    this.vehicles = [];
+    this._vehicleWheelRight = null;
+    this._vehicleWheelUp = null;
   }
 
   _allocBuffer(bodyCount) {
@@ -103,6 +106,8 @@ class MatrixJolt {
     this._vector2 = new Jolt.Vec3();
     this._q = new Jolt.Quat(0, 0, 0, 1);
     this._zero = new Jolt.Vec3(0, 0, 0);
+    this._vehicleWheelRight = new Jolt.Vec3(0, 1, 0);
+    this._vehicleWheelUp = new Jolt.Vec3(1, 0, 0);
     this._arr = [0, 0, 0];
     this._initPhysics(options.groundY ?? 0);
   }
@@ -205,6 +210,7 @@ class MatrixJolt {
     switch(pOptions.geometry) {
       case 'SoftBody': return this._addSoftBody(pOptions);
       case 'Cloth': return this._addCloth(pOptions);
+      case 'Heightfield': body = this._addHeightfield(pOptions); break;
       case 'Sphere': body = this._addSphere(pOptions); break;
       case 'Cube': body = this._addBox(pOptions); break;
       case 'Capsule': body = this._addCapsule(pOptions); break;
@@ -217,12 +223,189 @@ class MatrixJolt {
     return body ? this.rigidBodies.length - 1 : -1;
   }
 
+
+  _addHeightfield(pOptions) {
+    const Jolt = this.Jolt;
+    const columns = pOptions.columns | 0;
+    const rows = pOptions.rows | 0;
+    const elementSize = pOptions.elementSize || 1;
+    const heights = pOptions.heightData;
+    if(columns < 2 || rows !== columns || !heights || heights.length !== columns * rows) {
+      console.error('[jolt] Heightfield requires a square heightData grid (rows === columns).');
+      return null;
+    }
+
+    // Jolt heightfields are square and use row-major samples: z * sampleCount + x.
+    // A 65x65 grid has 64 intervals, compatible with the default block size of 2.
+    const settings = new Jolt.HeightFieldShapeSettings();
+    settings.mSampleCount = columns;
+    settings.mBlockSize = 2;
+    settings.mOffset.Set(-((columns - 1) * elementSize) * 0.5, 0, -((rows - 1) * elementSize) * 0.5);
+    settings.mScale.Set(elementSize, 1, elementSize);
+    settings.mHeightSamples.resize(heights.length);
+    const samplesPtr = Jolt.getPointer(settings.mHeightSamples.data());
+    const samples = new Float32Array(Jolt.HEAPF32.buffer, samplesPtr, heights.length);
+    samples.set(heights);
+
+    const result = settings.Create();
+    if(result.HasError()) {
+      console.error('[jolt] Heightfield creation failed:', result.GetError().c_str());
+      Jolt.destroy(settings);
+      return null;
+    }
+    const shape = result.Get();
+    Jolt.destroy(settings);
+    return this._createBody({
+      ...pOptions,
+      geometry: undefined,
+      mass: 0,
+      friction: pOptions.friction ?? 0.9
+    }, shape);
+  }
+
+
+  addVehicle(pOptions = {}) {
+    const Jolt = this.Jolt;
+    const vehicleOptions = pOptions.vehicle || {};
+    const scale = pOptions.scale || [1, 0.5, 2];
+    const chassisIdx = this.addBody({
+      ...pOptions,
+      geometry: 'Cube',
+      scale,
+      mass: pOptions.mass ?? 800,
+      friction: pOptions.friction ?? 0.5,
+      name: pOptions.name || 'jolt-vehicle-chassis'
+    });
+    if(chassisIdx < 0) return null;
+
+    const chassis = this.rigidBodies[chassisIdx];
+    const settings = new Jolt.VehicleConstraintSettings();
+    settings.mUp.Set(0, 1, 0);
+    settings.mForward.Set(0, 0, 1);
+    settings.mMaxPitchRollAngle = degToRad(vehicleOptions.maxPitchRollAngle ?? 60);
+    settings.mWheels.clear();
+
+    const wheelRadius = vehicleOptions.wheelRadius ?? 0.5;
+    const wheelWidth = vehicleOptions.wheelWidth ?? 0.25;
+    const wheelY = vehicleOptions.wheelConnectionY ?? -scale[1] * 0.9;
+    const wheelX = vehicleOptions.wheelConnectionX ?? scale[0] * 0.9;
+    const wheelZ = vehicleOptions.wheelConnectionZ ?? scale[2] * 0.7;
+    const suspensionRest = vehicleOptions.suspensionRestLength ?? 0.6;
+    const maxSteerAngle = degToRad(vehicleOptions.maxSteerAngle ?? 30);
+    const wheelSettings = [];
+
+    // Order: front-left, front-right, rear-left, rear-right.
+    for(let i = 0;i < 4;i++) {
+      const front = i < 2;
+      const left = i % 2 === 0;
+      const wheel = new Jolt.WheelSettingsWV();
+      wheel.mPosition = new Jolt.Vec3(left ? wheelX : -wheelX, wheelY, front ? wheelZ : -wheelZ);
+      wheel.mRadius = wheelRadius;
+      wheel.mWidth = wheelWidth;
+      wheel.mMaxSteerAngle = front ? maxSteerAngle : 0;
+      wheel.mSuspensionMinLength = Math.max(0.1, suspensionRest * 0.5);
+      wheel.mSuspensionMaxLength = suspensionRest;
+      wheel.mSuspensionSpring.mFrequency = vehicleOptions.suspensionFrequency ?? 2.0;
+      wheel.mSuspensionSpring.mDamping = vehicleOptions.suspensionDamping ?? 0.7;
+      wheel.mMaxBrakeTorque = vehicleOptions.maxBrakeTorque ?? 1800;
+      wheel.mMaxHandBrakeTorque = front ? 0 : (vehicleOptions.maxHandBrakeTorque ?? 3500);
+      settings.mWheels.push_back(wheel);
+      wheelSettings.push(wheel);
+    }
+
+    const controllerSettings = new Jolt.WheeledVehicleControllerSettings();
+    controllerSettings.mEngine.mMaxTorque = vehicleOptions.maxEngineTorque ?? 500;
+    controllerSettings.mTransmission.mClutchStrength = vehicleOptions.clutchStrength ?? 10;
+    controllerSettings.mDifferentials.clear();
+
+    const frontDiff = new Jolt.VehicleDifferentialSettings();
+    frontDiff.mLeftWheel = 0;
+    frontDiff.mRightWheel = 1;
+    frontDiff.mEngineTorqueRatio = 0.5;
+    frontDiff.mLimitedSlipRatio = 1.4;
+    controllerSettings.mDifferentials.push_back(frontDiff);
+
+    const rearDiff = new Jolt.VehicleDifferentialSettings();
+    rearDiff.mLeftWheel = 2;
+    rearDiff.mRightWheel = 3;
+    rearDiff.mEngineTorqueRatio = 0.5;
+    rearDiff.mLimitedSlipRatio = 1.4;
+    controllerSettings.mDifferentials.push_back(rearDiff);
+    controllerSettings.mDifferentialLimitedSlipRatio = 1.4;
+    settings.mController = controllerSettings;
+
+    const constraint = new Jolt.VehicleConstraint(chassis, settings);
+    const collisionTester = new Jolt.VehicleCollisionTesterCastCylinder(LAYER_MOVING, 0.05);
+    constraint.SetVehicleCollisionTester(collisionTester);
+    this.physicsSystem.AddConstraint(constraint);
+
+    const stepListener = new Jolt.VehicleConstraintStepListener(constraint);
+    this.physicsSystem.AddStepListener(stepListener);
+    const controller = Jolt.castObject(constraint.GetController(), Jolt.WheeledVehicleController);
+
+    const wheelStart = this.rigidBodies.length;
+    for(let i = 0;i < 4;i++) {
+      this.rigidBodies.push(null);
+      this.bodyIDs.push(null);
+    }
+    this._allocBuffer(this.rigidBodies.length);
+
+    const vid = this.vehicles.length;
+    this.vehicles.push({
+      constraint, controller, chassis, chassisIdx, wheelStart,
+      wheelCount: 4, wheelSettings, collisionTester, stepListener
+    });
+    this.bodyInterface.ActivateBody(chassis.GetID());
+    return {idx: chassisIdx, vid, wheelStart, count: 4, sab: this._sab};
+  }
+
+  vehicleControl(vid, engine = 0, steering = 0, brake = 0) {
+    const vehicle = this.vehicles[vid];
+    if(!vehicle) return;
+    const forward = Math.max(-1, Math.min(1, engine / 1500));
+    const right = Math.max(-1, Math.min(1, steering));
+    const brakeInput = Math.max(0, Math.min(1, brake / 60));
+    vehicle.controller.SetDriverInput(forward, right, brakeInput, 0);
+    this.bodyInterface.ActivateBody(vehicle.chassis.GetID());
+  }
+
+  getVehicleSpeed(vid, msgID) {
+    const vehicle = this.vehicles[vid];
+    const velocity = vehicle ? vehicle.chassis.GetLinearVelocity() : null;
+    self.postMessage({
+      cmd: 'getVehicleSpeed',
+      id: msgID,
+      speed: velocity ? velocity.Length() * 3.6 : 0
+    });
+  }
+
+  _writeVehicleWheels(snap) {
+    for(const vehicle of this.vehicles) {
+      for(let i = 0;i < vehicle.wheelCount;i++) {
+        const transform = vehicle.constraint.GetWheelWorldTransform(
+          i, this._vehicleWheelRight, this._vehicleWheelUp
+        );
+        const position = transform.GetTranslation();
+        const rotation = transform.GetRotation().GetQuaternion();
+        const base = (vehicle.wheelStart + i) * FLOATS_PER_BODY;
+        snap[base + 0] = position.GetX();
+        snap[base + 1] = position.GetY();
+        snap[base + 2] = position.GetZ();
+        snap[base + 3] = rotation.GetX();
+        snap[base + 4] = rotation.GetY();
+        snap[base + 5] = rotation.GetZ();
+        snap[base + 6] = rotation.GetW();
+        snap[base + 7] = 1;
+      }
+    }
+  }
+
   _registerBody(body, pOptions) {
     body.name = pOptions.name;
     this.rigidBodies.push(body);
 
     // this.bodyIDs = this.rigidBodies.map(b => b.GetID());
-    this.bodyIDs = this.rigidBodies.map(b => b.isSoft ? null : b.GetID());
+    this.bodyIDs = this.rigidBodies.map(b => b ? (b.isSoft ? null : b.GetID()) : null);
 
     this._allocBuffer(this.rigidBodies.length);
     const idx = this.rigidBodies.length - 1;
@@ -982,6 +1165,8 @@ class MatrixJolt {
       snap[base + 7] = 1;
     }
 
+    this._writeVehicleWheels(snap);
+
     this.clothDataPackets.length = 0;
     for(const c of this.cloths) {
       const verts = this._softVerts(c.sb);
@@ -1042,6 +1227,18 @@ self.onmessage = async ({data}) => {
       });
       break;
     }
+    case 'addVehicle': {
+      const vehicle = jolt.addVehicle(data.pOptions);
+      if(vehicle) self.postMessage({cmd: 'vehicleAdded', id, ...vehicle});
+      else self.postMessage({cmd: 'vehicleAdded', id, idx: -1, vid: -1, wheelStart: -1, count: 0});
+      break;
+    }
+    case 'vehicleControl':
+      jolt.vehicleControl(data.vid, data.engine, data.steering, data.brake);
+      break;
+    case 'getVehicleSpeed':
+      jolt.getVehicleSpeed(data.vid, id);
+      break;
     case 'step': {
       jolt.step();
       if(jolt._snapshot) {
