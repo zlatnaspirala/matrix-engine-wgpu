@@ -197,7 +197,7 @@ export var loadFreekyChat = function() {
       const NY = 10;
 
       PLANE = app.addProceduralMeshObj({
-        material: {type: 'mirror'},
+        material: {type: 'standard'},
         position: {x: 0, y: 15, z: -10},
         scale: [1, 1, 1],
         name: 'test',
