@@ -373,7 +373,8 @@ class MatrixJolt {
     const vid = this.vehicles.length;
     this.vehicles.push({
       constraint, controller, chassis, chassisIdx, wheelStart,
-      wheelCount: 4, wheelSettings, collisionTester, stepListener
+      wheelCount: 4, wheelSettings, settings, controllerSettings,
+      frontDiff, rearDiff, collisionTester, stepListener
     });
     this.bodyInterface.ActivateBody(chassis.GetID());
     return {idx: chassisIdx, vid, wheelStart, count: 4, sab: this._sab};

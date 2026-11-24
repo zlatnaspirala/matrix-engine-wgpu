@@ -1,7 +1,7 @@
 import MatrixEngineWGPU from "../src/world.js";
 import {downloadMeshes} from '../src/engine/loader-obj.js';
 
-// Jolt native Heightfield terrain demo (demo 54).
+// Jolt native Heightfield terrain demo (demo 55).
 export var heightfieldJolt = function() {
   const world = new MatrixEngineWGPU({
     canvasSize: 'fullscreen',
@@ -53,7 +53,7 @@ export var heightfieldJolt = function() {
         friction: 0.9, name: 'jolt-heightfield'
       });
 
-      // Chassis and wheel meshes are registered by the native Jolt RaycastVehicle.
+      // Chassis and wheel meshes are registered by the native Jolt VehicleConstraint.
       const chassis = world.addMeshObj({
         position: {x: 0, y: 5.2, z: -10},
         scale: [1, 0.5, 2],
