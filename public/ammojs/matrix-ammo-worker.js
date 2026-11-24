@@ -30,6 +30,7 @@ class MatrixAmmoWorker {
     this.clothDataPackets = [];
     this.softBodies = [];
     this.softBodyDataPackets = [];
+    this._heightfieldAllocations = []; // btHeightfieldTerrainShape keeps a pointer into Ammo.HEAPF32.
   }
 
   async init(options = {}) {
@@ -127,6 +128,7 @@ class MatrixAmmoWorker {
       case 'ConvexHull': body = this._addConvexHull(pOptions); break;
       case 'BvhMesh': body = this._addBvhMesh(pOptions); break;
       case 'StaticPlane': body = this._addStaticPlane(pOptions); break;
+      case 'Heightfield': body = this._addHeightfield(pOptions); break;
       default:
         console.warn('[ammo-worker] unknown geometry:', pOptions.geometry);
         return -1;
@@ -196,6 +198,78 @@ class MatrixAmmoWorker {
     Ammo.destroy(rbInfo);
     this._applyBodyFlags(body, pOptions);
     return this._registerBody(body, pOptions);
+  }
+
+  _addHeightfield(pOptions) {
+    const Ammo = this.Ammo;
+    const columns = pOptions.columns, rows = pOptions.rows;
+    const source = pOptions.heightData;
+    if(!Number.isInteger(columns) || !Number.isInteger(rows) || columns < 2 || rows < 2 ||
+      !source || source.length !== columns * rows) {
+      console.error('[ammo-worker] invalid Heightfield dimensions/data');
+      return null;
+    }
+    const heights = source instanceof Float32Array ? source : new Float32Array(source);
+    let minHeight = pOptions.minHeight ?? Infinity;
+    let maxHeight = pOptions.maxHeight ?? -Infinity;
+    for(let i = 0;i < heights.length;i++) {
+      const h = heights[i];
+      if(!Number.isFinite(h)) {
+        console.error('[ammo-worker] Heightfield contains a non-finite height');
+        return null;
+      }
+      if(pOptions.minHeight === undefined) minHeight = Math.min(minHeight, h);
+      if(pOptions.maxHeight === undefined) maxHeight = Math.max(maxHeight, h);
+    }
+    if(!Number.isFinite(minHeight) || !Number.isFinite(maxHeight) || minHeight > maxHeight) {
+      console.error('[ammo-worker] invalid Heightfield minHeight/maxHeight');
+      return null;
+    }
+
+    // Bullet reads the height samples directly from WASM memory. Keep both the allocation
+    // and shape alive for as long as the body exists; never pass a temporary JS array here.
+    const ptr = Ammo._malloc(heights.length * Float32Array.BYTES_PER_ELEMENT);
+    if(!ptr) {
+      console.error('[ammo-worker] unable to allocate Heightfield sample buffer');
+      return null;
+    }
+    Ammo.HEAPF32.set(heights, ptr >> 2);
+
+    let shape;
+    try {
+      shape = new Ammo.btHeightfieldTerrainShape(
+        columns, rows, ptr, 1, minHeight, maxHeight, 1, Ammo.PHY_FLOAT ?? 0, false
+      );
+    } catch(error) {
+      Ammo._free(ptr);
+      console.error('[ammo-worker] btHeightfieldTerrainShape creation failed:', error);
+      return null;
+    }
+
+    const elementSize = pOptions.elementSize ?? 1;
+    const localScale = new Ammo.btVector3(elementSize, 1, elementSize);
+    shape.setLocalScaling(localScale);
+    Ammo.destroy(localScale);
+
+    const pos = pOptions.position || {x: 0, y: 0, z: 0};
+    // Bullet centers heightfield samples around its local origin on all three axes.
+    this._origin.setValue(pos.x ?? 0, (pos.y ?? 0) + (minHeight + maxHeight) * 0.5, pos.z ?? 0);
+    this._transform2.setIdentity();
+    this._transform2.setOrigin(this._origin);
+    this._quat.setEulerZYX(0, 0, 0);
+    this._transform2.setRotation(this._quat);
+
+    const inertia = new Ammo.btVector3(0, 0, 0);
+    const motionState = new Ammo.btDefaultMotionState(this._transform2);
+    const rbInfo = new Ammo.btRigidBodyConstructionInfo(0, motionState, shape, inertia);
+    const body = new Ammo.btRigidBody(rbInfo);
+    Ammo.destroy(rbInfo);
+    Ammo.destroy(inertia);
+    if(pOptions.friction !== undefined) body.setFriction(pOptions.friction);
+    if(pOptions.restitution !== undefined) body.setRestitution(pOptions.restitution);
+    this._applyBodyFlags(body, {...pOptions, mass: 0});
+    this._heightfieldAllocations.push({ptr, shape});
+    return this._registerBody(body, {...pOptions, mass: 0});
   }
 
   _addBox(pOptions) {
