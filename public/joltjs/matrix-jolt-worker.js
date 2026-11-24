@@ -1099,13 +1099,8 @@ class MatrixJolt {
 
   isSleeping(idx, msgID) {
     const body = this.rigidBodies[idx];
-    if(!body) {
-      if(!body.IsActive()) {
-        self.postMessage({cmd: 'isSleeping', id: msgID, isSleeping: true});
-      } else {
-        self.postMessage({cmd: 'isSleeping', id: msgID, isSleeping: false});
-      }
-    }
+    if(!body) return;
+    self.postMessage({cmd: 'isSleeping', id: msgID, isSleeping: !body.IsActive()});
   }
 
   switchToKinematic(idx) {
