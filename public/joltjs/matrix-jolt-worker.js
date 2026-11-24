@@ -235,17 +235,37 @@ class MatrixJolt {
       return null;
     }
 
-    // Jolt heightfields are square and use row-major samples: z * sampleCount + x.
-    // A 65x65 grid has 64 intervals, compatible with the default block size of 2.
+    // Jolt's heightfield block layout requires sampleCount / blockSize to be a power of two.
+    // Resample the engine's 65x65 terrain to 128x128 while preserving its exact world-space bounds.
+    const sampleCount = 128;
+    const intervals = columns - 1;
+    const sampleSpacing = intervals * elementSize / (sampleCount - 1);
     const settings = new Jolt.HeightFieldShapeSettings();
-    settings.mSampleCount = columns;
+    settings.mSampleCount = sampleCount;
     settings.mBlockSize = 2;
-    settings.mOffset.Set(-((columns - 1) * elementSize) * 0.5, 0, -((rows - 1) * elementSize) * 0.5);
-    settings.mScale.Set(elementSize, 1, elementSize);
-    settings.mHeightSamples.resize(heights.length);
+    settings.mOffset.Set(-(intervals * elementSize) * 0.5, 0, -(intervals * elementSize) * 0.5);
+    settings.mScale.Set(sampleSpacing, 1, sampleSpacing);
+    const totalSamples = sampleCount * sampleCount;
+    settings.mHeightSamples.resize(totalSamples);
     const samplesPtr = Jolt.getPointer(settings.mHeightSamples.data());
-    const samples = new Float32Array(Jolt.HEAPF32.buffer, samplesPtr, heights.length);
-    samples.set(heights);
+    const samples = new Float32Array(Jolt.HEAPF32.buffer, samplesPtr, totalSamples);
+    for(let z = 0;z < sampleCount;z++) {
+      const sourceZ = z * intervals / (sampleCount - 1);
+      const z0 = Math.floor(sourceZ), z1 = Math.min(intervals, z0 + 1);
+      const tz = sourceZ - z0;
+      for(let x = 0;x < sampleCount;x++) {
+        const sourceX = x * intervals / (sampleCount - 1);
+        const x0 = Math.floor(sourceX), x1 = Math.min(intervals, x0 + 1);
+        const tx = sourceX - x0;
+        const h00 = heights[z0 * columns + x0];
+        const h10 = heights[z0 * columns + x1];
+        const h01 = heights[z1 * columns + x0];
+        const h11 = heights[z1 * columns + x1];
+        const top = h00 + (h10 - h00) * tx;
+        const bottom = h01 + (h11 - h01) * tx;
+        samples[z * sampleCount + x] = top + (bottom - top) * tz;
+      }
+    }
 
     const result = settings.Create();
     if(result.HasError()) {
