@@ -43,7 +43,6 @@ export var loadFreekyChat = function() {
 
     const videoTrackId = trackId || stream.getVideoTracks?.()[0]?.id || peerId;
     const safePeerId = String(peerId).replace(/[^a-zA-Z0-9_-]/g, '_');
-    const safeTrackId = String(videoTrackId).replace(/[^a-zA-Z0-9_-]/g, '_');
     const index = remoteVideoCubes.size;
     const object = freekyChat.addMeshObj({
       material: {type: 'standard'},
@@ -52,7 +51,7 @@ export var loadFreekyChat = function() {
       rotationSpeed: {x: 0, y: 0, z: 0},
       scale: [2, 2, 2],
       texturesPaths: ['./res/textures/cube-g1-extra_low.png'],
-      name: 'remote-video-' + safePeerId + '-' + safeTrackId,
+      name: 'remote-video-' + safePeerId,
       mesh: loadedMeshes.cube,
       physics: {enabled: true, geometry: "Cube"},
       raycast: {enabled: true, radius: 1}
@@ -96,7 +95,6 @@ export var loadFreekyChat = function() {
     const videoTrackId = trackId || stream.getVideoTracks?.()[0]?.id || 'local';
     const localConnectionId = connectionId || freekyChat.net?.connection?.connectionId || 'local';
     const safeConnectionId = String(localConnectionId).replace(/[^a-zA-Z0-9_-]/g, '_');
-    const safeTrackId = String(videoTrackId).replace(/[^a-zA-Z0-9_-]/g, '_');
     const object = freekyChat.addMeshObj({
       material: {type: 'standard'},
       position: {x: 0, y: 8, z: -10},
@@ -104,7 +102,7 @@ export var loadFreekyChat = function() {
       rotationSpeed: {x: 0, y: 0, z: 0},
       scale: [2, 2, 2],
       texturesPaths: ['./res/textures/cube-g1-extra_low.png'],
-      name: 'local-video-' + safeConnectionId + '-' + safeTrackId,
+      name: 'local-video-' + safeConnectionId,
       mesh: loadedMeshes.cube,
       physics: {enabled: true, geometry: 'Cube'},
       raycast: {enabled: true, radius: 1}
@@ -114,7 +112,7 @@ export var loadFreekyChat = function() {
       localVideoCube = {object, video, stream};
       object.position.netObject = object.name;
       // Other peers create this same track as a remote-video cube.
-      object.position.remoteName = 'remote-video-' + safeConnectionId + '-' + safeTrackId;
+      object.position.remoteName = 'remote-video-' + safeConnectionId;
       console.log('[public-chat] local video cube created:', {connectionId: localConnectionId, trackId: videoTrackId, name: object.name, remoteName: object.position.remoteName});
     } catch(error) {
       console.error('[public-chat] local video texture initialization failed:', error);
