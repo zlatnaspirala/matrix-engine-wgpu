@@ -69,7 +69,8 @@ export var loadFreekyChat = function() {
     }
 
     object.position.netObject = object.name;
-    object.position.remoteName = object.name;
+
+    object.position.remoteName = 'local-video-' + safePeerId;
 
   };
 
