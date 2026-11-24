@@ -13,12 +13,15 @@ export var loadFreekyChat = function() {
   const remoteVideoCubes = new Map();
   const pendingRemoteStreams = new Map();
   const creatingRemoteVideoCubes = new Set();
+  let localVideoCube = null;
+  let pendingLocalStream = null;
+  let creatingLocalVideoCube = false;
 
   // Native WebRTC owns exactly one DOM video element per remote stream.
   // The example only consumes that element for the engine's video texture.
-  const addRemoteVideoCube = async (peerId, stream, video) => {
+  const addRemoteVideoCube = async (peerId, stream, video, trackId) => {
     if(!loadedMeshes?.cube || !freekyChat) {
-      pendingRemoteStreams.set(peerId, {stream, video});
+      pendingRemoteStreams.set(peerId, {stream, video, trackId});
       return;
     }
     if(!video) {
@@ -38,6 +41,8 @@ export var loadFreekyChat = function() {
     if(creatingRemoteVideoCubes.has(peerId)) return;
     creatingRemoteVideoCubes.add(peerId);
 
+    const videoTrackId = trackId || stream.getVideoTracks?.()[0]?.id || peerId;
+    const safeTrackId = String(videoTrackId).replace(/[^a-zA-Z0-9_-]/g, '_');
     const index = remoteVideoCubes.size;
     const object = freekyChat.addMeshObj({
       material: {type: 'standard'},
@@ -46,7 +51,7 @@ export var loadFreekyChat = function() {
       rotationSpeed: {x: 0, y: 0, z: 0},
       scale: [2, 2, 2],
       texturesPaths: ['./res/textures/cube-g1-extra_low.png'],
-      name: 'remote-video-' + String(peerId).replace(/[^a-zA-Z0-9_-]/g, '_'),
+      name: 'remote-video-' + safeTrackId,
       mesh: loadedMeshes.cube,
       physics: {enabled: true, geometry: "Cube"},
       raycast: {enabled: true, radius: 1}
@@ -64,18 +69,74 @@ export var loadFreekyChat = function() {
     }
 
     object.position.netObject = object.name;
-    object.position.remoteName =  'remote-video-' + String(peerId).replace(/[^a-zA-Z0-9_-]/g, '_')
+    object.position.remoteName = object.name;
 
+  };
+
+  const addLocalVideoCube = async (stream, video, trackId) => {
+    if(!loadedMeshes?.cube || !freekyChat) {
+      pendingLocalStream = {stream, video, trackId};
+      return;
+    }
+    if(!video) {
+      console.warn('[public-chat] local stream did not provide its engine video element');
+      return;
+    }
+    if(localVideoCube) {
+      if(localVideoCube.video !== video) {
+        localVideoCube.video = video;
+        localVideoCube.stream = stream;
+        await localVideoCube.object.loadVideoTexture({type: 'videoElement', videoElement: video});
+      }
+      return;
+    }
+    if(creatingLocalVideoCube) return;
+    creatingLocalVideoCube = true;
+    const videoTrackId = trackId || stream.getVideoTracks?.()[0]?.id || 'local';
+    const safeTrackId = String(videoTrackId).replace(/[^a-zA-Z0-9_-]/g, '_');
+    const object = freekyChat.addMeshObj({
+      material: {type: 'standard'},
+      position: {x: 0, y: 8, z: -10},
+      rotation: {x: 0, y: 0, z: 90},
+      rotationSpeed: {x: 0, y: 0, z: 0},
+      scale: [2, 2, 2],
+      texturesPaths: ['./res/textures/cube-g1-extra_low.png'],
+      name: 'local-video-' + safeTrackId,
+      mesh: loadedMeshes.cube,
+      physics: {enabled: true, geometry: 'Cube'},
+      raycast: {enabled: true, radius: 1}
+    });
+    try {
+      await object.loadVideoTexture({type: 'videoElement', videoElement: video});
+      localVideoCube = {object, video, stream};
+      object.position.netObject = object.name;
+      // Other peers create this same track as a remote-video cube.
+      object.position.remoteName = 'remote-video-' + safeTrackId;
+      console.log('[public-chat] local video cube created:', videoTrackId, object.name);
+    } catch(error) {
+      console.error('[public-chat] local video texture initialization failed:', error);
+      throw error;
+    } finally {
+      creatingLocalVideoCube = false;
+    }
   };
 
   addEventListener('streamPlaying', event => {
     const detail = event.detail || {};
     const target = detail.target;
-    const video = target?.videos?.[0]?.video;
-    const peerId = detail.peerId || target?.id?.replace(/^remote-video-/, '');
+    const video = target?.videos?.[0]?.video || detail.videoElement;
     const stream = detail.stream || video?.srcObject;
-    if(!peerId || !stream || !video || target?.id?.indexOf('remote-video-') !== 0) return;
-    addRemoteVideoCube(peerId, stream, video).catch(error => {
+    const trackId = detail.trackId || stream?.getVideoTracks?.()[0]?.id;
+    if(!stream || !video) return;
+    if(detail.isLocal || target?.id === 'local-video') {
+      addLocalVideoCube(stream, video, trackId).catch(error => {
+        console.error('[public-chat] could not create local video cube:', error);
+      });
+      return;
+    }
+    const peerId = detail.peerId;
+    if(!peerId || target?.id?.indexOf('remote-video-') !== 0) return;
+    addRemoteVideoCube(peerId, stream, video, trackId).catch(error => {
       console.error('[public-chat] could not create remote video cube:', peerId, error);
     });
   });
@@ -136,7 +197,7 @@ export var loadFreekyChat = function() {
       const NY = 10;
 
       PLANE = app.addProceduralMeshObj({
-        material: {type: 'standard'},
+        material: {type: 'mirror'},
         position: {x: 0, y: 15, z: -10},
         scale: [1, 1, 1],
         name: 'test',
@@ -188,13 +249,20 @@ export var loadFreekyChat = function() {
       // A peer can publish before the scene meshes finish loading.
       for(const [peerId, media] of pendingRemoteStreams) {
         pendingRemoteStreams.delete(peerId);
-        addRemoteVideoCube(peerId, media.stream, media.video).catch(error => {
+        addRemoteVideoCube(peerId, media.stream, media.video, media.trackId).catch(error => {
           console.error('[public-chat] queued remote video cube failed:', peerId, error);
+        });
+      }
+      if(pendingLocalStream) {
+        const media = pendingLocalStream;
+        pendingLocalStream = null;
+        addLocalVideoCube(media.stream, media.video, media.trackId).catch(error => {
+          console.error('[public-chat] queued local video cube failed:', error);
         });
       }
 
       MYCUBE = freekyChat.addMeshObj({
-        material: {type: 'standard'},
+        material: {type: 'mirror'},
         position: {x: 0, y: 1, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
@@ -222,8 +290,6 @@ export var loadFreekyChat = function() {
       })
 
       setTimeout(() => {
-
-        //  subMesh.position.netObject = subMesh.name;
         MYCUBE.position.netObject = MYCUBE.name;
         MYCUBE.rotation.emitY = MYCUBE.name;
         PLANE.vertexAnim.enableCloth(1);
