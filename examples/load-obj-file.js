@@ -117,21 +117,21 @@ export var loadObjFile = function() {
       loadObjFile.lightContainer[0].setIntensity(45);
       loadObjFile.activateBloomEffect();
 
-      app.activateVolumetricTexProj({
-        density: 0.01,
-        steps: 32,
-        scatterStrength: 0.1,
-        heightFalloff: 0.1,
-        lightColor: [1.0, 0.0, 0.0]
-      }
-      );
-      // app.volumetricPass.setDensity(34);
-      const view = await loadTextureView(app.device, './res/textures/cube-g1-extra_low.png');
-      app.volumetricPass.setProjectionTexture(view, app.lightContainer[0].viewProjMatrix);
-      app.volumetricPass.setTextureProjectionIntensity(111.0); // 0..2
-      // app.volumetricPass.disableTextureProjection();
+      // loadObjFile.activateVolumetricTexProj({
+      //   density: 0.01,
+      //   steps: 32,
+      //   scatterStrength: 0.1,
+      //   heightFalloff: 0.1,
+      //   lightColor: [1.0, 0.0, 0.0]
+      // }
+      // );
+      // // app.volumetricPass.setDensity(34);
+      // const view = await loadTextureView(loadObjFile.device, './res/textures/cube-g1-extra_low.png');
+      // loadObjFile.volumetricPass.setProjectionTexture(view, loadObjFile.lightContainer[0].viewProjMatrix);
+      // loadObjFile.volumetricPass.setTextureProjectionIntensity(111.0); // 0..2
+      // // app.volumetricPass.disableTextureProjection();
 
-      // physicsPlayground.activateVolumetricClouds({
+      // loadObjFile.activateVolumetricClouds({
       //   qualityScale: 0.35,
       //   steps: 24,
       //   coverage: 0.58,

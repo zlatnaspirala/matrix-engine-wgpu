@@ -30,6 +30,7 @@ class MatrixAmmoWorker {
     this.clothDataPackets = [];
     this.softBodies = [];
     this.softBodyDataPackets = [];
+    this._heightfieldAllocations = []; // btHeightfieldTerrainShape keeps a pointer into Ammo.HEAPF32.
   }
 
   async init(options = {}) {
@@ -127,6 +128,7 @@ class MatrixAmmoWorker {
       case 'ConvexHull': body = this._addConvexHull(pOptions); break;
       case 'BvhMesh': body = this._addBvhMesh(pOptions); break;
       case 'StaticPlane': body = this._addStaticPlane(pOptions); break;
+      case 'Heightfield': body = this._addHeightfield(pOptions); break;
       default:
         console.warn('[ammo-worker] unknown geometry:', pOptions.geometry);
         return -1;
@@ -198,6 +200,78 @@ class MatrixAmmoWorker {
     return this._registerBody(body, pOptions);
   }
 
+  _addHeightfield(pOptions) {
+    const Ammo = this.Ammo;
+    const columns = pOptions.columns, rows = pOptions.rows;
+    const source = pOptions.heightData;
+    if(!Number.isInteger(columns) || !Number.isInteger(rows) || columns < 2 || rows < 2 ||
+      !source || source.length !== columns * rows) {
+      console.error('[ammo-worker] invalid Heightfield dimensions/data');
+      return null;
+    }
+    const heights = source instanceof Float32Array ? source : new Float32Array(source);
+    let minHeight = pOptions.minHeight ?? Infinity;
+    let maxHeight = pOptions.maxHeight ?? -Infinity;
+    for(let i = 0;i < heights.length;i++) {
+      const h = heights[i];
+      if(!Number.isFinite(h)) {
+        console.error('[ammo-worker] Heightfield contains a non-finite height');
+        return null;
+      }
+      if(pOptions.minHeight === undefined) minHeight = Math.min(minHeight, h);
+      if(pOptions.maxHeight === undefined) maxHeight = Math.max(maxHeight, h);
+    }
+    if(!Number.isFinite(minHeight) || !Number.isFinite(maxHeight) || minHeight > maxHeight) {
+      console.error('[ammo-worker] invalid Heightfield minHeight/maxHeight');
+      return null;
+    }
+
+    // Bullet reads the height samples directly from WASM memory. Keep both the allocation
+    // and shape alive for as long as the body exists; never pass a temporary JS array here.
+    const ptr = Ammo._malloc(heights.length * Float32Array.BYTES_PER_ELEMENT);
+    if(!ptr) {
+      console.error('[ammo-worker] unable to allocate Heightfield sample buffer');
+      return null;
+    }
+    Ammo.HEAPF32.set(heights, ptr >> 2);
+
+    let shape;
+    try {
+      shape = new Ammo.btHeightfieldTerrainShape(
+        columns, rows, ptr, 1, minHeight, maxHeight, 1, Ammo.PHY_FLOAT ?? 0, false
+      );
+    } catch(error) {
+      Ammo._free(ptr);
+      console.error('[ammo-worker] btHeightfieldTerrainShape creation failed:', error);
+      return null;
+    }
+
+    const elementSize = pOptions.elementSize ?? 1;
+    const localScale = new Ammo.btVector3(elementSize, 1, elementSize);
+    shape.setLocalScaling(localScale);
+    Ammo.destroy(localScale);
+
+    const pos = pOptions.position || {x: 0, y: 0, z: 0};
+    // Bullet centers heightfield samples around its local origin on all three axes.
+    this._origin.setValue(pos.x ?? 0, (pos.y ?? 0) + (minHeight + maxHeight) * 0.5, pos.z ?? 0);
+    this._transform2.setIdentity();
+    this._transform2.setOrigin(this._origin);
+    this._quat.setEulerZYX(0, 0, 0);
+    this._transform2.setRotation(this._quat);
+
+    const inertia = new Ammo.btVector3(0, 0, 0);
+    const motionState = new Ammo.btDefaultMotionState(this._transform2);
+    const rbInfo = new Ammo.btRigidBodyConstructionInfo(0, motionState, shape, inertia);
+    const body = new Ammo.btRigidBody(rbInfo);
+    Ammo.destroy(rbInfo);
+    Ammo.destroy(inertia);
+    if(pOptions.friction !== undefined) body.setFriction(pOptions.friction);
+    if(pOptions.restitution !== undefined) body.setRestitution(pOptions.restitution);
+    this._applyBodyFlags(body, {...pOptions, mass: 0});
+    this._heightfieldAllocations.push({ptr, shape});
+    return this._registerBody(body, {...pOptions, mass: 0});
+  }
+
   _addBox(pOptions) {
     const Ammo = this.Ammo;
     this._origin.setValue(pOptions.scale[0], pOptions.scale[1], pOptions.scale[2]);
@@ -220,6 +294,89 @@ class MatrixAmmoWorker {
     Ammo.destroy(rbInfo);
     this._applyBodyFlags(body, pOptions);
     return this._registerBody(body, pOptions);
+  }
+
+  addVehicle(pOptions) {
+    const Ammo = this.Ammo;
+    const cfg = pOptions.vehicle || {};
+    const s = pOptions.scale || [1, 0.5, 2]; // chassis half extents
+
+    // Chassis is a regular box body, it syncs through the normal snapshot.
+    const chassis = this._addBox({...pOptions, geometry: 'Cube', mass: pOptions.mass ?? 800});
+    const chassisIdx = this.rigidBodies.length - 1;
+    chassis.setActivationState(4); // never sleep
+    chassis.setFriction(0.5);
+
+    const tuning = new Ammo.btVehicleTuning();
+    const raycaster = new Ammo.btDefaultVehicleRaycaster(this.dynamicsWorld);
+    const vehicle = new Ammo.btRaycastVehicle(tuning, chassis, raycaster);
+    vehicle.setCoordinateSystem(0, 1, 2); // right=X, up=Y, forward=Z
+    this.dynamicsWorld.addAction(vehicle);
+
+    const radius = cfg.wheelRadius ?? 0.5;
+    const rest = cfg.suspensionRestLength ?? 0.6;
+    const wx = s[0] * 0.9, wy = -s[1] * 0.2, wz = s[2] * 0.7;
+    const wheels = cfg.wheels ?? [
+      {pos: [wx, wy, wz], front: true},
+      {pos: [-wx, wy, wz], front: true},
+      {pos: [wx, wy, -wz], front: false},
+      {pos: [-wx, wy, -wz], front: false},
+    ];
+
+    const dir = new Ammo.btVector3(0, -1, 0);
+    const axle = new Ammo.btVector3(-1, 0, 0);
+    const frontIdx = [], rearIdx = [];
+    wheels.forEach((w, i) => {
+      const cp = new Ammo.btVector3(w.pos[0], w.pos[1], w.pos[2]);
+      const wi = vehicle.addWheel(cp, dir, axle, rest, radius, tuning, !!w.front);
+      wi.set_m_suspensionStiffness(cfg.suspensionStiffness ?? 20);
+      wi.set_m_wheelsDampingCompression(cfg.dampingCompression ?? 4.4);
+      wi.set_m_wheelsDampingRelaxation(cfg.dampingRelaxation ?? 2.3);
+      wi.set_m_frictionSlip(cfg.frictionSlip ?? 1000);
+      wi.set_m_rollInfluence(cfg.rollInfluence ?? 0.1);
+      wi.set_m_maxSuspensionTravelCm(cfg.maxSuspensionTravelCm ?? 500);
+      (w.front ? frontIdx : rearIdx).push(i);
+      Ammo.destroy(cp);
+    });
+    Ammo.destroy(dir);
+    Ammo.destroy(axle);
+
+    // Reserve snapshot slots for the wheels. null entries are skipped by step().
+    const wheelStart = this.rigidBodies.length;
+    for(let i = 0;i < wheels.length;i++) this.rigidBodies.push(null);
+    this._allocBuffer(this.rigidBodies.length);
+
+    if(!this.vehicles) this.vehicles = [];
+    this.vehicles.push({vehicle, chassisIdx, wheelStart, count: wheels.length, frontIdx, rearIdx});
+    return {idx: chassisIdx, vid: this.vehicles.length - 1, wheelStart, count: wheels.length};
+  }
+
+  vehicleControl(vid, engine = 0, steering = 0, brake = 0) {
+    const v = this.vehicles?.[vid];
+    if(!v) return;
+    for(const i of v.frontIdx) v.vehicle.setSteeringValue(steering, i);
+    for(const i of v.rearIdx) v.vehicle.applyEngineForce(engine, i);
+    for(let i = 0;i < v.count;i++) v.vehicle.setBrake(brake, i);
+  }
+
+  getVehicleSpeed(vid, msgID) {
+    const v = this.vehicles?.[vid];
+    self.postMessage({cmd: 'getVehicleSpeed', id: msgID, speed: v ? v.vehicle.getCurrentSpeedKmHour() : 0});
+  }
+
+  _writeVehicleWheels(snap) {
+    if(!this.vehicles) return;
+    for(const v of this.vehicles) {
+      for(let i = 0;i < v.count;i++) {
+        v.vehicle.updateWheelTransform(i, true);
+        const t = v.vehicle.getWheelTransformWS(i);
+        const o = t.getOrigin(), r = t.getRotation();
+        const base = (v.wheelStart + i) * FLOATS_PER_BODY;
+        snap[base + 0] = o.x(); snap[base + 1] = o.y(); snap[base + 2] = o.z();
+        snap[base + 3] = r.x(); snap[base + 4] = r.y(); snap[base + 5] = r.z(); snap[base + 6] = r.w();
+        snap[base + 7] = 1;
+      }
+    }
   }
 
   addHingeConstraint(idxA, idxB, pOptions, msgID) {
@@ -799,7 +956,13 @@ class MatrixAmmoWorker {
     for(let i = 0;i < numBodies;i++) {
       const body = bodies[i];
       const base = i * FLOATS_PER_BODY;
-      if(body.isSoft) {snap[base + 7] = 0; continue;}
+      if(!body || body.isSoft) {snap[base + 7] = 0; continue;} // wheel and soft-body slots
+      // Dynamic Ammo bodies become inactive when they sleep. Kinematic bodies
+      // are intentionally kept in the active snapshot path.
+      if(!body.isKinematic && !body.isActive()) {
+        snap[base + 7] = 0;
+        continue;
+      }
       if(body.isKinematic) {
         body.getWorldTransform(this._trans);
       } else {
@@ -818,6 +981,8 @@ class MatrixAmmoWorker {
       snap[base + 6] = rot.w();
       snap[base + 7] = 1;
     }
+
+    this._writeVehicleWheels(snap);
 
     this.clothDataPackets.length = 0;
     for(const c of this.cloths) {
@@ -853,14 +1018,10 @@ class MatrixAmmoWorker {
     body.setGravity(this._origin2);
   }
 
-  isSleeping() {
+  isSleeping(idx, msgID) {
     const body = this.rigidBodies[idx];
     if(!body) return;
-    if(body.isActive()) {
-      self.postMessage({cmd: 'isSleeping', id: msgID, isSleeping: false});
-    } else {
-      self.postMessage({cmd: 'isSleeping', id: msgID, isSleeping: true});
-    }
+    self.postMessage({cmd: 'isSleeping', id: msgID, isSleeping: !body.isActive()});
   }
 
   setCollisionFlags(idx, flags) {
@@ -988,6 +1149,13 @@ self.onmessage = async ({data}) => {
       }
       break;
     }
+    case 'addVehicle': {
+      const r = ammo.addVehicle(data.pOptions);
+      self.postMessage({cmd: 'vehicleAdded', id, sab: ammo._sab, ...r});
+      break;
+    }
+    case 'vehicleControl': ammo.vehicleControl(data.vid, data.engine, data.steering, data.brake); break;
+    case 'getVehicleSpeed': ammo.getVehicleSpeed(data.vid, data.id); break;
     case 'applyClothForce': ammo.applyClothForce(data.startIndex, data.x, data.y, data.z); break;
     case 'applyImpulse': ammo.applyImpulse(data.idx, data.x, data.y, data.z); break;
     case 'shootBody': ammo.shootBody(data.idx, data.lx, data.ly, data.lz, data.ax, data.ay, data.az); break;

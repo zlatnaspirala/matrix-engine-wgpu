@@ -7,6 +7,7 @@
 export class GeometryFactory {
   static create(type, size = 1, segments = 16, options = {}) {
     switch(type) {
+      case "heightfield": return GeometryFactory.heightfield(options.heightData, options.columns, options.rows, options.elementSize || 1);
       case "quad": return GeometryFactory.quad(size);
       case "cube": return GeometryFactory.cube(size);
       case "sphere": return GeometryFactory.sphere(size, segments);
@@ -37,6 +38,42 @@ export class GeometryFactory {
       case "scatter": return GeometryFactory.scatter(size, options.spread || 0.3);
       default: throw new Error(`Unknown geometry: ${type}`);
     }
+  }
+
+  static heightfield(heightData, columns, rows, elementSize = 1) {
+    if(!heightData || !Number.isInteger(columns) || !Number.isInteger(rows) ||
+      columns < 2 || rows < 2 || heightData.length !== columns * rows) {
+      throw new RangeError('heightfield requires heightData with columns * rows samples and dimensions >= 2');
+    }
+    const positions = new Float32Array(columns * rows * 3);
+    const uvs = new Float32Array(columns * rows * 2);
+    const vertexCount = columns * rows;
+    if(vertexCount > 65535) {
+      throw new RangeError('ProceduralMeshObj currently uses uint16 indices; heightfield must contain <= 65535 vertices');
+    }
+    const indices = new Uint16Array((columns - 1) * (rows - 1) * 6);
+    const halfX = (columns - 1) * elementSize * 0.5;
+    const halfZ = (rows - 1) * elementSize * 0.5;
+    for(let z = 0;z < rows;z++) {
+      for(let x = 0;x < columns;x++) {
+        const i = z * columns + x;
+        positions[i * 3] = x * elementSize - halfX;
+        positions[i * 3 + 1] = heightData[i];
+        positions[i * 3 + 2] = z * elementSize - halfZ;
+        uvs[i * 2] = x / (columns - 1);
+        uvs[i * 2 + 1] = z / (rows - 1);
+      }
+    }
+    let t = 0;
+    for(let z = 0;z < rows - 1;z++) {
+      for(let x = 0;x < columns - 1;x++) {
+        const a = z * columns + x, b = a + 1, c = a + columns, d = c + 1;
+        // Winding faces upward in the engine's Y-up coordinate system.
+        indices[t++] = a; indices[t++] = c; indices[t++] = b;
+        indices[t++] = b; indices[t++] = c; indices[t++] = d;
+      }
+    }
+    return {positions, uvs, indices};
   }
 
   static computeFlatNormals(positions, indices) {

@@ -211,14 +211,14 @@ export class Position {
     return parseFloat(this.z)
   }
 
-  setPosition(newx, newy, newz) {
+  setPosition(newx, newy, newz, EMIT = false) {
     this.x = newx;
     this.y = newy;
     this.z = newz;
     this.targetX = newx;
     this.targetY = newy;
     this.targetZ = newz;
-    this.inMove = true;
+    if (EMIT === true) this.inMove = true;
   }
 }
 

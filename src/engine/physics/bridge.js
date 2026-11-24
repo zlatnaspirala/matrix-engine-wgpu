@@ -382,6 +382,43 @@ export class PhysicsBridge {
     this._worker.postMessage({cmd: 'enableAngularMotor', constraintIdx, enable, targetVelocity, maxMotorImpulse});
   }
 
+  // Heightfield terrain for Ammo, Cannon, and Jolt. heightData is a row-major Float32Array (rows * columns).
+  // The selected physics worker owns the native heightfield shape for its lifetime.
+  addHeightfield({heightData, columns, rows, elementSize = 1, position = {x: 0, y: 0, z: 0}, minHeight, maxHeight, friction = 1, name = 'heightfield'} = {}) {
+    if(!(heightData instanceof Float32Array)) throw new TypeError('heightData must be a Float32Array');
+    if(!Number.isInteger(columns) || !Number.isInteger(rows) || columns < 2 || rows < 2) {
+      throw new RangeError('Heightfield columns and rows must both be integers >= 2');
+    }
+    if(heightData.length !== columns * rows) {
+      throw new RangeError(`heightData length must equal columns * rows (${columns * rows})`);
+    }
+    if(!Number.isFinite(elementSize) || elementSize <= 0) throw new RangeError('elementSize must be > 0');
+    return this._send('addBody', {
+      pOptions: {
+        geometry: 'Heightfield', heightData, columns, rows, elementSize,
+        position, minHeight, maxHeight, friction, mass: 0, name
+      }
+    }).then(idx => idx);
+  }
+
+  // Ammo, Cannon, and Jolt vehicles register chassis and wheel snapshot slots here.
+  addVehicle(chassisObj, wheelObjs, pOptions) {
+    return this._send('addVehicle', {pOptions}).then(({idx, vid, wheelStart}) => {
+      for(const [i, obj] of [[idx, chassisObj], ...wheelObjs.map((w, k) => [wheelStart + k, w])]) {
+        obj.isKinematic = false;
+        obj.itIsPhysicsBody = true; // otherwise getModelMatrix() rebuilds the matrix and drops the physics rotation
+        this._bodyIndexMap.set(i, obj);
+      }
+      return vid;
+    });
+  }
+
+  vehicleControl(vid, engine, steering, brake = 0) {
+    this._worker.postMessage({cmd: 'vehicleControl', vid, engine, steering, brake});
+  }
+
+  getVehicleSpeed(vid) {return this._send('getVehicleSpeed', {vid});}
+
   getPosition(idx) {
     return this._send('getPosition', {idx: idx});
   }
@@ -544,6 +581,15 @@ export class PhysicsBridge {
         break;
       case 'getPosition':
         this._pending.get(data.id)?.(data.position);
+        this._pending.delete(data.id);
+        break;
+      case 'vehicleAdded':
+        if(data.sab) this._snapshot = new Float32Array(data.sab, 4);
+        this._pending.get(data.id)?.(data);
+        this._pending.delete(data.id);
+        break;
+      case 'getVehicleSpeed':
+        this._pending.get(data.id)?.(data.speed);
         this._pending.delete(data.id);
         break;
       case 'getQuaternion':

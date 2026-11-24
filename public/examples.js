@@ -11598,6 +11598,17 @@ var CameraPath = class _CameraPath {
     return 1;
   }
 };
+async function loadTextureView(device2, url) {
+  const bmp = await createImageBitmap(await (await fetch(url)).blob());
+  const tex = device2.createTexture({
+    size: [bmp.width, bmp.height],
+    format: "rgba8unorm",
+    usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
+    // required by copyExternalImageToTexture
+  });
+  device2.queue.copyExternalImageToTexture({ source: bmp }, { texture: tex }, [bmp.width, bmp.height]);
+  return tex.createView();
+}
 
 // src/me-config.js
 window.urlQ = urlQuery;
@@ -13991,6 +14002,11 @@ var WASDCamera = class _WASDCamera {
   rotationSpeed = 1;
   _dirtyAngle = true;
   usePointerEvents = false;
+  followMe = null;
+  // any {x, y, z}, e.g. mesh.position
+  followOffset = new Float32Array([0, 6, 14]);
+  followSmooth = 0.1;
+  // 1 = rigid, lower = softer
   static HALF_PI = Math.PI * 0.5;
   constructor(options2 = {}) {
     if (options2.position) {
@@ -14280,6 +14296,7 @@ var WASDCamera = class _WASDCamera {
   }
   // WASD MOVEMENT
   _applyDigitalMovement() {
+    if (this.followMe) return;
     const d2 = this._digital;
     if (d2 === 0) return;
     const right2 = this.right;
@@ -14356,6 +14373,29 @@ var WASDCamera = class _WASDCamera {
     this.yaw = y3;
     this._dirtyAngle = true;
   };
+  // FOLLOW (call updateFollow() from an autoUpdate item)
+  setFollow = (target, offset, smooth) => {
+    this.followMe = target;
+    if (offset) this.followOffset.set(offset);
+    if (smooth !== void 0) this.followSmooth = smooth;
+    this._dirtyAngle = true;
+  };
+  clearFollow = () => {
+    this.followMe = null;
+  };
+  updateFollow() {
+    const t3 = this.followMe;
+    if (!t3) return;
+    const p2 = this.position, o3 = this.followOffset, k2 = this.followSmooth;
+    const dx = t3.x + o3[0] - p2[0];
+    const dy = t3.y + o3[1] - p2[1];
+    const dz = t3.z + o3[2] - p2[2];
+    if (Math.abs(dx) + Math.abs(dy) + Math.abs(dz) < 5e-4) return;
+    p2[0] += dx * k2;
+    p2[1] += dy * k2;
+    p2[2] += dz * k2;
+    this._dirtyAngle = true;
+  }
   // LOOK CONTROL
   setLookEnabled = (enabled) => {
     this._lookDisabled = !enabled;
@@ -47737,34 +47777,52 @@ function rayIntersectsAABB(rayOrigin, rayDirection, boxMin, boxMax) {
   return { t: t3, hitPoint };
 }
 function computeWorldVertsAndAABB(object) {
-  if (object._aabbCache && object._aabbCache.x === object.position.x && object._aabbCache.y === object.position.y && object._aabbCache.z === object.position.z) {
-    return object._aabbCache;
+  const mesh = object.meshA || object.mesh;
+  const verts = mesh?.vertices;
+  if (!verts?.length) return null;
+  let local2 = mesh._raycastLocalAABB;
+  if (!local2 || local2.vertices !== verts || local2.length !== verts.length) {
+    const min3 = [Infinity, Infinity, Infinity];
+    const max3 = [-Infinity, -Infinity, -Infinity];
+    for (let i2 = 0; i2 < verts.length; i2 += 3) {
+      const x3 = verts[i2], y3 = verts[i2 + 1], z2 = verts[i2 + 2];
+      if (x3 < min3[0]) min3[0] = x3;
+      if (y3 < min3[1]) min3[1] = y3;
+      if (z2 < min3[2]) min3[2] = z2;
+      if (x3 > max3[0]) max3[0] = x3;
+      if (y3 > max3[1]) max3[1] = y3;
+      if (z2 > max3[2]) max3[2] = z2;
+    }
+    local2 = mesh._raycastLocalAABB = { vertices: verts, length: verts.length, min: min3, max: max3 };
   }
   const modelMatrix = object.getModelMatrix(object.position, true);
-  const min2 = [Infinity, Infinity, Infinity];
-  const max2 = [-Infinity, -Infinity, -Infinity];
-  const verts = object.meshA ? object.meshA.vertices : object.mesh.vertices;
-  for (let i2 = 0; i2 < verts.length; i2 += 3) {
-    const world = vec3Impl.transformMat4(
-      [verts[i2], verts[i2 + 1], verts[i2 + 2]],
-      modelMatrix
-    );
-    min2[0] = Math.min(min2[0], world[0]);
-    min2[1] = Math.min(min2[1], world[1]);
-    min2[2] = Math.min(min2[2], world[2]);
-    max2[0] = Math.max(max2[0], world[0]);
-    max2[1] = Math.max(max2[1], world[1]);
-    max2[2] = Math.max(max2[2], world[2]);
+  const box = object._aabbCache || (object._aabbCache = {
+    boxMin: [Infinity, Infinity, Infinity],
+    boxMax: [-Infinity, -Infinity, -Infinity]
+  });
+  const min2 = box.boxMin, max2 = box.boxMax;
+  min2[0] = min2[1] = min2[2] = Infinity;
+  max2[0] = max2[1] = max2[2] = -Infinity;
+  const lx = local2.min, hx = local2.max;
+  for (let mask = 0; mask < 8; mask++) {
+    const x3 = mask & 1 ? hx[0] : lx[0];
+    const y3 = mask & 2 ? hx[1] : lx[1];
+    const z2 = mask & 4 ? hx[2] : lx[2];
+    const wx = modelMatrix[0] * x3 + modelMatrix[4] * y3 + modelMatrix[8] * z2 + modelMatrix[12];
+    const wy = modelMatrix[1] * x3 + modelMatrix[5] * y3 + modelMatrix[9] * z2 + modelMatrix[13];
+    const wz = modelMatrix[2] * x3 + modelMatrix[6] * y3 + modelMatrix[10] * z2 + modelMatrix[14];
+    if (wx < min2[0]) min2[0] = wx;
+    if (wy < min2[1]) min2[1] = wy;
+    if (wz < min2[2]) min2[2] = wz;
+    if (wx > max2[0]) max2[0] = wx;
+    if (wy > max2[1]) max2[1] = wy;
+    if (wz > max2[2]) max2[2] = wz;
   }
-  object._aabbCache = {
-    modelMatrix,
-    boxMin: min2,
-    boxMax: max2,
-    x: object.position.x,
-    y: object.position.y,
-    z: object.position.z
-  };
-  return object._aabbCache;
+  box.modelMatrix = modelMatrix;
+  box.x = object.position.x;
+  box.y = object.position.y;
+  box.z = object.position.z;
+  return box;
 }
 function dispatchRayHitEvent(canvas, data) {
   const e2 = data.eventName === "click" ? rayHitEventClick : data.eventName === "mousedown" ? rayHitEventMouseDown : rayHitEventMouseMove;
@@ -50666,8 +50724,8 @@ var cullingPass = function() {
           l2 = mesh.materialBindGroup;
         }
         pass.setBindGroup(2, mesh.modelBindGroup);
-        if (mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
-        if (mesh.material.type === "water") pass.setBindGroup(3, mesh.waterBindGroup);
+        if (mesh.mirrorBindGroup) pass.setBindGroup(3, mesh.mirrorBindGroup);
+        if (mesh.waterBindGroup) pass.setBindGroup(3, mesh.waterBindGroup);
         mesh.drawElements(pass);
       }
     }
@@ -50677,8 +50735,8 @@ var cullingPass = function() {
         if (mesh.isVideo && !mesh.videoFrameReady) continue;
         pass.setBindGroup(1, mesh.materialBindGroup);
         pass.setBindGroup(2, mesh.modelBindGroup);
-        if (mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
-        if (mesh.material.type === "water") pass.setBindGroup(3, mesh.waterBindGroup);
+        if (mesh.mirrorBindGroup) pass.setBindGroup(3, mesh.mirrorBindGroup);
+        if (mesh.waterBindGroup) pass.setBindGroup(3, mesh.waterBindGroup);
         mesh.drawElements(pass);
       }
     }
@@ -50800,8 +50858,8 @@ var noShadowPass = function() {
           l2 = mesh.materialBindGroup;
         }
         pass.setBindGroup(2, mesh.modelBindGroup);
-        if (mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
-        if (mesh.material.type === "water") pass.setBindGroup(3, mesh.waterBindGroup);
+        if (mesh.mirrorBindGroup) pass.setBindGroup(3, mesh.mirrorBindGroup);
+        if (mesh.waterBindGroup) pass.setBindGroup(3, mesh.waterBindGroup);
         mesh.drawElements(pass);
       }
     }
@@ -50811,8 +50869,8 @@ var noShadowPass = function() {
         if (mesh.isVideo && !mesh.videoFrameReady) continue;
         pass.setBindGroup(1, mesh.materialBindGroup);
         pass.setBindGroup(2, mesh.modelBindGroup);
-        if (mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
-        if (mesh.material.type === "water") pass.setBindGroup(3, mesh.waterBindGroup);
+        if (mesh.mirrorBindGroup) pass.setBindGroup(3, mesh.mirrorBindGroup);
+        if (mesh.waterBindGroup) pass.setBindGroup(3, mesh.waterBindGroup);
         mesh.drawElements(pass);
       }
     }
@@ -51008,9 +51066,64 @@ function calculateSoftBodyNormals(positions, indices, vertexCount, fallbackNorma
   }
   return normals;
 }
+function updateSoftBodyNormals(meta, positions, vertexCount, v2n) {
+  const normalBuffer = meta.mesh.vertexNormalsBuffer;
+  const indices = meta.mesh.mesh?.indices;
+  if (!normalBuffer || !indices?.length) return;
+  if (!meta._normalScratch || meta._normalScratch.length !== vertexCount * 3) {
+    meta._normalScratch = new Float32Array(vertexCount * 3);
+  }
+  if (v2n && !meta._nodeAcc) {
+    let maxNode = 0;
+    for (let k2 = 0; k2 < v2n.length; k2++) if (v2n[k2] > maxNode) maxNode = v2n[k2];
+    meta._nodeAcc = new Float32Array((maxNode + 1) * 3);
+  }
+  calculateSoftBodyNormals(
+    positions,
+    indices,
+    vertexCount,
+    meta.mesh.mesh?.vertexNormals,
+    meta._normalScratch,
+    v2n,
+    meta._nodeAcc
+  );
+  app.device.queue.writeBuffer(normalBuffer, 0, meta._normalScratch);
+}
+function updateCannonSoftBodyNormals(meta, positions, vertexCount, v2n) {
+  meta._normalUpdateFrame = (meta._normalUpdateFrame || 0) + 1;
+  if (meta._normalUpdateFrame & 1) {
+    updateSoftBodyNormals(meta, positions, vertexCount, v2n);
+  }
+}
+function uploadClothPackets(packets, clothMap, softBodyNormalUpdater) {
+  if (!packets?.length) return;
+  const device2 = app.device;
+  for (let p2 = 0; p2 < packets.length; p2++) {
+    const packet = packets[p2];
+    const meta = clothMap.get(packet.startIndex);
+    const buf = meta?.mesh?.vertexAnim?.clothBuffer;
+    if (!buf) continue;
+    const src = packet.positions, v2n = meta.v2n;
+    if (meta.isSoftBody) meta.positions = src;
+    const n3 = v2n ? v2n.length : meta.count;
+    if (!meta._scratch || meta._scratch.length !== n3 * 4) meta._scratch = new Float32Array(n3 * 4);
+    const dst = meta._scratch;
+    const o3 = meta.off;
+    for (let i2 = 0; i2 < n3; i2++) {
+      const s2 = (v2n ? v2n[i2] : i2) * 3;
+      const d2 = i2 * 4;
+      dst[d2] = src[s2] + (o3 ? o3[i2 * 3] : 0);
+      dst[d2 + 1] = src[s2 + 1] + (o3 ? o3[i2 * 3 + 1] : 0);
+      dst[d2 + 2] = src[s2 + 2] + (o3 ? o3[i2 * 3 + 2] : 0);
+    }
+    device2.queue.writeBuffer(buf, 0, dst);
+    if (meta.isSoftBody) softBodyNormalUpdater(meta, dst, n3, v2n);
+  }
+}
 var PhysicsBridge = class {
   constructor(workerUrl) {
     this._worker = null;
+    this._softBodyNormalUpdater = updateSoftBodyNormals;
     const isModule = workerUrl.indexOf("ammo") === -1 && workerUrl.indexOf("matter") === -1;
     const needsBlobBridge = new URL(workerUrl, location.href).origin !== location.origin;
     if (needsBlobBridge) {
@@ -51047,6 +51160,7 @@ var PhysicsBridge = class {
     this.collisionRemoved = (e2) => {
     };
     this.tempRot = mat4Impl.create();
+    this._quatScratch = new Float32Array(4);
     this._paused = false;
     this.updates = [];
     this._kinematicIdx = new Uint16Array(1024);
@@ -51054,6 +51168,13 @@ var PhysicsBridge = class {
     this._kinematicCount = 0;
     this.c = 0;
     this._clothMap = /* @__PURE__ */ new Map();
+  }
+  get _PHYSICS_DRIVE() {
+    return this._physicsDrive;
+  }
+  set _PHYSICS_DRIVE(value) {
+    this._physicsDrive = value;
+    this._softBodyNormalUpdater = value === "CANNON" ? updateCannonSoftBodyNormals : updateSoftBodyNormals;
   }
   getBodyByName(name2) {
     for (const [idx, meObj] of this._bodyIndexMap) if (meObj.name === name2) return idx;
@@ -51245,6 +51366,23 @@ var PhysicsBridge = class {
     if (constraintIdx === void 0) return;
     this._worker.postMessage({ cmd: "enableAngularMotor", constraintIdx, enable, targetVelocity, maxMotorImpulse });
   }
+  // Ammo only. Meshes are created with physics: {enabled: false}; the vehicle registers the bodies.
+  addVehicle(chassisObj, wheelObjs, pOptions) {
+    return this._send("addVehicle", { pOptions }).then(({ idx, vid, wheelStart }) => {
+      for (const [i2, obj2] of [[idx, chassisObj], ...wheelObjs.map((w2, k2) => [wheelStart + k2, w2])]) {
+        obj2.isKinematic = false;
+        obj2.itIsPhysicsBody = true;
+        this._bodyIndexMap.set(i2, obj2);
+      }
+      return vid;
+    });
+  }
+  vehicleControl(vid, engine, steering, brake = 0) {
+    this._worker.postMessage({ cmd: "vehicleControl", vid, engine, steering, brake });
+  }
+  getVehicleSpeed(vid) {
+    return this._send("getVehicleSpeed", { vid });
+  }
   getPosition(idx) {
     return this._send("getPosition", { idx });
   }
@@ -51301,18 +51439,22 @@ var PhysicsBridge = class {
     for (const [idx, meObj] of this._bodyIndexMap) {
       if (!meObj.modelMatrix) continue;
       const b2 = idx * STRIDE;
-      const pos2 = snap.subarray(b2, b2 + 3);
-      const quat = snap.subarray(b2 + 3, b2 + 7);
+      const x3 = snap[b2], y3 = snap[b2 + 1], z2 = snap[b2 + 2];
+      const quat = this._quatScratch;
+      quat[0] = snap[b2 + 3];
+      quat[1] = snap[b2 + 4];
+      quat[2] = snap[b2 + 5];
+      quat[3] = snap[b2 + 6];
       mat4Impl.fromQuat(quat, meObj.modelMatrix);
-      meObj.modelMatrix[12] = pos2[0];
-      meObj.modelMatrix[13] = pos2[1];
-      meObj.modelMatrix[14] = pos2[2];
+      meObj.modelMatrix[12] = x3;
+      meObj.modelMatrix[13] = y3;
+      meObj.modelMatrix[14] = z2;
       mat4Impl.scale(meObj.modelMatrix, meObj.scale, meObj.modelMatrix);
       meObj.modelMatrix[15] = 1;
       meObj.position.inMove = true;
-      meObj.position.x = pos2[0];
-      meObj.position.y = pos2[1];
-      meObj.position.z = pos2[2];
+      meObj.position.x = x3;
+      meObj.position.y = y3;
+      meObj.position.z = z2;
     }
   }
   _send(cmd, extra = {}) {
@@ -51354,51 +51496,8 @@ var PhysicsBridge = class {
         break;
       case "snapshot":
         this._snapshot = data.snap;
-        if (data.clothPackets || data.softBodyPackets) {
-          const packets = [...data.clothPackets || [], ...data.softBodyPackets || []];
-          for (const packet of packets) {
-            const meta = this._clothMap.get(packet.startIndex);
-            const buf = meta?.mesh?.vertexAnim?.clothBuffer;
-            if (!buf) continue;
-            const src = packet.positions, v2n = meta.v2n;
-            if (meta.isSoftBody) meta.positions = src;
-            const n3 = v2n ? v2n.length : meta.count;
-            if (!meta._scratch || meta._scratch.length !== n3 * 4) meta._scratch = new Float32Array(n3 * 4);
-            const dst = meta._scratch;
-            const o3 = meta.off;
-            for (let i2 = 0; i2 < n3; i2++) {
-              const s2 = (v2n ? v2n[i2] : i2) * 3;
-              dst[i2 * 4] = src[s2] + (o3 ? o3[i2 * 3] : 0);
-              dst[i2 * 4 + 1] = src[s2 + 1] + (o3 ? o3[i2 * 3 + 1] : 0);
-              dst[i2 * 4 + 2] = src[s2 + 2] + (o3 ? o3[i2 * 3 + 2] : 0);
-            }
-            app.device.queue.writeBuffer(buf, 0, dst);
-            if (meta.isSoftBody) {
-              const normalBuffer = meta.mesh.vertexNormalsBuffer;
-              const indices = meta.mesh.mesh?.indices;
-              if (normalBuffer && indices?.length) {
-                if (!meta._normalScratch || meta._normalScratch.length !== n3 * 3) {
-                  meta._normalScratch = new Float32Array(n3 * 3);
-                }
-                if (v2n && !meta._nodeAcc) {
-                  let maxNode = 0;
-                  for (let k2 = 0; k2 < v2n.length; k2++) if (v2n[k2] > maxNode) maxNode = v2n[k2];
-                  meta._nodeAcc = new Float32Array((maxNode + 1) * 3);
-                }
-                meta._normalScratch = calculateSoftBodyNormals(
-                  dst,
-                  indices,
-                  n3,
-                  meta.mesh.mesh?.vertexNormals,
-                  meta._normalScratch,
-                  v2n,
-                  meta._nodeAcc
-                );
-                app.device.queue.writeBuffer(normalBuffer, 0, meta._normalScratch);
-              }
-            }
-          }
-        }
+        uploadClothPackets(data.clothPackets, this._clothMap, this._softBodyNormalUpdater);
+        uploadClothPackets(data.softBodyPackets, this._clothMap, this._softBodyNormalUpdater);
         this._syncToObjects();
         break;
       case "collision":
@@ -51425,6 +51524,15 @@ var PhysicsBridge = class {
         break;
       case "getPosition":
         this._pending.get(data.id)?.(data.position);
+        this._pending.delete(data.id);
+        break;
+      case "vehicleAdded":
+        if (data.sab) this._snapshot = new Float32Array(data.sab, 4);
+        this._pending.get(data.id)?.(data);
+        this._pending.delete(data.id);
+        break;
+      case "getVehicleSpeed":
+        this._pending.get(data.id)?.(data.speed);
         this._pending.delete(data.id);
         break;
       case "getQuaternion":
@@ -51495,8 +51603,8 @@ var mobile1 = function() {
           l2 = mesh.materialBindGroup;
         }
         pass.setBindGroup(2, mesh.modelBindGroup);
-        if (mesh.material.type == "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
-        if (mesh.material.type == "water") pass.setBindGroup(3, mesh.waterBindGroup);
+        if (mesh.mirrorBindGroup) pass.setBindGroup(3, mesh.mirrorBindGroup);
+        if (mesh.waterBindGroup) pass.setBindGroup(3, mesh.waterBindGroup);
         mesh.drawElements(pass);
       }
     }
@@ -51514,7 +51622,8 @@ var mobile1 = function() {
       for (const mesh of meshes) {
         pass.setBindGroup(1, mesh.materialBindGroup);
         pass.setBindGroup(2, mesh.modelBindGroup);
-        if (mesh.material.type == "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
+        if (mesh.mirrorBindGroup) pass.setBindGroup(3, mesh.mirrorBindGroup);
+        if (mesh.waterBindGroup) pass.setBindGroup(3, mesh.waterBindGroup);
         mesh.drawElements(pass);
       }
     }
@@ -53223,7 +53332,8 @@ async function GPUIndirectDraws() {
       pass.draw(6);
       pass.end();
     }
-    this.device.queue.submit([commandEncoder.finish()]);
+    this.submitQueue[0] = commandEncoder.finish();
+    this.device.queue.submit(this.submitQueue);
     if (this.collisionSystem) this.collisionSystem.update();
   } catch (err) {
     if (this.logLoopError) console.log(`%cLoop(warn): ${err} Info: ${err.stack}`, LOG_WARN);
@@ -55234,203 +55344,6 @@ function fxaaWGSL() {
   `;
 }
 
-// src/engine/postprocessing/motion-blur,js
-var MotionBlurPass = class {
-  constructor(width, height, device2, options2 = {}) {
-    this.enabled = false;
-    this.device = device2;
-    this.width = width;
-    this.height = height;
-    this.params = {
-      strength: options2.strength ?? 0.6,
-      samples: options2.samples ?? 12,
-      maxBlur: options2.maxBlur ?? 0.03,
-      depthTol: options2.depthTol ?? 3e-4
-    };
-    this._u = new Float32Array(24);
-    this.debug = 0;
-    this.ranFrames = 0;
-    this.uniformBuffer = device2.createBuffer({
-      label: "MotionBlur uniforms",
-      size: 96,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-    this._reproj = mat4Impl.create();
-    this._prevVP = new Float32Array(16);
-    this._hasPrev = false;
-    this.sampler = device2.createSampler({ magFilter: "linear", minFilter: "linear", addressModeU: "clamp-to-edge", addressModeV: "clamp-to-edge" });
-    this.tex = this._createTex();
-    this.texView = this.tex.createView();
-    this.pipeline = device2.createRenderPipeline({
-      label: "MotionBlur pipeline",
-      layout: "auto",
-      vertex: { module: device2.createShaderModule({ code: fullscreenQuadWGSL() }), entryPoint: "vert" },
-      fragment: {
-        module: device2.createShaderModule({ code: motionBlurWGSL() }),
-        entryPoint: "main",
-        targets: [{ format: "rgba16float" }]
-      },
-      primitive: { topology: "triangle-list" }
-    });
-    this._passDesc = {
-      label: "MotionBlur pass",
-      colorAttachments: [{ view: this.texView, loadOp: "clear", storeOp: "store", clearValue: { r: 0, g: 0, b: 0, a: 1 } }]
-    };
-    this._bg = null;
-    this._lastScene = null;
-    this._lastDepth = null;
-  }
-  _createTex() {
-    return this.device.createTexture({
-      label: "MotionBlur out",
-      size: [this.width, this.height],
-      format: "rgba16float",
-      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_SRC
-    });
-  }
-  setStrength = (v2) => {
-    this.params.strength = v2;
-  };
-  setSamples = (v2) => {
-    this.params.samples = Math.max(2, Math.min(32, v2 | 0));
-  };
-  setMaxBlur = (v2) => {
-    this.params.maxBlur = v2;
-  };
-  setDepthTol = (v2) => {
-    this.params.depthTol = v2;
-  };
-  setDebug = (m2) => {
-    this.debug = m2;
-  };
-  resize(width, height) {
-    this.width = width;
-    this.height = height;
-    this.tex.destroy();
-    this.tex = this._createTex();
-    this.texView = this.tex.createView();
-    this._passDesc.colorAttachments[0].view = this.texView;
-    this._bg = null;
-  }
-  _same(a2, b2) {
-    for (let i2 = 0; i2 < 16; i2++) if (a2[i2] !== b2[i2]) return false;
-    return true;
-  }
-  /**
-   * @param {GPUCommandEncoder} encoder
-   * @param {GPUTexture}     sceneTexture   needs COPY_DST
-   * @param {GPUTextureView} sceneView
-   * @param {GPUTextureView} depthView      mainDepthView
-   * @param {Float32Array}   invViewProj    inverse of current VP
-   * @param {Float32Array}   viewProj       current VP
-   */
-  render(encoder, sceneTexture, sceneView, depthView, invViewProj, viewProj) {
-    if (!this._hasPrev) {
-      this._prevVP.set(viewProj);
-      this._hasPrev = true;
-      return;
-    }
-    if (this._same(viewProj, this._prevVP)) return;
-    mat4Impl.multiply(this._prevVP, invViewProj, this._reproj);
-    const u2 = this._u;
-    u2.set(this._reproj, 0);
-    u2[16] = this.params.strength;
-    u2[17] = this.params.samples;
-    u2[18] = this.params.maxBlur;
-    u2[19] = this.params.depthTol;
-    u2[20] = this.debug;
-    this.device.queue.writeBuffer(this.uniformBuffer, 0, u2);
-    if (!this._bg || this._lastScene !== sceneView || this._lastDepth !== depthView) {
-      this._bg = this.device.createBindGroup({
-        label: "MotionBlur bindgroup",
-        layout: this.pipeline.getBindGroupLayout(0),
-        entries: [
-          { binding: 0, resource: sceneView },
-          { binding: 1, resource: depthView },
-          { binding: 2, resource: this.sampler },
-          { binding: 3, resource: { buffer: this.uniformBuffer } }
-        ]
-      });
-      this._lastScene = sceneView;
-      this._lastDepth = depthView;
-    }
-    const pass = encoder.beginRenderPass(this._passDesc);
-    pass.setPipeline(this.pipeline);
-    pass.setBindGroup(0, this._bg);
-    pass.draw(6);
-    pass.end();
-    encoder.copyTextureToTexture({ texture: this.tex }, { texture: sceneTexture }, [this.width, this.height]);
-    this.ranFrames++;
-    this._prevVP.set(viewProj);
-  }
-};
-function motionBlurWGSL() {
-  return (
-    /* wgsl */
-    `
-  struct MB {
-    reproj: mat4x4<f32>,
-    strength: f32,
-    samples: f32,
-    maxBlur: f32,
-    depthTol: f32,
-    debug: f32,
-    _p0: f32,
-    _p1: f32,
-    _p2: f32,
-  };
-
-  @group(0) @binding(0) var sceneTex : texture_2d<f32>;
-  @group(0) @binding(1) var depthTex : texture_depth_2d;
-  @group(0) @binding(2) var samp     : sampler;
-  @group(0) @binding(3) var<uniform> mb : MB;
-
-  fn depthAt(uv: vec2<f32>, dims: vec2<f32>) -> f32 {
-    let px = vec2<i32>(clamp(uv * dims, vec2<f32>(0.0), dims - vec2<f32>(1.0)));
-    return textureLoad(depthTex, px, 0);
-  }
-
-  @fragment
-  fn main(@builtin(position) p: vec4<f32>) -> @location(0) vec4<f32> {
-    let dims = vec2<f32>(textureDimensions(sceneTex));
-    let uv = p.xy / dims;
-    let center = textureSampleLevel(sceneTex, samp, uv, 0.0);
-    let d0 = depthAt(uv, dims);
-
-    let ndc = vec4<f32>(uv.x * 2.0 - 1.0, (1.0 - uv.y) * 2.0 - 1.0, d0, 1.0);
-    let pc = mb.reproj * ndc;
-    let prevNdc = pc.xy / pc.w;
-
-    // NDC delta -> UV delta (y flipped)
-    let raw = (ndc.xy - prevNdc) * vec2<f32>(0.5, -0.5);
-    if (mb.debug > 0.5 && mb.debug < 1.5) {
-      // velocity view: red = horizontal, green = vertical (60 = ~1% of screen per frame -> full color)
-      return vec4<f32>(center.rgb * 0.3 + vec3<f32>(abs(raw) * 60.0, 0.0), 1.0);
-    }
-    if (mb.debug > 1.5 && uv.x > 0.5) { return center; }   // right half untouched for comparison
-    var v = raw * mb.strength;
-    let len = length(v);
-    if (len * max(dims.x, dims.y) < 0.75) { return center; }   // sub-pixel: skip
-    if (len > mb.maxBlur) { v = v * (mb.maxBlur / len); }
-
-    let n = i32(mb.samples);
-    var acc = center.rgb;
-    var wsum = 1.0;
-    for (var i = 0; i < n; i++) {
-      let t = (f32(i) + 0.5) / f32(n) - 0.5;
-      let suv = uv + v * t;
-      let sd = depthAt(suv, dims);
-      // Reject taps that are nearer than the center pixel (foreground bleeding onto background)
-      let w = select(0.0, 1.0, sd >= d0 - mb.depthTol);
-      acc += textureSampleLevel(sceneTex, samp, suv, 0.0).rgb * w;
-      wsum += w;
-    }
-    return vec4<f32>(acc / wsum, center.a);
-  }
-  `
-  );
-}
-
 // src/engine/postprocessing/grade.js
 var TONEMAP = { reinhard: 0, aces: 1, agx: 2, neutral: 3 };
 var GradePass = class {
@@ -55720,6 +55633,203 @@ function gradeWGSL() {
     }
 
     return vec4<f32>(clamp(c, vec3<f32>(0.0), vec3<f32>(1.0)), 1.0);
+  }
+  `
+  );
+}
+
+// src/engine/postprocessing/motion-blur.js
+var MotionBlurPass = class {
+  constructor(width, height, device2, options2 = {}) {
+    this.enabled = false;
+    this.device = device2;
+    this.width = width;
+    this.height = height;
+    this.params = {
+      strength: options2.strength ?? 0.6,
+      samples: options2.samples ?? 12,
+      maxBlur: options2.maxBlur ?? 0.03,
+      depthTol: options2.depthTol ?? 3e-4
+    };
+    this._u = new Float32Array(24);
+    this.debug = 0;
+    this.ranFrames = 0;
+    this.uniformBuffer = device2.createBuffer({
+      label: "MotionBlur uniforms",
+      size: 96,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this._reproj = mat4Impl.create();
+    this._prevVP = new Float32Array(16);
+    this._hasPrev = false;
+    this.sampler = device2.createSampler({ magFilter: "linear", minFilter: "linear", addressModeU: "clamp-to-edge", addressModeV: "clamp-to-edge" });
+    this.tex = this._createTex();
+    this.texView = this.tex.createView();
+    this.pipeline = device2.createRenderPipeline({
+      label: "MotionBlur pipeline",
+      layout: "auto",
+      vertex: { module: device2.createShaderModule({ code: fullscreenQuadWGSL() }), entryPoint: "vert" },
+      fragment: {
+        module: device2.createShaderModule({ code: motionBlurWGSL() }),
+        entryPoint: "main",
+        targets: [{ format: "rgba16float" }]
+      },
+      primitive: { topology: "triangle-list" }
+    });
+    this._passDesc = {
+      label: "MotionBlur pass",
+      colorAttachments: [{ view: this.texView, loadOp: "clear", storeOp: "store", clearValue: { r: 0, g: 0, b: 0, a: 1 } }]
+    };
+    this._bg = null;
+    this._lastScene = null;
+    this._lastDepth = null;
+  }
+  _createTex() {
+    return this.device.createTexture({
+      label: "MotionBlur out",
+      size: [this.width, this.height],
+      format: "rgba16float",
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_SRC
+    });
+  }
+  setStrength = (v2) => {
+    this.params.strength = v2;
+  };
+  setSamples = (v2) => {
+    this.params.samples = Math.max(2, Math.min(32, v2 | 0));
+  };
+  setMaxBlur = (v2) => {
+    this.params.maxBlur = v2;
+  };
+  setDepthTol = (v2) => {
+    this.params.depthTol = v2;
+  };
+  setDebug = (m2) => {
+    this.debug = m2;
+  };
+  resize(width, height) {
+    this.width = width;
+    this.height = height;
+    this.tex.destroy();
+    this.tex = this._createTex();
+    this.texView = this.tex.createView();
+    this._passDesc.colorAttachments[0].view = this.texView;
+    this._bg = null;
+  }
+  _same(a2, b2) {
+    for (let i2 = 0; i2 < 16; i2++) if (a2[i2] !== b2[i2]) return false;
+    return true;
+  }
+  /**
+   * @param {GPUCommandEncoder} encoder
+   * @param {GPUTexture}     sceneTexture   needs COPY_DST
+   * @param {GPUTextureView} sceneView
+   * @param {GPUTextureView} depthView      mainDepthView
+   * @param {Float32Array}   invViewProj    inverse of current VP
+   * @param {Float32Array}   viewProj       current VP
+   */
+  render(encoder, sceneTexture, sceneView, depthView, invViewProj, viewProj) {
+    if (!this._hasPrev) {
+      this._prevVP.set(viewProj);
+      this._hasPrev = true;
+      return;
+    }
+    if (this._same(viewProj, this._prevVP)) return;
+    mat4Impl.multiply(this._prevVP, invViewProj, this._reproj);
+    const u2 = this._u;
+    u2.set(this._reproj, 0);
+    u2[16] = this.params.strength;
+    u2[17] = this.params.samples;
+    u2[18] = this.params.maxBlur;
+    u2[19] = this.params.depthTol;
+    u2[20] = this.debug;
+    this.device.queue.writeBuffer(this.uniformBuffer, 0, u2);
+    if (!this._bg || this._lastScene !== sceneView || this._lastDepth !== depthView) {
+      this._bg = this.device.createBindGroup({
+        label: "MotionBlur bindgroup",
+        layout: this.pipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: sceneView },
+          { binding: 1, resource: depthView },
+          { binding: 2, resource: this.sampler },
+          { binding: 3, resource: { buffer: this.uniformBuffer } }
+        ]
+      });
+      this._lastScene = sceneView;
+      this._lastDepth = depthView;
+    }
+    const pass = encoder.beginRenderPass(this._passDesc);
+    pass.setPipeline(this.pipeline);
+    pass.setBindGroup(0, this._bg);
+    pass.draw(6);
+    pass.end();
+    encoder.copyTextureToTexture({ texture: this.tex }, { texture: sceneTexture }, [this.width, this.height]);
+    this.ranFrames++;
+    this._prevVP.set(viewProj);
+  }
+};
+function motionBlurWGSL() {
+  return (
+    /* wgsl */
+    `
+  struct MB {
+    reproj: mat4x4<f32>,
+    strength: f32,
+    samples: f32,
+    maxBlur: f32,
+    depthTol: f32,
+    debug: f32,
+    _p0: f32,
+    _p1: f32,
+    _p2: f32,
+  };
+
+  @group(0) @binding(0) var sceneTex : texture_2d<f32>;
+  @group(0) @binding(1) var depthTex : texture_depth_2d;
+  @group(0) @binding(2) var samp     : sampler;
+  @group(0) @binding(3) var<uniform> mb : MB;
+
+  fn depthAt(uv: vec2<f32>, dims: vec2<f32>) -> f32 {
+    let px = vec2<i32>(clamp(uv * dims, vec2<f32>(0.0), dims - vec2<f32>(1.0)));
+    return textureLoad(depthTex, px, 0);
+  }
+
+  @fragment
+  fn main(@builtin(position) p: vec4<f32>) -> @location(0) vec4<f32> {
+    let dims = vec2<f32>(textureDimensions(sceneTex));
+    let uv = p.xy / dims;
+    let center = textureSampleLevel(sceneTex, samp, uv, 0.0);
+    let d0 = depthAt(uv, dims);
+
+    let ndc = vec4<f32>(uv.x * 2.0 - 1.0, (1.0 - uv.y) * 2.0 - 1.0, d0, 1.0);
+    let pc = mb.reproj * ndc;
+    let prevNdc = pc.xy / pc.w;
+
+    // NDC delta -> UV delta (y flipped)
+    let raw = (ndc.xy - prevNdc) * vec2<f32>(0.5, -0.5);
+    if (mb.debug > 0.5 && mb.debug < 1.5) {
+      // velocity view: red = horizontal, green = vertical (60 = ~1% of screen per frame -> full color)
+      return vec4<f32>(center.rgb * 0.3 + vec3<f32>(abs(raw) * 60.0, 0.0), 1.0);
+    }
+    if (mb.debug > 1.5 && uv.x > 0.5) { return center; }   // right half untouched for comparison
+    var v = raw * mb.strength;
+    let len = length(v);
+    if (len * max(dims.x, dims.y) < 0.75) { return center; }   // sub-pixel: skip
+    if (len > mb.maxBlur) { v = v * (mb.maxBlur / len); }
+
+    let n = i32(mb.samples);
+    var acc = center.rgb;
+    var wsum = 1.0;
+    for (var i = 0; i < n; i++) {
+      let t = (f32(i) + 0.5) / f32(n) - 0.5;
+      let suv = uv + v * t;
+      let sd = depthAt(suv, dims);
+      // Reject taps that are nearer than the center pixel (foreground bleeding onto background)
+      let w = select(0.0, 1.0, sd >= d0 - mb.depthTol);
+      acc += textureSampleLevel(sceneTex, samp, suv, 0.0).rgb * w;
+      wsum += w;
+    }
+    return vec4<f32>(acc / wsum, center.a);
   }
   `
   );
@@ -57034,8 +57144,8 @@ var MatrixEngineWGPU = class {
             l2 = mesh.materialBindGroup;
           }
           pass.setBindGroup(2, mesh.modelBindGroup);
-          if (mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
-          if (mesh.material.type === "water") pass.setBindGroup(3, mesh.waterBindGroup);
+          if (mesh.mirrorBindGroup) pass.setBindGroup(3, mesh.mirrorBindGroup);
+          if (mesh.waterBindGroup) pass.setBindGroup(3, mesh.waterBindGroup);
           mesh.drawElements(pass, this.lightContainer);
         }
       }
@@ -57045,8 +57155,8 @@ var MatrixEngineWGPU = class {
           if (mesh.isVideo && !mesh.videoFrameReady) continue;
           pass.setBindGroup(1, mesh.materialBindGroup);
           pass.setBindGroup(2, mesh.modelBindGroup);
-          if (mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
-          if (mesh.material.type === "water") pass.setBindGroup(3, mesh.waterBindGroup);
+          if (mesh.mirrorBindGroup) pass.setBindGroup(3, mesh.mirrorBindGroup);
+          if (mesh.waterBindGroup) pass.setBindGroup(3, mesh.waterBindGroup);
           mesh.drawElements(pass, this.lightContainer);
         }
       }
@@ -57134,7 +57244,6 @@ var MatrixEngineWGPU = class {
       }
       this.submitQueue[0] = commandEncoder.finish();
       this.device.queue.submit(this.submitQueue);
-      this.submitQueue[0] = null;
       if (this.collisionSystem) this.collisionSystem.update();
       this.graphUpdate(this.now);
       this.blendQueue.length = 0;
@@ -57707,7 +57816,7 @@ function loadGLBLoader() {
       name: "woman1",
       texturesPaths: ["./res/meshes/glb/textures/mutant_origin.webp"]
     }, null, glbFile11);
-    function onGround(m2) {
+    async function onGround(m2) {
       TEST_ANIM.addLight();
       TEST_ANIM.addMeshObj({
         material: { type: "standard" },
@@ -57744,6 +57853,17 @@ function loadGLBLoader() {
       app.lightContainer[0].setPosY(35);
       app.lightContainer[0].setIntensity(6);
       app.activateBloomEffect();
+      app.activateVolumetricTexProj({
+        density: 1.3,
+        steps: 32,
+        scatterStrength: 1.2,
+        heightFalloff: 10.8,
+        lightColor: [3, 1, 1]
+      });
+      app.volumetricPass.setDensity(36);
+      const view = await loadTextureView(app.device, "res/textures/shooter/hang3d.png");
+      app.volumetricPass.setProjectionTexture(view, app.lightContainer[0].viewProjMatrix);
+      app.volumetricPass.setTextureProjectionIntensity(121);
     }
   });
   window.app = TEST_ANIM;
@@ -57841,7 +57961,7 @@ var myLights = function() {
       const light = myLights2.lightContainer[i2];
       const angleOffset = i2 / NUM_LIGHTS * Math.PI * 2;
       const color = LIGHT_COLORS[i2];
-      light.setIntensity(8.5);
+      light.setIntensity(318.5);
       light.color = color;
       const heightOffset = Math.sin(angleOffset) * 2;
       light.setPosition(
@@ -57863,6 +57983,19 @@ var myLights = function() {
     if (isMobile() == false) {
       myLights2.activateBloomEffect();
       myLights2.activateHZB();
+      myLights2.activateVolumetricTexProj(
+        {
+          density: 0.01,
+          steps: 32,
+          scatterStrength: 1.1,
+          heightFalloff: 1.1,
+          lightColor: [1, 1, 0]
+        }
+      );
+      myLights2.volumetricPass.setDensity(62);
+      const view = await loadTextureView(myLights2.device, "./res/textures/shooter/hang3d.png");
+      myLights2.volumetricPass.setProjectionTexture(view, myLights2.lightContainer[0].viewProjMatrix);
+      myLights2.volumetricPass.setTextureProjectionIntensity(1);
     }
     setTimeout(() => {
       let monster = app.getSceneObjectByName("monster_MutantMesh");
@@ -59200,7 +59333,7 @@ var loadObjFile = function() {
           flameEffect: true
         }
       });
-      loadObjFile2.lightContainer[0].setIntensity(15);
+      loadObjFile2.lightContainer[0].setIntensity(45);
       loadObjFile2.activateBloomEffect();
       loadObjFile2.lightContainer[0].behavior.setOsc0(-2, 2, 0.01);
       loadObjFile2.lightContainer[0].behavior.value_ = -1;
@@ -59208,7 +59341,7 @@ var loadObjFile = function() {
         light.setTargetX(light.behavior.setPath0());
         light.setPosX(light.behavior.setPath0());
       });
-      loadObjFile2.lightContainer[0].setPosition(0, 15, -10);
+      loadObjFile2.lightContainer[0].setPosition(0, 45, -10);
       loadObjFile2.lightContainer[0].setTarget(0, 0, -10);
       setTimeout(() => {
         app.MYCUBE = MYCUBE;
@@ -59311,14 +59444,24 @@ var loadObjsSequence = function() {
       type: "WASD",
       responseCoef: 1e3
     }
-  }, () => {
+  }, async () => {
     loadObjFile2.addLight();
     loadObjFile2.lightContainer[0].setPosZ(-20);
-    loadObjFile2.lightContainer[0].setPosY(35);
-    loadObjFile2.lightContainer[0].setIntensity(5);
+    loadObjFile2.lightContainer[0].setPosY(45);
+    loadObjFile2.lightContainer[0].setIntensity(15);
     downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, onGround, { scale: [20, 1, 20] });
     loadObjFile2.activateBloomEffect();
-    loadObjFile2.activateVolumetricEffect({ density: 1.5, steps: 30, scatterStrength: 1, heightFalloff: 1.6, lightColor: [10, 1.8, 0] });
+    loadObjFile2.activateVolumetricTexProj({
+      density: 0.03,
+      steps: 32,
+      scatterStrength: 0.2,
+      heightFalloff: 10.8,
+      lightColor: [3, 1, 1]
+    });
+    app.volumetricPass.setDensity(16);
+    const view = await loadTextureView(loadObjFile2.device, "res/textures/shooter/hang3d.png");
+    loadObjFile2.volumetricPass.setProjectionTexture(view, loadObjFile2.lightContainer[0].viewProjMatrix);
+    loadObjFile2.volumetricPass.setTextureProjectionIntensity(121);
     downloadMeshes(
       makeObjSeqArg({
         id: "swat-walk-pistol",
@@ -59365,7 +59508,7 @@ var loadObjsSequence = function() {
         },
         objAnim
       });
-      setTimeout(() => {
+      setTimeout(async () => {
         app.getSceneObjectByName("swat").objAnim.animations.walk.speed = 1;
         let cam2 = app.getCamera();
         cam2.setPitch(-0.26);
@@ -59374,7 +59517,7 @@ var loadObjsSequence = function() {
         cam2.setZ(11);
         cam2._dirtyAngle = true;
         app.getSceneObjectByName("swat").objAnim.play("walk");
-      }, 200);
+      }, 300);
     }
     function onGround(m2) {
       loadObjFile2.addMeshObj({
@@ -59419,7 +59562,6 @@ var physicsPlayground = function() {
       }, onGround, { scale: [1, 1, 1] });
       physicsPlayground2.matrixPhysics.speedUpSimulation(4);
       app.activateBloomEffect();
-      app.activateVolumetricEffect({ density: 0.5, steps: 30, scatterStrength: 2, heightFalloff: 0.2, lightColor: [0, 1.8, 10] });
       physicsPlayground2.physicsBodiesGeneratorDeepPyramid(
         "standard",
         { x: 0, y: 1, z: -20 },
@@ -59563,8 +59705,21 @@ var physicsPlayground = function() {
         },
         raycast: { enabled: true, radius: 1 }
       });
-      physicsPlayground2.lightContainer[0].setPosY(14);
-      physicsPlayground2.lightContainer[0].setIntensity(24);
+      physicsPlayground2.lightContainer[0].setPosY(75);
+      physicsPlayground2.lightContainer[0].setIntensity(50);
+      app.activateVolumetricTexProj(
+        {
+          density: 0.03,
+          steps: 32,
+          scatterStrength: 0.2,
+          heightFalloff: 10.8,
+          lightColor: [1, 1, 1]
+        }
+      );
+      app.volumetricPass.setDensity(34);
+      const view = await loadTextureView(app.device, "res/textures/shooter/hang3d.png");
+      app.volumetricPass.setProjectionTexture(view, app.lightContainer[0].viewProjMatrix);
+      app.volumetricPass.setTextureProjectionIntensity(11);
     }
     function onLoadObj(m2) {
       physicsPlayground2.myLoadedMeshes = m2;
@@ -62453,31 +62608,7 @@ var testCannonES = function() {
         },
         raycast: { enabled: true, radius: 1 }
       });
-      console.log("....... ..d.. .. . .. ..d..d... ");
-      const jelly = physicsPlayground2.addMeshObj({
-        material: { type: "standard" },
-        position: { x: 0, y: 8, z: -10 },
-        scale: [1, 1, 1],
-        texturesPaths: ["./res/textures/floor1.webp"],
-        name: "jelly",
-        mesh: m2.ball,
-        physics: {
-          // radius: undefined,
-          enabled: true,
-          geometry: "SoftBody",
-          mass: 2,
-          nodeSpacing: 0,
-          group: 2,
-          mask: -1,
-          vertices: m2.ball.vertices,
-          indices: m2.ball.indices,
-          hub: false,
-          radius: 0.01
-        }
-      });
-      setTimeout(() => jelly.vertexAnim.enableCloth(1), 500);
       app.activateBloomEffect();
-      app.activateVolumetricEffect();
       physicsPlayground2.lightContainer[0].setPosY(65);
       physicsPlayground2.lightContainer[0].setIntensity(100);
     }
@@ -85386,6 +85517,82 @@ async function initializeSymbolReel2(mesh, engine, reelCfg) {
   return effects;
 }
 
+// examples/physics-car-ammo.js
+var carAmmo = function() {
+  let carDemo = new MatrixEngineWGPU({
+    canvasSize: "fullscreen",
+    useAmmo: true,
+    fastRender: 0.8,
+    MAX_SPOTLIGHTS: 1,
+    MAX_BONES: 0,
+    mainCameraParams: { type: "WASD", responseCoef: 1e3 },
+    clearColor: { r: 0, b: 0.122, g: 0.122, a: 1 }
+  }, () => {
+    carDemo.addLight();
+    addEventListener("PhysicsReady", () => {
+      downloadMeshes({
+        cube: "./res/meshes/blender/cube.obj"
+      }, onLoad, { scale: [1, 1, 1] });
+    });
+    async function onLoad(m2) {
+      carDemo.addMeshObj({
+        position: { x: 0, y: 0, z: -10 },
+        scale: [50, 0.01, 50],
+        texturesPaths: ["res/icons/editor/chatgpt-gen-bg-inv.webp"],
+        name: "ground",
+        mesh: m2.cube,
+        physics: { enabled: false }
+      });
+      const chassis = carDemo.addMeshObj({
+        position: { x: 0, y: 3, z: -10 },
+        scale: [1, 0.5, 2],
+        texturesPaths: ["./res/textures/rust.jpg"],
+        name: "car",
+        mesh: m2.cube,
+        physics: { enabled: false }
+      });
+      const wheels = [0, 1, 2, 3].map((i2) => carDemo.addMeshObj({
+        position: { x: 0, y: 3, z: -10 },
+        scale: [0.25, 0.5, 0.5],
+        texturesPaths: ["./res/textures/gold-1.webp"],
+        name: "wheel" + i2,
+        mesh: m2.cube,
+        physics: { enabled: false }
+      }));
+      const vid = await carDemo.matrixPhysics.addVehicle(chassis, wheels, {
+        name: "car",
+        position: { x: 0, y: 3, z: -10 },
+        rotation: { x: 0, y: 180, z: 0 },
+        scale: [1, 0.5, 2],
+        mass: 800,
+        vehicle: { wheelRadius: 0.5 }
+      });
+      const cam2 = carDemo.cameras.WASD;
+      cam2.setYaw(0);
+      cam2.setPitch(-0.35);
+      cam2.setFollow(chassis.position, [0, 6, 14], 0.08);
+      let lastE = 0, lastS = 0, lastB = 0;
+      carDemo.autoUpdate.push({
+        update: () => {
+          cam2.updateFollow();
+          const d2 = cam2._digital;
+          const e2 = d2 & 1 ? 1500 : d2 & 2 ? -800 : 0;
+          const s2 = d2 & 4 ? 0.4 : d2 & 8 ? -0.4 : 0;
+          const b2 = d2 & 16 ? 60 : 0;
+          if (e2 === lastE && s2 === lastS && b2 === lastB) return;
+          lastE = e2;
+          lastS = s2;
+          lastB = b2;
+          carDemo.matrixPhysics.vehicleControl(vid, e2, s2, b2);
+        }
+      });
+      carDemo.lightContainer[0].setPosY(40);
+      carDemo.lightContainer[0].setIntensity(60);
+    }
+  });
+  window.app = carDemo;
+};
+
 // examples.js
 var switchDemo = (id2) => {
   const url = new URL(window.location.href);
@@ -85563,6 +85770,8 @@ if (urlQuery["demo"] === "1") {
   volumetrixTexProj();
 } else if (urlQuery["demo"] === "52") {
   loadFluidsSlot();
+} else if (urlQuery["demo"] === "53") {
+  carAmmo();
 } else {
   loadObjFile();
 }

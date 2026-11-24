@@ -13,36 +13,6 @@ export let zeroPass = function() {
     if(camera._digital) {camera._applyDigitalMovement(this.now);}
     if(camera._dirtyAngle) {camera.update(); this.getTransformationMatrix(camera, now2);}
 
-    // for(let i = 0;i < this.lightContainer.length;i++) {
-    //   const light = this.lightContainer[i];
-    //   const pass = commandEncoder.beginRenderPass(this._shadowPassDescs[i]);
-    //   if(this.shadowBuckets.default.length) {
-    //     pass.setPipeline(light.shadowPipeline);
-    //     for(let m of this.shadowBuckets.default) {
-    //       pass.setBindGroup(0, light.getShadowBindGroup(m));
-    //       pass.setBindGroup(1, m.modelBindGroup);
-    //       m.drawShadows(pass, light);
-    //     }
-    //   }
-    //   if(this.shadowBuckets.instanced.length) {
-    //     pass.setPipeline(light.shadowPipelineInstanced);
-    //     for(let m of this.shadowBuckets.instanced) {
-    //       pass.setBindGroup(0, light.getShadowBindGroup(m));
-    //       pass.setBindGroup(1, m.modelBindGroupInstanced);
-    //       m.drawShadows(pass, light);
-    //     }
-    //   }
-    //   if(this.shadowBuckets.procedural.length) {
-    //     pass.setPipeline(light.shadowPipelineMorph);
-    //     for(let m of this.shadowBuckets.procedural) {
-    //       pass.setBindGroup(0, light.getShadowBindGroup(m));
-    //       pass.setBindGroup(1, m.mainRenderBindGroup);
-    //       m.drawShadows(pass, light);
-    //     }
-    //   }
-    //   pass.end();
-    // }
-
     const len = this.mainRenderBundle.length;
     for(let i = 0;i < len;i++) {
       const mesh = this.mainRenderBundle[i];

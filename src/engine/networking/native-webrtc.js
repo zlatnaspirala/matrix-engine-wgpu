@@ -217,8 +217,9 @@ export class NativeWebRTC {
       this.localStreamReadyDispatched = true;
       const detail = {connection: this.connection, stream, videoElement: video};
       dispatchEvent(new CustomEvent('LOCAL-STREAM-READY', {detail}));
+      const trackId = stream.getVideoTracks?.()[0]?.id || null;
       dispatchEvent(new CustomEvent('streamPlaying', {
-        detail: {peerId: this.id, stream, target: {id: 'local-video', videos: [{video}]}}
+        detail: {peerId: this.id, connectionId: this.connection.connectionId || this.id, stream, trackId, isLocal: true, target: {id: 'local-video', videos: [{video}]}}
       }));
     }
     return video;
@@ -265,9 +266,13 @@ export class NativeWebRTC {
     }
     // Keep the legacy Kurento event contract so existing streamPlaying
     // consumers can use target.id and target.videos[0].video unchanged.
+    const trackId = stream.getVideoTracks?.()[0]?.id || null;
     const detail = {
       peerId,
+      connectionId: peerId,
       stream,
+      trackId,
+      isLocal: false,
       target: {id: video.id, videos: [{video}]}
     };
     dispatchEvent(new CustomEvent('streamPlaying', {detail}));

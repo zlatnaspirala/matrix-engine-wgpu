@@ -14,6 +14,9 @@
 
     NETWORK API Level same :  NET DRIVE (kurento,node signaling)
 
+ - addHeightfield for AMMO ,cannonjs + example
+ - addVehicle for AMMO, cannonjs + example
+
 ```js
 // Easy way
 freekyChat.net = activateNet2({
@@ -36,6 +39,31 @@ net = new NativeWebRTC({
 });
 
 ```
+
+```js
+carDemo.addProceduralMeshObj({
+  name: 'car-terrain',
+  position: {x: 0, y: 0, z: -10},
+  scale: [1, 1, 1],
+  geometryA: {
+    type: 'heightfield', size: 1, segments: terrainColumns - 1,
+    options: {
+      heightData: terrainHeights, columns: terrainColumns, rows: terrainRows,
+      elementSize: terrainElementSize
+    }
+  },
+  texturesPaths: ['res/icons/editor/chatgpt-gen-bg-inv.webp'],
+  material: {type: 'standard'},
+  physics: {enabled: false}
+});
+
+await carDemo.matrixPhysics.addHeightfield({
+  heightData: terrainHeights, columns: terrainColumns, rows: terrainRows,
+  elementSize: terrainElementSize, position: {x: 0, y: 0, z: -10},
+  friction: 1, name: 'car-terrain'
+});
+```
+
 
 
 [2.0.0]

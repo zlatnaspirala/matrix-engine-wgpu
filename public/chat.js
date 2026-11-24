@@ -2404,6 +2404,11 @@ var WASDCamera = class _WASDCamera {
   rotationSpeed = 1;
   _dirtyAngle = true;
   usePointerEvents = false;
+  followMe = null;
+  // any {x, y, z}, e.g. mesh.position
+  followOffset = new Float32Array([0, 6, 14]);
+  followSmooth = 0.1;
+  // 1 = rigid, lower = softer
   static HALF_PI = Math.PI * 0.5;
   constructor(options2 = {}) {
     if (options2.position) {
@@ -2693,6 +2698,7 @@ var WASDCamera = class _WASDCamera {
   }
   // WASD MOVEMENT
   _applyDigitalMovement() {
+    if (this.followMe) return;
     const d = this._digital;
     if (d === 0) return;
     const right2 = this.right;
@@ -2769,6 +2775,29 @@ var WASDCamera = class _WASDCamera {
     this.yaw = y2;
     this._dirtyAngle = true;
   };
+  // FOLLOW (call updateFollow() from an autoUpdate item)
+  setFollow = (target, offset, smooth) => {
+    this.followMe = target;
+    if (offset) this.followOffset.set(offset);
+    if (smooth !== void 0) this.followSmooth = smooth;
+    this._dirtyAngle = true;
+  };
+  clearFollow = () => {
+    this.followMe = null;
+  };
+  updateFollow() {
+    const t2 = this.followMe;
+    if (!t2) return;
+    const p = this.position, o2 = this.followOffset, k = this.followSmooth;
+    const dx = t2.x + o2[0] - p[0];
+    const dy = t2.y + o2[1] - p[1];
+    const dz = t2.z + o2[2] - p[2];
+    if (Math.abs(dx) + Math.abs(dy) + Math.abs(dz) < 5e-4) return;
+    p[0] += dx * k;
+    p[1] += dy * k;
+    p[2] += dz * k;
+    this._dirtyAngle = true;
+  }
   // LOOK CONTROL
   setLookEnabled = (enabled) => {
     this._lookDisabled = !enabled;
@@ -4499,14 +4528,14 @@ var Position = class {
   get Z() {
     return parseFloat(this.z);
   }
-  setPosition(newx, newy, newz) {
+  setPosition(newx, newy, newz, EMIT = false) {
     this.x = newx;
     this.y = newy;
     this.z = newz;
     this.targetX = newx;
     this.targetY = newy;
     this.targetZ = newz;
-    this.inMove = true;
+    if (EMIT === true) this.inMove = true;
   }
 };
 var Rotation = class {
@@ -11142,6 +11171,8 @@ fn fsMain(input : VSOut) -> FragOut {
 var GeometryFactory = class _GeometryFactory {
   static create(type2, size2 = 1, segments = 16, options2 = {}) {
     switch (type2) {
+      case "heightfield":
+        return _GeometryFactory.heightfield(options2.heightData, options2.columns, options2.rows, options2.elementSize || 1);
       case "quad":
         return _GeometryFactory.quad(size2);
       case "cube":
@@ -11200,6 +11231,43 @@ var GeometryFactory = class _GeometryFactory {
       default:
         throw new Error(`Unknown geometry: ${type2}`);
     }
+  }
+  static heightfield(heightData, columns, rows, elementSize = 1) {
+    if (!heightData || !Number.isInteger(columns) || !Number.isInteger(rows) || columns < 2 || rows < 2 || heightData.length !== columns * rows) {
+      throw new RangeError("heightfield requires heightData with columns * rows samples and dimensions >= 2");
+    }
+    const positions = new Float32Array(columns * rows * 3);
+    const uvs = new Float32Array(columns * rows * 2);
+    const vertexCount = columns * rows;
+    if (vertexCount > 65535) {
+      throw new RangeError("ProceduralMeshObj currently uses uint16 indices; heightfield must contain <= 65535 vertices");
+    }
+    const indices = new Uint16Array((columns - 1) * (rows - 1) * 6);
+    const halfX = (columns - 1) * elementSize * 0.5;
+    const halfZ = (rows - 1) * elementSize * 0.5;
+    for (let z = 0; z < rows; z++) {
+      for (let x2 = 0; x2 < columns; x2++) {
+        const i = z * columns + x2;
+        positions[i * 3] = x2 * elementSize - halfX;
+        positions[i * 3 + 1] = heightData[i];
+        positions[i * 3 + 2] = z * elementSize - halfZ;
+        uvs[i * 2] = x2 / (columns - 1);
+        uvs[i * 2 + 1] = z / (rows - 1);
+      }
+    }
+    let t2 = 0;
+    for (let z = 0; z < rows - 1; z++) {
+      for (let x2 = 0; x2 < columns - 1; x2++) {
+        const a = z * columns + x2, b = a + 1, c = a + columns, d = c + 1;
+        indices[t2++] = a;
+        indices[t2++] = c;
+        indices[t2++] = b;
+        indices[t2++] = b;
+        indices[t2++] = c;
+        indices[t2++] = d;
+      }
+    }
+    return { positions, uvs, indices };
   }
   static computeFlatNormals(positions, indices) {
     const normals = new Float32Array(positions.length);
@@ -38900,8 +38968,8 @@ var cullingPass = function() {
           l = mesh.materialBindGroup;
         }
         pass.setBindGroup(2, mesh.modelBindGroup);
-        if (mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
-        if (mesh.material.type === "water") pass.setBindGroup(3, mesh.waterBindGroup);
+        if (mesh.mirrorBindGroup) pass.setBindGroup(3, mesh.mirrorBindGroup);
+        if (mesh.waterBindGroup) pass.setBindGroup(3, mesh.waterBindGroup);
         mesh.drawElements(pass);
       }
     }
@@ -38911,8 +38979,8 @@ var cullingPass = function() {
         if (mesh.isVideo && !mesh.videoFrameReady) continue;
         pass.setBindGroup(1, mesh.materialBindGroup);
         pass.setBindGroup(2, mesh.modelBindGroup);
-        if (mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
-        if (mesh.material.type === "water") pass.setBindGroup(3, mesh.waterBindGroup);
+        if (mesh.mirrorBindGroup) pass.setBindGroup(3, mesh.mirrorBindGroup);
+        if (mesh.waterBindGroup) pass.setBindGroup(3, mesh.waterBindGroup);
         mesh.drawElements(pass);
       }
     }
@@ -39034,8 +39102,8 @@ var noShadowPass = function() {
           l = mesh.materialBindGroup;
         }
         pass.setBindGroup(2, mesh.modelBindGroup);
-        if (mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
-        if (mesh.material.type === "water") pass.setBindGroup(3, mesh.waterBindGroup);
+        if (mesh.mirrorBindGroup) pass.setBindGroup(3, mesh.mirrorBindGroup);
+        if (mesh.waterBindGroup) pass.setBindGroup(3, mesh.waterBindGroup);
         mesh.drawElements(pass);
       }
     }
@@ -39045,8 +39113,8 @@ var noShadowPass = function() {
         if (mesh.isVideo && !mesh.videoFrameReady) continue;
         pass.setBindGroup(1, mesh.materialBindGroup);
         pass.setBindGroup(2, mesh.modelBindGroup);
-        if (mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
-        if (mesh.material.type === "water") pass.setBindGroup(3, mesh.waterBindGroup);
+        if (mesh.mirrorBindGroup) pass.setBindGroup(3, mesh.mirrorBindGroup);
+        if (mesh.waterBindGroup) pass.setBindGroup(3, mesh.waterBindGroup);
         mesh.drawElements(pass);
       }
     }
@@ -39542,6 +39610,50 @@ var PhysicsBridge = class {
     if (constraintIdx === void 0) return;
     this._worker.postMessage({ cmd: "enableAngularMotor", constraintIdx, enable, targetVelocity, maxMotorImpulse });
   }
+  // Heightfield terrain for Ammo, Cannon, and Jolt. heightData is a row-major Float32Array (rows * columns).
+  // The selected physics worker owns the native heightfield shape for its lifetime.
+  addHeightfield({ heightData, columns, rows, elementSize = 1, position = { x: 0, y: 0, z: 0 }, minHeight, maxHeight, friction = 1, name: name2 = "heightfield" } = {}) {
+    if (!(heightData instanceof Float32Array)) throw new TypeError("heightData must be a Float32Array");
+    if (!Number.isInteger(columns) || !Number.isInteger(rows) || columns < 2 || rows < 2) {
+      throw new RangeError("Heightfield columns and rows must both be integers >= 2");
+    }
+    if (heightData.length !== columns * rows) {
+      throw new RangeError(`heightData length must equal columns * rows (${columns * rows})`);
+    }
+    if (!Number.isFinite(elementSize) || elementSize <= 0) throw new RangeError("elementSize must be > 0");
+    return this._send("addBody", {
+      pOptions: {
+        geometry: "Heightfield",
+        heightData,
+        columns,
+        rows,
+        elementSize,
+        position,
+        minHeight,
+        maxHeight,
+        friction,
+        mass: 0,
+        name: name2
+      }
+    }).then((idx) => idx);
+  }
+  // Ammo, Cannon, and Jolt vehicles register chassis and wheel snapshot slots here.
+  addVehicle(chassisObj, wheelObjs, pOptions) {
+    return this._send("addVehicle", { pOptions }).then(({ idx, vid, wheelStart }) => {
+      for (const [i, obj2] of [[idx, chassisObj], ...wheelObjs.map((w, k) => [wheelStart + k, w])]) {
+        obj2.isKinematic = false;
+        obj2.itIsPhysicsBody = true;
+        this._bodyIndexMap.set(i, obj2);
+      }
+      return vid;
+    });
+  }
+  vehicleControl(vid, engine, steering, brake = 0) {
+    this._worker.postMessage({ cmd: "vehicleControl", vid, engine, steering, brake });
+  }
+  getVehicleSpeed(vid) {
+    return this._send("getVehicleSpeed", { vid });
+  }
   getPosition(idx) {
     return this._send("getPosition", { idx });
   }
@@ -39685,6 +39797,15 @@ var PhysicsBridge = class {
         this._pending.get(data.id)?.(data.position);
         this._pending.delete(data.id);
         break;
+      case "vehicleAdded":
+        if (data.sab) this._snapshot = new Float32Array(data.sab, 4);
+        this._pending.get(data.id)?.(data);
+        this._pending.delete(data.id);
+        break;
+      case "getVehicleSpeed":
+        this._pending.get(data.id)?.(data.speed);
+        this._pending.delete(data.id);
+        break;
       case "getQuaternion":
         this._pending.get(data.id)?.(data.quaternion);
         this._pending.delete(data.id);
@@ -39753,8 +39874,8 @@ var mobile1 = function() {
           l = mesh.materialBindGroup;
         }
         pass.setBindGroup(2, mesh.modelBindGroup);
-        if (mesh.material.type == "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
-        if (mesh.material.type == "water") pass.setBindGroup(3, mesh.waterBindGroup);
+        if (mesh.mirrorBindGroup) pass.setBindGroup(3, mesh.mirrorBindGroup);
+        if (mesh.waterBindGroup) pass.setBindGroup(3, mesh.waterBindGroup);
         mesh.drawElements(pass);
       }
     }
@@ -39772,7 +39893,8 @@ var mobile1 = function() {
       for (const mesh of meshes) {
         pass.setBindGroup(1, mesh.materialBindGroup);
         pass.setBindGroup(2, mesh.modelBindGroup);
-        if (mesh.material.type == "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
+        if (mesh.mirrorBindGroup) pass.setBindGroup(3, mesh.mirrorBindGroup);
+        if (mesh.waterBindGroup) pass.setBindGroup(3, mesh.waterBindGroup);
         mesh.drawElements(pass);
       }
     }
@@ -41349,7 +41471,8 @@ async function GPUIndirectDraws() {
       pass.draw(6);
       pass.end();
     }
-    this.device.queue.submit([commandEncoder.finish()]);
+    this.submitQueue[0] = commandEncoder.finish();
+    this.device.queue.submit(this.submitQueue);
     if (this.collisionSystem) this.collisionSystem.update();
   } catch (err) {
     if (this.logLoopError) console.log(`%cLoop(warn): ${err} Info: ${err.stack}`, LOG_WARN);
@@ -43360,203 +43483,6 @@ function fxaaWGSL() {
   `;
 }
 
-// src/engine/postprocessing/motion-blur,js
-var MotionBlurPass = class {
-  constructor(width, height, device2, options2 = {}) {
-    this.enabled = false;
-    this.device = device2;
-    this.width = width;
-    this.height = height;
-    this.params = {
-      strength: options2.strength ?? 0.6,
-      samples: options2.samples ?? 12,
-      maxBlur: options2.maxBlur ?? 0.03,
-      depthTol: options2.depthTol ?? 3e-4
-    };
-    this._u = new Float32Array(24);
-    this.debug = 0;
-    this.ranFrames = 0;
-    this.uniformBuffer = device2.createBuffer({
-      label: "MotionBlur uniforms",
-      size: 96,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-    this._reproj = mat4Impl.create();
-    this._prevVP = new Float32Array(16);
-    this._hasPrev = false;
-    this.sampler = device2.createSampler({ magFilter: "linear", minFilter: "linear", addressModeU: "clamp-to-edge", addressModeV: "clamp-to-edge" });
-    this.tex = this._createTex();
-    this.texView = this.tex.createView();
-    this.pipeline = device2.createRenderPipeline({
-      label: "MotionBlur pipeline",
-      layout: "auto",
-      vertex: { module: device2.createShaderModule({ code: fullscreenQuadWGSL() }), entryPoint: "vert" },
-      fragment: {
-        module: device2.createShaderModule({ code: motionBlurWGSL() }),
-        entryPoint: "main",
-        targets: [{ format: "rgba16float" }]
-      },
-      primitive: { topology: "triangle-list" }
-    });
-    this._passDesc = {
-      label: "MotionBlur pass",
-      colorAttachments: [{ view: this.texView, loadOp: "clear", storeOp: "store", clearValue: { r: 0, g: 0, b: 0, a: 1 } }]
-    };
-    this._bg = null;
-    this._lastScene = null;
-    this._lastDepth = null;
-  }
-  _createTex() {
-    return this.device.createTexture({
-      label: "MotionBlur out",
-      size: [this.width, this.height],
-      format: "rgba16float",
-      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_SRC
-    });
-  }
-  setStrength = (v) => {
-    this.params.strength = v;
-  };
-  setSamples = (v) => {
-    this.params.samples = Math.max(2, Math.min(32, v | 0));
-  };
-  setMaxBlur = (v) => {
-    this.params.maxBlur = v;
-  };
-  setDepthTol = (v) => {
-    this.params.depthTol = v;
-  };
-  setDebug = (m) => {
-    this.debug = m;
-  };
-  resize(width, height) {
-    this.width = width;
-    this.height = height;
-    this.tex.destroy();
-    this.tex = this._createTex();
-    this.texView = this.tex.createView();
-    this._passDesc.colorAttachments[0].view = this.texView;
-    this._bg = null;
-  }
-  _same(a, b) {
-    for (let i = 0; i < 16; i++) if (a[i] !== b[i]) return false;
-    return true;
-  }
-  /**
-   * @param {GPUCommandEncoder} encoder
-   * @param {GPUTexture}     sceneTexture   needs COPY_DST
-   * @param {GPUTextureView} sceneView
-   * @param {GPUTextureView} depthView      mainDepthView
-   * @param {Float32Array}   invViewProj    inverse of current VP
-   * @param {Float32Array}   viewProj       current VP
-   */
-  render(encoder, sceneTexture, sceneView, depthView, invViewProj, viewProj) {
-    if (!this._hasPrev) {
-      this._prevVP.set(viewProj);
-      this._hasPrev = true;
-      return;
-    }
-    if (this._same(viewProj, this._prevVP)) return;
-    mat4Impl.multiply(this._prevVP, invViewProj, this._reproj);
-    const u = this._u;
-    u.set(this._reproj, 0);
-    u[16] = this.params.strength;
-    u[17] = this.params.samples;
-    u[18] = this.params.maxBlur;
-    u[19] = this.params.depthTol;
-    u[20] = this.debug;
-    this.device.queue.writeBuffer(this.uniformBuffer, 0, u);
-    if (!this._bg || this._lastScene !== sceneView || this._lastDepth !== depthView) {
-      this._bg = this.device.createBindGroup({
-        label: "MotionBlur bindgroup",
-        layout: this.pipeline.getBindGroupLayout(0),
-        entries: [
-          { binding: 0, resource: sceneView },
-          { binding: 1, resource: depthView },
-          { binding: 2, resource: this.sampler },
-          { binding: 3, resource: { buffer: this.uniformBuffer } }
-        ]
-      });
-      this._lastScene = sceneView;
-      this._lastDepth = depthView;
-    }
-    const pass = encoder.beginRenderPass(this._passDesc);
-    pass.setPipeline(this.pipeline);
-    pass.setBindGroup(0, this._bg);
-    pass.draw(6);
-    pass.end();
-    encoder.copyTextureToTexture({ texture: this.tex }, { texture: sceneTexture }, [this.width, this.height]);
-    this.ranFrames++;
-    this._prevVP.set(viewProj);
-  }
-};
-function motionBlurWGSL() {
-  return (
-    /* wgsl */
-    `
-  struct MB {
-    reproj: mat4x4<f32>,
-    strength: f32,
-    samples: f32,
-    maxBlur: f32,
-    depthTol: f32,
-    debug: f32,
-    _p0: f32,
-    _p1: f32,
-    _p2: f32,
-  };
-
-  @group(0) @binding(0) var sceneTex : texture_2d<f32>;
-  @group(0) @binding(1) var depthTex : texture_depth_2d;
-  @group(0) @binding(2) var samp     : sampler;
-  @group(0) @binding(3) var<uniform> mb : MB;
-
-  fn depthAt(uv: vec2<f32>, dims: vec2<f32>) -> f32 {
-    let px = vec2<i32>(clamp(uv * dims, vec2<f32>(0.0), dims - vec2<f32>(1.0)));
-    return textureLoad(depthTex, px, 0);
-  }
-
-  @fragment
-  fn main(@builtin(position) p: vec4<f32>) -> @location(0) vec4<f32> {
-    let dims = vec2<f32>(textureDimensions(sceneTex));
-    let uv = p.xy / dims;
-    let center = textureSampleLevel(sceneTex, samp, uv, 0.0);
-    let d0 = depthAt(uv, dims);
-
-    let ndc = vec4<f32>(uv.x * 2.0 - 1.0, (1.0 - uv.y) * 2.0 - 1.0, d0, 1.0);
-    let pc = mb.reproj * ndc;
-    let prevNdc = pc.xy / pc.w;
-
-    // NDC delta -> UV delta (y flipped)
-    let raw = (ndc.xy - prevNdc) * vec2<f32>(0.5, -0.5);
-    if (mb.debug > 0.5 && mb.debug < 1.5) {
-      // velocity view: red = horizontal, green = vertical (60 = ~1% of screen per frame -> full color)
-      return vec4<f32>(center.rgb * 0.3 + vec3<f32>(abs(raw) * 60.0, 0.0), 1.0);
-    }
-    if (mb.debug > 1.5 && uv.x > 0.5) { return center; }   // right half untouched for comparison
-    var v = raw * mb.strength;
-    let len = length(v);
-    if (len * max(dims.x, dims.y) < 0.75) { return center; }   // sub-pixel: skip
-    if (len > mb.maxBlur) { v = v * (mb.maxBlur / len); }
-
-    let n = i32(mb.samples);
-    var acc = center.rgb;
-    var wsum = 1.0;
-    for (var i = 0; i < n; i++) {
-      let t = (f32(i) + 0.5) / f32(n) - 0.5;
-      let suv = uv + v * t;
-      let sd = depthAt(suv, dims);
-      // Reject taps that are nearer than the center pixel (foreground bleeding onto background)
-      let w = select(0.0, 1.0, sd >= d0 - mb.depthTol);
-      acc += textureSampleLevel(sceneTex, samp, suv, 0.0).rgb * w;
-      wsum += w;
-    }
-    return vec4<f32>(acc / wsum, center.a);
-  }
-  `
-  );
-}
-
 // src/engine/postprocessing/grade.js
 var TONEMAP = { reinhard: 0, aces: 1, agx: 2, neutral: 3 };
 var GradePass = class {
@@ -43846,6 +43772,203 @@ function gradeWGSL() {
     }
 
     return vec4<f32>(clamp(c, vec3<f32>(0.0), vec3<f32>(1.0)), 1.0);
+  }
+  `
+  );
+}
+
+// src/engine/postprocessing/motion-blur.js
+var MotionBlurPass = class {
+  constructor(width, height, device2, options2 = {}) {
+    this.enabled = false;
+    this.device = device2;
+    this.width = width;
+    this.height = height;
+    this.params = {
+      strength: options2.strength ?? 0.6,
+      samples: options2.samples ?? 12,
+      maxBlur: options2.maxBlur ?? 0.03,
+      depthTol: options2.depthTol ?? 3e-4
+    };
+    this._u = new Float32Array(24);
+    this.debug = 0;
+    this.ranFrames = 0;
+    this.uniformBuffer = device2.createBuffer({
+      label: "MotionBlur uniforms",
+      size: 96,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this._reproj = mat4Impl.create();
+    this._prevVP = new Float32Array(16);
+    this._hasPrev = false;
+    this.sampler = device2.createSampler({ magFilter: "linear", minFilter: "linear", addressModeU: "clamp-to-edge", addressModeV: "clamp-to-edge" });
+    this.tex = this._createTex();
+    this.texView = this.tex.createView();
+    this.pipeline = device2.createRenderPipeline({
+      label: "MotionBlur pipeline",
+      layout: "auto",
+      vertex: { module: device2.createShaderModule({ code: fullscreenQuadWGSL() }), entryPoint: "vert" },
+      fragment: {
+        module: device2.createShaderModule({ code: motionBlurWGSL() }),
+        entryPoint: "main",
+        targets: [{ format: "rgba16float" }]
+      },
+      primitive: { topology: "triangle-list" }
+    });
+    this._passDesc = {
+      label: "MotionBlur pass",
+      colorAttachments: [{ view: this.texView, loadOp: "clear", storeOp: "store", clearValue: { r: 0, g: 0, b: 0, a: 1 } }]
+    };
+    this._bg = null;
+    this._lastScene = null;
+    this._lastDepth = null;
+  }
+  _createTex() {
+    return this.device.createTexture({
+      label: "MotionBlur out",
+      size: [this.width, this.height],
+      format: "rgba16float",
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_SRC
+    });
+  }
+  setStrength = (v) => {
+    this.params.strength = v;
+  };
+  setSamples = (v) => {
+    this.params.samples = Math.max(2, Math.min(32, v | 0));
+  };
+  setMaxBlur = (v) => {
+    this.params.maxBlur = v;
+  };
+  setDepthTol = (v) => {
+    this.params.depthTol = v;
+  };
+  setDebug = (m) => {
+    this.debug = m;
+  };
+  resize(width, height) {
+    this.width = width;
+    this.height = height;
+    this.tex.destroy();
+    this.tex = this._createTex();
+    this.texView = this.tex.createView();
+    this._passDesc.colorAttachments[0].view = this.texView;
+    this._bg = null;
+  }
+  _same(a, b) {
+    for (let i = 0; i < 16; i++) if (a[i] !== b[i]) return false;
+    return true;
+  }
+  /**
+   * @param {GPUCommandEncoder} encoder
+   * @param {GPUTexture}     sceneTexture   needs COPY_DST
+   * @param {GPUTextureView} sceneView
+   * @param {GPUTextureView} depthView      mainDepthView
+   * @param {Float32Array}   invViewProj    inverse of current VP
+   * @param {Float32Array}   viewProj       current VP
+   */
+  render(encoder, sceneTexture, sceneView, depthView, invViewProj, viewProj) {
+    if (!this._hasPrev) {
+      this._prevVP.set(viewProj);
+      this._hasPrev = true;
+      return;
+    }
+    if (this._same(viewProj, this._prevVP)) return;
+    mat4Impl.multiply(this._prevVP, invViewProj, this._reproj);
+    const u = this._u;
+    u.set(this._reproj, 0);
+    u[16] = this.params.strength;
+    u[17] = this.params.samples;
+    u[18] = this.params.maxBlur;
+    u[19] = this.params.depthTol;
+    u[20] = this.debug;
+    this.device.queue.writeBuffer(this.uniformBuffer, 0, u);
+    if (!this._bg || this._lastScene !== sceneView || this._lastDepth !== depthView) {
+      this._bg = this.device.createBindGroup({
+        label: "MotionBlur bindgroup",
+        layout: this.pipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: sceneView },
+          { binding: 1, resource: depthView },
+          { binding: 2, resource: this.sampler },
+          { binding: 3, resource: { buffer: this.uniformBuffer } }
+        ]
+      });
+      this._lastScene = sceneView;
+      this._lastDepth = depthView;
+    }
+    const pass = encoder.beginRenderPass(this._passDesc);
+    pass.setPipeline(this.pipeline);
+    pass.setBindGroup(0, this._bg);
+    pass.draw(6);
+    pass.end();
+    encoder.copyTextureToTexture({ texture: this.tex }, { texture: sceneTexture }, [this.width, this.height]);
+    this.ranFrames++;
+    this._prevVP.set(viewProj);
+  }
+};
+function motionBlurWGSL() {
+  return (
+    /* wgsl */
+    `
+  struct MB {
+    reproj: mat4x4<f32>,
+    strength: f32,
+    samples: f32,
+    maxBlur: f32,
+    depthTol: f32,
+    debug: f32,
+    _p0: f32,
+    _p1: f32,
+    _p2: f32,
+  };
+
+  @group(0) @binding(0) var sceneTex : texture_2d<f32>;
+  @group(0) @binding(1) var depthTex : texture_depth_2d;
+  @group(0) @binding(2) var samp     : sampler;
+  @group(0) @binding(3) var<uniform> mb : MB;
+
+  fn depthAt(uv: vec2<f32>, dims: vec2<f32>) -> f32 {
+    let px = vec2<i32>(clamp(uv * dims, vec2<f32>(0.0), dims - vec2<f32>(1.0)));
+    return textureLoad(depthTex, px, 0);
+  }
+
+  @fragment
+  fn main(@builtin(position) p: vec4<f32>) -> @location(0) vec4<f32> {
+    let dims = vec2<f32>(textureDimensions(sceneTex));
+    let uv = p.xy / dims;
+    let center = textureSampleLevel(sceneTex, samp, uv, 0.0);
+    let d0 = depthAt(uv, dims);
+
+    let ndc = vec4<f32>(uv.x * 2.0 - 1.0, (1.0 - uv.y) * 2.0 - 1.0, d0, 1.0);
+    let pc = mb.reproj * ndc;
+    let prevNdc = pc.xy / pc.w;
+
+    // NDC delta -> UV delta (y flipped)
+    let raw = (ndc.xy - prevNdc) * vec2<f32>(0.5, -0.5);
+    if (mb.debug > 0.5 && mb.debug < 1.5) {
+      // velocity view: red = horizontal, green = vertical (60 = ~1% of screen per frame -> full color)
+      return vec4<f32>(center.rgb * 0.3 + vec3<f32>(abs(raw) * 60.0, 0.0), 1.0);
+    }
+    if (mb.debug > 1.5 && uv.x > 0.5) { return center; }   // right half untouched for comparison
+    var v = raw * mb.strength;
+    let len = length(v);
+    if (len * max(dims.x, dims.y) < 0.75) { return center; }   // sub-pixel: skip
+    if (len > mb.maxBlur) { v = v * (mb.maxBlur / len); }
+
+    let n = i32(mb.samples);
+    var acc = center.rgb;
+    var wsum = 1.0;
+    for (var i = 0; i < n; i++) {
+      let t = (f32(i) + 0.5) / f32(n) - 0.5;
+      let suv = uv + v * t;
+      let sd = depthAt(suv, dims);
+      // Reject taps that are nearer than the center pixel (foreground bleeding onto background)
+      let w = select(0.0, 1.0, sd >= d0 - mb.depthTol);
+      acc += textureSampleLevel(sceneTex, samp, suv, 0.0).rgb * w;
+      wsum += w;
+    }
+    return vec4<f32>(acc / wsum, center.a);
   }
   `
   );
@@ -45160,8 +45283,8 @@ var MatrixEngineWGPU = class {
             l = mesh.materialBindGroup;
           }
           pass.setBindGroup(2, mesh.modelBindGroup);
-          if (mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
-          if (mesh.material.type === "water") pass.setBindGroup(3, mesh.waterBindGroup);
+          if (mesh.mirrorBindGroup) pass.setBindGroup(3, mesh.mirrorBindGroup);
+          if (mesh.waterBindGroup) pass.setBindGroup(3, mesh.waterBindGroup);
           mesh.drawElements(pass, this.lightContainer);
         }
       }
@@ -45171,8 +45294,8 @@ var MatrixEngineWGPU = class {
           if (mesh.isVideo && !mesh.videoFrameReady) continue;
           pass.setBindGroup(1, mesh.materialBindGroup);
           pass.setBindGroup(2, mesh.modelBindGroup);
-          if (mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
-          if (mesh.material.type === "water") pass.setBindGroup(3, mesh.waterBindGroup);
+          if (mesh.mirrorBindGroup) pass.setBindGroup(3, mesh.mirrorBindGroup);
+          if (mesh.waterBindGroup) pass.setBindGroup(3, mesh.waterBindGroup);
           mesh.drawElements(pass, this.lightContainer);
         }
       }
@@ -45260,7 +45383,6 @@ var MatrixEngineWGPU = class {
       }
       this.submitQueue[0] = commandEncoder.finish();
       this.device.queue.submit(this.submitQueue);
-      this.submitQueue[0] = null;
       if (this.collisionSystem) this.collisionSystem.update();
       this.graphUpdate(this.now);
       this.blendQueue.length = 0;
@@ -45894,8 +46016,9 @@ var NativeWebRTC = class {
       this.localStreamReadyDispatched = true;
       const detail = { connection: this.connection, stream, videoElement: video };
       dispatchEvent(new CustomEvent("LOCAL-STREAM-READY", { detail }));
+      const trackId = stream.getVideoTracks?.()[0]?.id || null;
       dispatchEvent(new CustomEvent("streamPlaying", {
-        detail: { peerId: this.id, stream, target: { id: "local-video", videos: [{ video }] } }
+        detail: { peerId: this.id, connectionId: this.connection.connectionId || this.id, stream, trackId, isLocal: true, target: { id: "local-video", videos: [{ video }] } }
       }));
     }
     return video;
@@ -45942,9 +46065,13 @@ var NativeWebRTC = class {
     } catch (error) {
       console.warn("[NativeWebRTC] remote video autoplay blocked:", peerId, error);
     }
+    const trackId = stream.getVideoTracks?.()[0]?.id || null;
     const detail = {
       peerId,
+      connectionId: peerId,
       stream,
+      trackId,
+      isLocal: false,
       target: { id: video.id, videos: [{ video }] }
     };
     dispatchEvent(new CustomEvent("streamPlaying", { detail }));
@@ -46751,9 +46878,12 @@ var loadFreekyChat = function() {
   const remoteVideoCubes = /* @__PURE__ */ new Map();
   const pendingRemoteStreams = /* @__PURE__ */ new Map();
   const creatingRemoteVideoCubes = /* @__PURE__ */ new Set();
-  const addRemoteVideoCube = async (peerId, stream, video) => {
+  let localVideoCube = null;
+  let pendingLocalStream = null;
+  let creatingLocalVideoCube = false;
+  const addRemoteVideoCube = async (peerId, stream, video, trackId) => {
     if (!loadedMeshes?.cube || !freekyChat) {
-      pendingRemoteStreams.set(peerId, { stream, video });
+      pendingRemoteStreams.set(peerId, { stream, video, trackId });
       return;
     }
     if (!video) {
@@ -46771,6 +46901,8 @@ var loadFreekyChat = function() {
     }
     if (creatingRemoteVideoCubes.has(peerId)) return;
     creatingRemoteVideoCubes.add(peerId);
+    const videoTrackId = trackId || stream.getVideoTracks?.()[0]?.id || peerId;
+    const safePeerId = String(peerId).replace(/[^a-zA-Z0-9_-]/g, "_");
     const index = remoteVideoCubes.size;
     const object = freekyChat.addMeshObj({
       material: { type: "standard" },
@@ -46779,7 +46911,7 @@ var loadFreekyChat = function() {
       rotationSpeed: { x: 0, y: 0, z: 0 },
       scale: [2, 2, 2],
       texturesPaths: ["./res/textures/cube-g1-extra_low.png"],
-      name: "remote-video-" + String(peerId).replace(/[^a-zA-Z0-9_-]/g, "_"),
+      name: "remote-video-" + safePeerId,
       mesh: loadedMeshes.cube,
       physics: { enabled: true, geometry: "Cube" },
       raycast: { enabled: true, radius: 1 }
@@ -46795,16 +46927,71 @@ var loadFreekyChat = function() {
       creatingRemoteVideoCubes.delete(peerId);
     }
     object.position.netObject = object.name;
-    object.position.remoteName = "remote-video-" + String(peerId).replace(/[^a-zA-Z0-9_-]/g, "_");
+    object.position.remoteName = "local-video-" + safePeerId;
+  };
+  const addLocalVideoCube = async (stream, video, trackId, connectionId) => {
+    if (!loadedMeshes?.cube || !freekyChat) {
+      pendingLocalStream = { stream, video, trackId, connectionId };
+      return;
+    }
+    if (!video) {
+      console.warn("[public-chat] local stream did not provide its engine video element");
+      return;
+    }
+    if (localVideoCube) {
+      if (localVideoCube.video !== video) {
+        localVideoCube.video = video;
+        localVideoCube.stream = stream;
+        await localVideoCube.object.loadVideoTexture({ type: "videoElement", videoElement: video });
+      }
+      return;
+    }
+    if (creatingLocalVideoCube) return;
+    creatingLocalVideoCube = true;
+    const videoTrackId = trackId || stream.getVideoTracks?.()[0]?.id || "local";
+    const localConnectionId = connectionId || freekyChat.net?.connection?.connectionId || "local";
+    const safeConnectionId = String(localConnectionId).replace(/[^a-zA-Z0-9_-]/g, "_");
+    const object = freekyChat.addMeshObj({
+      material: { type: "standard" },
+      position: { x: 0, y: 8, z: -10 },
+      rotation: { x: 0, y: 0, z: 90 },
+      rotationSpeed: { x: 0, y: 0, z: 0 },
+      scale: [2, 2, 2],
+      texturesPaths: ["./res/textures/cube-g1-extra_low.png"],
+      name: "local-video-" + safeConnectionId,
+      mesh: loadedMeshes.cube,
+      physics: { enabled: true, geometry: "Cube" },
+      raycast: { enabled: true, radius: 1 }
+    });
+    try {
+      await object.loadVideoTexture({ type: "videoElement", videoElement: video });
+      localVideoCube = { object, video, stream };
+      object.position.netObject = object.name;
+      object.position.remoteName = "remote-video-" + safeConnectionId;
+      console.log("[public-chat] local video cube created:", { connectionId: localConnectionId, trackId: videoTrackId, name: object.name, remoteName: object.position.remoteName });
+    } catch (error) {
+      console.error("[public-chat] local video texture initialization failed:", error);
+      throw error;
+    } finally {
+      creatingLocalVideoCube = false;
+    }
   };
   addEventListener("streamPlaying", (event) => {
     const detail = event.detail || {};
     const target = detail.target;
-    const video = target?.videos?.[0]?.video;
-    const peerId = detail.peerId || target?.id?.replace(/^remote-video-/, "");
+    const video = target?.videos?.[0]?.video || detail.videoElement;
     const stream = detail.stream || video?.srcObject;
-    if (!peerId || !stream || !video || target?.id?.indexOf("remote-video-") !== 0) return;
-    addRemoteVideoCube(peerId, stream, video).catch((error) => {
+    const trackId = detail.trackId || stream?.getVideoTracks?.()[0]?.id;
+    if (!stream || !video) return;
+    if (detail.isLocal || target?.id === "local-video") {
+      addLocalVideoCube(stream, video, trackId, detail.connectionId || detail.peerId).catch((error) => {
+        console.error("[public-chat] could not create local video cube:", error);
+      });
+      return;
+    }
+    const peerId = detail.peerId;
+    if (!peerId || target?.id?.indexOf("remote-video-") !== 0) return;
+    addRemoteVideoCube(peerId, stream, video, trackId).catch((error) => {
       console.error("[public-chat] could not create remote video cube:", peerId, error);
     });
   });
@@ -46900,8 +47087,15 @@ var loadFreekyChat = function() {
       loadedMeshes = m;
       for (const [peerId, media] of pendingRemoteStreams) {
         pendingRemoteStreams.delete(peerId);
-        addRemoteVideoCube(peerId, media.stream, media.video).catch((error) => {
+        addRemoteVideoCube(peerId, media.stream, media.video, media.trackId).catch((error) => {
           console.error("[public-chat] queued remote video cube failed:", peerId, error);
+        });
+      }
+      if (pendingLocalStream) {
+        const media = pendingLocalStream;
+        pendingLocalStream = null;
+        addLocalVideoCube(media.stream, media.video, media.trackId, media.connectionId).catch((error) => {
+          console.error("[public-chat] queued local video cube failed:", error);
         });
       }
       MYCUBE = freekyChat.addMeshObj({

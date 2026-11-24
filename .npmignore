@@ -1,3 +1,22 @@
+# Development-only source files and backups (keep them in Git, omit from npm)
+**/*.blend
+**/*.blend1
+**/*.blend11
+**/*.blender
+
+# Editable source artwork, not runtime assets
+**/*.psd
+**/*.xcf
+
+# Demo media and generated debugging artifacts
+public/res/videos/
+**/*.mp4
+**/*.js.map
+api-docs/
+
+# Large standalone sample point cloud; users can keep/load it from the repository
+public/res/meshes/ply/splats/scene.ply
+
 *.blender
 *.blend1
 **/*.blender

@@ -53,8 +53,8 @@ export let mobile1 = function() {
           l = mesh.materialBindGroup;
         }
         pass.setBindGroup(2, mesh.modelBindGroup);
-        if(mesh.material.type == "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
-        if(mesh.material.type == "water") pass.setBindGroup(3, mesh.waterBindGroup);
+        if(mesh.mirrorBindGroup) pass.setBindGroup(3, mesh.mirrorBindGroup);
+        if(mesh.waterBindGroup) pass.setBindGroup(3, mesh.waterBindGroup);
         mesh.drawElements(pass);
       }
     }
@@ -72,8 +72,8 @@ export let mobile1 = function() {
       for(const mesh of meshes) {
         pass.setBindGroup(1, mesh.materialBindGroup);
         pass.setBindGroup(2, mesh.modelBindGroup);
-        if(mesh.material.type == "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
-        //  if(mesh.material.type == "water") pass.setBindGroup(3, mesh.waterBindGroup);
+        if(mesh.mirrorBindGroup) pass.setBindGroup(3, mesh.mirrorBindGroup);
+        if(mesh.waterBindGroup) pass.setBindGroup(3, mesh.waterBindGroup);
         mesh.drawElements(pass);
       }
     }
@@ -99,8 +99,6 @@ export let mobile1 = function() {
     this.device.queue.submit(this.submitQueue);
     this.submitQueue[0] = null;
     if(this.collisionSystem) this.collisionSystem.update();
-    // this.graphUpdate(this.now);
-    //  this.blendQueue.length = 0;
   } catch(err) {
     if(this.logLoopError) console.log(`%cLoop(warn): ${err} Info: ${err.stack}`, LOG_WARN);
   }

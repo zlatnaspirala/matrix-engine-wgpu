@@ -38,6 +38,9 @@ export class WASDCamera {
 
   _dirtyAngle = true;
   usePointerEvents = false;
+  followMe = null; // any {x, y, z}, e.g. mesh.position
+  followOffset = new Float32Array([0, 6, 14]);
+  followSmooth = 0.1; // 1 = rigid, lower = softer
   static HALF_PI = Math.PI * 0.5;
 
   constructor(options = {}) {
@@ -427,6 +430,7 @@ export class WASDCamera {
   }
   // WASD MOVEMENT
   _applyDigitalMovement() {
+    if(this.followMe) return;
     const d = this._digital;
     if(d === 0) return;
     const right = this.right;
@@ -486,6 +490,28 @@ export class WASDCamera {
     this.yaw = y;
     this._dirtyAngle = true;
   }
+  // FOLLOW (call updateFollow() from an autoUpdate item)
+  setFollow = (target, offset, smooth) => {
+    this.followMe = target;
+    if(offset) this.followOffset.set(offset);
+    if(smooth !== undefined) this.followSmooth = smooth;
+    this._dirtyAngle = true;
+  }
+
+  clearFollow = () => {this.followMe = null;}
+
+  updateFollow() {
+    const t = this.followMe;
+    if(!t) return;
+    const p = this.position, o = this.followOffset, k = this.followSmooth;
+    const dx = t.x + o[0] - p[0];
+    const dy = t.y + o[1] - p[1];
+    const dz = t.z + o[2] - p[2];
+    if(Math.abs(dx) + Math.abs(dy) + Math.abs(dz) < 0.0005) return;
+    p[0] += dx * k; p[1] += dy * k; p[2] += dz * k;
+    this._dirtyAngle = true;
+  }
+
   // LOOK CONTROL
   setLookEnabled = (enabled) => {this._lookDisabled = !enabled;}
   disableLook = () => {this._lookDisabled = true;}
