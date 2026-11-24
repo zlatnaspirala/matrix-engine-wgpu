@@ -1111,7 +1111,7 @@ class MatrixCannon {
       const base = i * FLOATS_PER_BODY;
       const body = this.rigidBodies[i];
       if(!body) {snap[base + 7] = 0; continue;}
-      if(body.sleepState === body.SLEEPING) {
+      if(body.sleepState === 2) {
         snap[base + 7] = 0;
         continue;
       }
