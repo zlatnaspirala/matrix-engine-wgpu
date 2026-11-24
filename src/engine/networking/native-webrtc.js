@@ -219,7 +219,7 @@ export class NativeWebRTC {
       dispatchEvent(new CustomEvent('LOCAL-STREAM-READY', {detail}));
       const trackId = stream.getVideoTracks?.()[0]?.id || null;
       dispatchEvent(new CustomEvent('streamPlaying', {
-        detail: {peerId: this.id, stream, trackId, isLocal: true, target: {id: 'local-video', videos: [{video}]}}
+        detail: {peerId: this.id, connectionId: this.connection.connectionId || this.id, stream, trackId, isLocal: true, target: {id: 'local-video', videos: [{video}]}}
       }));
     }
     return video;
@@ -269,6 +269,7 @@ export class NativeWebRTC {
     const trackId = stream.getVideoTracks?.()[0]?.id || null;
     const detail = {
       peerId,
+      connectionId: peerId,
       stream,
       trackId,
       isLocal: false,
