@@ -42,6 +42,7 @@ export var loadFreekyChat = function() {
     creatingRemoteVideoCubes.add(peerId);
 
     const videoTrackId = trackId || stream.getVideoTracks?.()[0]?.id || peerId;
+    const safePeerId = String(peerId).replace(/[^a-zA-Z0-9_-]/g, '_');
     const safeTrackId = String(videoTrackId).replace(/[^a-zA-Z0-9_-]/g, '_');
     const index = remoteVideoCubes.size;
     const object = freekyChat.addMeshObj({
@@ -51,7 +52,7 @@ export var loadFreekyChat = function() {
       rotationSpeed: {x: 0, y: 0, z: 0},
       scale: [2, 2, 2],
       texturesPaths: ['./res/textures/cube-g1-extra_low.png'],
-      name: 'remote-video-' + safeTrackId,
+      name: 'remote-video-' + safePeerId + '-' + safeTrackId,
       mesh: loadedMeshes.cube,
       physics: {enabled: true, geometry: "Cube"},
       raycast: {enabled: true, radius: 1}
@@ -73,9 +74,9 @@ export var loadFreekyChat = function() {
 
   };
 
-  const addLocalVideoCube = async (stream, video, trackId) => {
+  const addLocalVideoCube = async (stream, video, trackId, connectionId) => {
     if(!loadedMeshes?.cube || !freekyChat) {
-      pendingLocalStream = {stream, video, trackId};
+      pendingLocalStream = {stream, video, trackId, connectionId};
       return;
     }
     if(!video) {
@@ -93,6 +94,8 @@ export var loadFreekyChat = function() {
     if(creatingLocalVideoCube) return;
     creatingLocalVideoCube = true;
     const videoTrackId = trackId || stream.getVideoTracks?.()[0]?.id || 'local';
+    const localConnectionId = connectionId || freekyChat.net?.connection?.connectionId || 'local';
+    const safeConnectionId = String(localConnectionId).replace(/[^a-zA-Z0-9_-]/g, '_');
     const safeTrackId = String(videoTrackId).replace(/[^a-zA-Z0-9_-]/g, '_');
     const object = freekyChat.addMeshObj({
       material: {type: 'standard'},
@@ -101,7 +104,7 @@ export var loadFreekyChat = function() {
       rotationSpeed: {x: 0, y: 0, z: 0},
       scale: [2, 2, 2],
       texturesPaths: ['./res/textures/cube-g1-extra_low.png'],
-      name: 'local-video-' + safeTrackId,
+      name: 'local-video-' + safeConnectionId + '-' + safeTrackId,
       mesh: loadedMeshes.cube,
       physics: {enabled: true, geometry: 'Cube'},
       raycast: {enabled: true, radius: 1}
@@ -111,8 +114,8 @@ export var loadFreekyChat = function() {
       localVideoCube = {object, video, stream};
       object.position.netObject = object.name;
       // Other peers create this same track as a remote-video cube.
-      object.position.remoteName = 'remote-video-' + safeTrackId;
-      console.log('[public-chat] local video cube created:', videoTrackId, object.name);
+      object.position.remoteName = 'remote-video-' + safeConnectionId + '-' + safeTrackId;
+      console.log('[public-chat] local video cube created:', {connectionId: localConnectionId, trackId: videoTrackId, name: object.name, remoteName: object.position.remoteName});
     } catch(error) {
       console.error('[public-chat] local video texture initialization failed:', error);
       throw error;
@@ -129,7 +132,7 @@ export var loadFreekyChat = function() {
     const trackId = detail.trackId || stream?.getVideoTracks?.()[0]?.id;
     if(!stream || !video) return;
     if(detail.isLocal || target?.id === 'local-video') {
-      addLocalVideoCube(stream, video, trackId).catch(error => {
+      addLocalVideoCube(stream, video, trackId, detail.connectionId || detail.peerId).catch(error => {
         console.error('[public-chat] could not create local video cube:', error);
       });
       return;
@@ -256,7 +259,7 @@ export var loadFreekyChat = function() {
       if(pendingLocalStream) {
         const media = pendingLocalStream;
         pendingLocalStream = null;
-        addLocalVideoCube(media.stream, media.video, media.trackId).catch(error => {
+        addLocalVideoCube(media.stream, media.video, media.trackId, media.connectionId).catch(error => {
           console.error('[public-chat] queued local video cube failed:', error);
         });
       }
