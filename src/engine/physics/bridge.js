@@ -382,7 +382,7 @@ export class PhysicsBridge {
     this._worker.postMessage({cmd: 'enableAngularMotor', constraintIdx, enable, targetVelocity, maxMotorImpulse});
   }
 
-  // Heightfield terrain for Ammo and Cannon. heightData is a row-major Float32Array (rows * columns).
+  // Heightfield terrain for Ammo, Cannon, and Jolt. heightData is a row-major Float32Array (rows * columns).
   // The selected physics worker owns the native heightfield shape for its lifetime.
   addHeightfield({heightData, columns, rows, elementSize = 1, position = {x: 0, y: 0, z: 0}, minHeight, maxHeight, friction = 1, name = 'heightfield'} = {}) {
     if(!(heightData instanceof Float32Array)) throw new TypeError('heightData must be a Float32Array');
@@ -401,7 +401,7 @@ export class PhysicsBridge {
     }).then(idx => idx);
   }
 
-  // Ammo and Cannon raycast vehicles register chassis and wheel snapshot slots here.
+  // Ammo, Cannon, and Jolt vehicles register chassis and wheel snapshot slots here.
   addVehicle(chassisObj, wheelObjs, pOptions) {
     return this._send('addVehicle', {pOptions}).then(({idx, vid, wheelStart}) => {
       for(const [i, obj] of [[idx, chassisObj], ...wheelObjs.map((w, k) => [wheelStart + k, w])]) {

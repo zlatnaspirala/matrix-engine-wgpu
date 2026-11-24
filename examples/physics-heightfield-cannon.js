@@ -98,7 +98,7 @@ export var heightfieldCannon = function() {
         update: () => {
           camera.updateFollow();
           const digital = camera._digital;
-          const engine = digital & 1 ? 1500 : digital & 2 ? -800 : 0;
+          const engine = digital & 2 ? 1500 : digital & 1 ? -800 : 0;
           const steering = digital & 4 ? 0.4 : digital & 8 ? -0.4 : 0;
           const brake = digital & 16 ? 60 : 0;
           if(engine === lastEngine && steering === lastSteering && brake === lastBrake) return;
