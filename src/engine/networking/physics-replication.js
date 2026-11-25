@@ -9,7 +9,6 @@
 export function activatePhysicsReplication(engine, net, options = {}) {
   const interval = Math.max(25, options.interval || 50);
   const correctionInterval = Math.max(100, options.correctionInterval || 250);
-  const correctionEvery = Math.max(1, Math.round(correctionInterval / interval));
   const knownRemote = new Set();
   const ownerByKey = new Map();
   const lastCorrection = new Map();
@@ -87,9 +86,12 @@ export function activatePhysicsReplication(engine, net, options = {}) {
       const idx = findBodyIndex(message.remoteName);
       if(idx < 0) return;
       ownerByKey.set(message.bodyKey, message.ownerPeerId || sender);
-      const isNew = !knownRemote.has(idx);
       setReplicaMode(idx, false);
-      applyState(idx, message.state, isNew || message.seq % correctionEvery === 0);
+      // Kinematic replicas (especially Bullet/Ammo) do not integrate the
+      // authoritative velocity as a normal dynamic body would. Apply every
+      // authoritative pose to the worker body; velocity remains useful for
+      // handoff and for backends that interpolate kinematic motion.
+      applyState(idx, message.state, true);
       return;
     }
 
