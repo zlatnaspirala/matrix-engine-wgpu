@@ -236,9 +236,12 @@ export function addRaycastsListener(canvasId = "canvas1", eventName = 'click') {
     let closestHit = null;
 
     for(const object of app.mainRenderBundle) {
-      if(!object.raycast?.enabled) continue;
+      // Render bundles may contain helper entries without the MEObject raycast API.
+      if(!object?.raycast?.enabled || typeof object.getModelMatrix !== 'function') continue;
 
-      const {boxMin, boxMax} = computeWorldVertsAndAABB(object);
+      const bounds = computeWorldVertsAndAABB(object);
+      if(!bounds) continue;
+      const {boxMin, boxMax} = bounds;
       const hitAABB = rayIntersectsAABB(rayOrigin, rayDirection, boxMin, boxMax);
       if(!hitAABB) continue;
 
