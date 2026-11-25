@@ -249,7 +249,7 @@ export class PhysicsBridge {
     let count = 0;
     for(const [idx_, meObj] of this._bodyIndexMap) {
       if(!meObj.isKinematic && idx_ !== idx) continue;
-      meObj.position.setPosition(x, y, z);
+      meObj.position.setPosition(x, y, z, false);
       count++;
     }
     this._kinematicCount = count;
