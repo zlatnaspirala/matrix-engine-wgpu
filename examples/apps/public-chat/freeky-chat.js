@@ -48,7 +48,7 @@ export var loadFreekyChat = function() {
     const index = remoteVideoCubes.size;
     const object = freekyChat.addMeshObj({
       material: {type: 'standard'},
-      position: {x: (index - 0.5) * 9, y: 8, z: -10},
+      position: {x: 0, y: 8, z: -10},
       rotation: {x: 0, y: 0, z: 90},
       rotationSpeed: {x: 0, y: 0, z: 0},
       scale: [2, 2, 2],
