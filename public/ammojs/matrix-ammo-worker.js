@@ -1018,6 +1018,21 @@ class MatrixAmmoWorker {
     body.setGravity(this._origin2);
   }
 
+  getBodyState(idx, msgID) {
+    const body = this.rigidBodies[idx];
+    if(!body) { self.postMessage({cmd: 'getBodyState', id: msgID, state: null}); return; }
+    const transform = body.getWorldTransform();
+    const origin = transform.getOrigin(), rotation = transform.getRotation();
+    const linear = body.getLinearVelocity(), angular = body.getAngularVelocity();
+    self.postMessage({cmd: 'getBodyState', id: msgID, state: {
+      position: {x: origin.x(), y: origin.y(), z: origin.z()},
+      quaternion: {x: rotation.x(), y: rotation.y(), z: rotation.z(), w: rotation.w()},
+      linearVelocity: {x: linear.x(), y: linear.y(), z: linear.z()},
+      angularVelocity: {x: angular.x(), y: angular.y(), z: angular.z()},
+      sleeping: !body.isActive()
+    }});
+  }
+
   isSleeping(idx, msgID) {
     const body = this.rigidBodies[idx];
     if(!body) return;
@@ -1186,6 +1201,7 @@ self.onmessage = async ({data}) => {
     case 'speedUpSimulation': ammo.speedUpSimulation(data.value); break;
     case 'createChain': ammo.createChain(data.ids, data.size, data.mass, data.marginSpace); break;
     case 'getQuaternion': ammo.getQuaternion(data.idx, data.id); break;
+    case 'getBodyState': ammo.getBodyState(data.idx, data.id); break;
     case 'isSleeping': ammo.isSleeping(data.idx, data.id); break;
     case 'switchToKinematic': ammo.switchToKinematic(data.idx); break;
     case 'switchToDinamic': ammo.switchToDinamic(data.idx); break;
