@@ -162,7 +162,7 @@ export function activatePhysicsReplication(engine, net, options = {}) {
         ownerByKey.set(key, owner);
         setReplicaMode(idx, owner === me);
         if(owner !== me) continue;
-        owned.push({idx, object, key});
+        owned.push({idx, object, key, remoteName});
       }
       const states = await Promise.all(owned.map(item => p.getBodyState?.(item.idx)));
       for(let i = 0;i < owned.length;i++) {
