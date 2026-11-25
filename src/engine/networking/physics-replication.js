@@ -126,8 +126,12 @@ export function activatePhysicsReplication(engine, net, options = {}) {
       if(!target) return;
       ownerByKey.set(message.bodyKey, message.ownerPeerId);
       const isOwner = message.ownerPeerId === localPeerId();
+      // Apply the handoff transform while the replica is still kinematic; then
+      // restore dynamic simulation so backends with kinematic-only teleports
+      // (notably Ammo) receive the exact final pose.
+      if(isOwner && message.state) applyState(target.idx, message.state, true);
       setReplicaMode(target.idx, isOwner);
-      if(message.state) applyState(target.idx, message.state, true);
+      if(!isOwner && message.state) applyState(target.idx, message.state, true);
       if(isOwner && message.wakeInput) {
         p.activate?.(target.idx, 1);
         const v = message.wakeInput.vector || {};
