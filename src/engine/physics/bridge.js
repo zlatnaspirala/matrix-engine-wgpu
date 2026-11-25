@@ -456,6 +456,11 @@ export class PhysicsBridge {
     return this._send('isSleeping', {idx: idx});
   }
 
+  getBodyState(idx) {
+    if(idx === undefined || idx < 0) return Promise.resolve(null);
+    return this._send('getBodyState', {idx});
+  }
+
   setKinematicInterpolate(idx, targetX, targetY, targetZ = 0, lerpFactor) {
     this._worker.postMessage({cmd: 'setKinematicInterpolate', idx, targetX, targetY, targetZ, lerpFactor});
   }
@@ -596,6 +601,10 @@ export class PhysicsBridge {
         break;
       case 'getDiceFace':
         this._pending.get(data.id)?.(data.face);
+        this._pending.delete(data.id);
+        break;
+      case 'getBodyState':
+        this._pending.get(data.id)?.(data.state || null);
         this._pending.delete(data.id);
         break;
       case 'isSleeping':
