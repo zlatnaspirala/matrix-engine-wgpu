@@ -497,6 +497,19 @@ class MatterPhysicsWorker {
     body.angularVelocity = az;
   }
 
+  getBodyState(idx, msgID) {
+    const body = this.rigidBodies[idx];
+    if(!body) { self.postMessage({cmd: 'getBodyState', id: msgID, state: null}); return; }
+    const velocity = body.velocity || {x: 0, y: 0};
+    self.postMessage({cmd: 'getBodyState', id: msgID, state: {
+      position: {x: body.position.x * this.TUNE, y: -body.position.y * this.TUNE, z: 0},
+      quaternion: {x: 0, y: 0, z: Math.sin(body.angle * 0.5), w: Math.cos(body.angle * 0.5)},
+      linearVelocity: {x: velocity.x * this.TUNE, y: -velocity.y * this.TUNE, z: 0},
+      angularVelocity: {x: 0, y: 0, z: body.angularVelocity || 0},
+      sleeping: !!body.isSleeping
+    }});
+  }
+
   isSleeping(idx, msgID) {
     const body = this.rigidBodies[idx];
     if(!body) return;
@@ -619,6 +632,7 @@ self.onmessage = async ({data}) => {
     case 'speedUpSimulation': m.speedUpSimulation(data.value); break;
     case 'getPosition': m.getPosition(data.idx, data.id); break;
     case 'shootBody': m.shootBody(data.idx, data.lx, data.ly, data.lz, data.ax, data.ay, data.az); break;
+    case 'getBodyState': m.getBodyState(data.idx, data.id); break;
     case 'isSleeping': m.isSleeping(data.idx, data.id); break;
     case 'setKinematicInterpolate': m.setKinematicInterpolate(data.idx, data.targetX, data.targetY, data.targetZ, data.lerpFactor = 0.1); break;
     case 'switchToKinematic': m.switchToKinematic(data.idx); break;
