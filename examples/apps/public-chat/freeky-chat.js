@@ -249,26 +249,26 @@ export var loadFreekyChat = function() {
 
     async function onGround(m) {
       loadedMeshes = m;
-      var glbFile11 = await fetch("./res/meshes/glb/beast_face_test.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, freekyChat.device)));
-      freekyChat.addGlbObjInctance({
-        material: {type: 'mirror', useTextureFromGlb: true},
-        envMapParams: {
-          baseColorMix: 0.75,
-          mirrorTint: [0.9, 0.5, 1.0],      // Slight cool tint
-          reflectivity: 0.5,                // 25% reflection blend
-          illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
-          illuminateStrength: 0.1,          // Gentle rim
-          illuminatePulse: 0.001,           // No pulse (static)
-          fresnelPower: 5.0,                // Medium-sharp edge
-          envLodBias: 2.5,
-          usePlanarReflection: false,       // ✅ Env map mode
-        },
-        useScale: true,
-        scale: [20, 20, 20],
-        position: {x: 0, y: -4, z: -20},
-        name: 'robot',
-        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp', './res/textures/env-maps/sky1.webp'],
-      }, null, glbFile11);
+      // var glbFile11 = await fetch("./res/meshes/glb/beast_face_test.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, freekyChat.device)));
+      // freekyChat.addGlbObjInctance({
+      //   material: {type: 'mirror', useTextureFromGlb: true},
+      //   envMapParams: {
+      //     baseColorMix: 0.75,
+      //     mirrorTint: [0.9, 0.5, 1.0],      // Slight cool tint
+      //     reflectivity: 0.5,                // 25% reflection blend
+      //     illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
+      //     illuminateStrength: 0.1,          // Gentle rim
+      //     illuminatePulse: 0.001,           // No pulse (static)
+      //     fresnelPower: 5.0,                // Medium-sharp edge
+      //     envLodBias: 2.5,
+      //     usePlanarReflection: false,       // ✅ Env map mode
+      //   },
+      //   useScale: true,
+      //   scale: [20, 20, 20],
+      //   position: {x: 0, y: -4, z: -20},
+      //   name: 'robot',
+      //   texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp', './res/textures/env-maps/sky1.webp'],
+      // }, null, glbFile11);
 
       // A peer can publish before the scene meshes finish loading.
       for(const [peerId, media] of pendingRemoteStreams) {
