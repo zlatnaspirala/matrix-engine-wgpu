@@ -129,6 +129,7 @@ export function activatePhysicsReplication(engine, net, options = {}) {
       setReplicaMode(target.idx, isOwner);
       if(message.state) applyState(target.idx, message.state, true);
       if(isOwner && message.wakeInput) {
+        p.activate?.(target.idx, 1);
         const v = message.wakeInput.vector || {};
         if(message.wakeInput.action === 'impulse') p.applyImpulse?.(target.idx, v);
         else if(message.wakeInput.action === 'torque') p.applyTorque?.(target.idx, v);
