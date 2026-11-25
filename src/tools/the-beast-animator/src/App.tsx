@@ -11,7 +11,12 @@ import { TopBar } from './components/TopBar';
 import { Viewport3D, type CameraPreset } from './components/Viewport3D';
 import { downloadTextFile, generateBVHString } from './engine/bvhExporter';
 import { generateDemoLandmarks } from './engine/demoMotions';
-import { exportMixamoGLB, exportMixamoMultiGLB } from './engine/glbExporter';
+import {
+  exportFaceMeshGLB,
+  exportFaceMeshMultiGLB,
+  exportMixamoGLB,
+  exportMixamoMultiGLB,
+} from './engine/glbExporter';
 import { MediaPipeFaceMesh3D } from './engine/mediapipeFaceMesh3D';
 import {
   MediaPipeFaceService,
@@ -615,6 +620,9 @@ export default function App() {
     setPlaybackFrameIdx(clamped);
     playbackTimeRef.current = frames[clamped].time;
     applyPoseFrameToRig(frames[clamped], rigRef.current);
+    if (frames[clamped].facePositions) {
+      faceMesh3DRef.current?.applyPositions(frames[clamped].facePositions);
+    }
     lastAppliedFrameRef.current = frames[clamped];
   }, []);
 
@@ -629,6 +637,9 @@ export default function App() {
     setRecordedFrames(smoothed);
     const idx = THREE.MathUtils.clamp(playbackFrameIdx, 0, smoothed.length - 1);
     applyPoseFrameToRig(smoothed[idx], rigRef.current);
+    if (smoothed[idx].facePositions) {
+      faceMesh3DRef.current?.applyPositions(smoothed[idx].facePositions);
+    }
     lastAppliedFrameRef.current = smoothed[idx];
     showNotice('Applied zero-phase temporal smoothing to recorded take.');
   }, [playbackFrameIdx, showNotice]);
@@ -666,7 +677,12 @@ export default function App() {
       hipsPosition: [...f.hipsPosition] as [number, number, number],
       rotations: { ...f.rotations },
       faceBlendshapes: f.faceBlendshapes ? { ...f.faceBlendshapes } : undefined,
+      facePositions: f.facePositions ? new Float32Array(f.facePositions) : undefined,
     }));
+
+    const isFaceTake =
+      mode === 'face' ||
+      frames.some((f) => Boolean(f.facePositions || f.faceBlendshapes));
 
     const newClip: AnimationTakeClip = {
       id: `clip_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
@@ -674,6 +690,7 @@ export default function App() {
       frames: clonedFrames,
       fps: settings.fps,
       included: true,
+      clipType: isFaceTake ? 'face' : 'pose',
     };
     setSavedClips((prev) => [...prev, newClip]);
     showNotice(`Added "${name}" to GLB Clips.`);
@@ -703,17 +720,31 @@ export default function App() {
         hipsPosition: [...f.hipsPosition] as [number, number, number],
         rotations: { ...f.rotations },
         faceBlendshapes: f.faceBlendshapes ? { ...f.faceBlendshapes } : undefined,
+        facePositions: f.facePositions ? new Float32Array(f.facePositions) : undefined,
       }));
       recordedFramesRef.current = cloned;
       setRecordedFrames(cloned);
       playbackTimeRef.current = 0;
       setPlaybackFrameIdx(0);
+
+      const isFaceClip =
+        clip.clipType === 'face' ||
+        cloned.some((f) => Boolean(f.facePositions || f.faceBlendshapes));
+      if (isFaceClip && modeRef.current !== 'face') {
+        handleSelectMode('face');
+      } else if (!isFaceClip && modeRef.current === 'face') {
+        handleSelectMode('lab');
+      }
+
       applyPoseFrameToRig(cloned[0], rigRef.current);
+      if (cloned[0].facePositions) {
+        faceMesh3DRef.current?.applyPositions(cloned[0].facePositions);
+      }
       lastAppliedFrameRef.current = cloned[0];
       setIsPlayingTake(true);
       showNotice(`Loaded "${clip.name}" into timeline.`);
     },
-    [clearCountdownTimer, savedClips, showNotice],
+    [clearCountdownTimer, handleSelectMode, savedClips, showNotice],
   );
 
   const handleDeleteClip = useCallback((id: string) => {
@@ -779,11 +810,48 @@ export default function App() {
       showNotice('Record or add a motion clip first to export GLB.');
       return;
     }
+
+    const hasFaceFrames = (frames: PoseFrame[]) =>
+      frames.some((f) => Boolean(f.facePositions || f.faceBlendshapes));
+    const useFaceRig =
+      !rigRef.current.isCustomModel &&
+      (hasMultiClips
+        ? includedClips.every(
+            (c) => c.clipType === 'face' || hasFaceFrames(c.frames),
+          )
+        : hasFaceFrames(recordedFrames));
+
     setIsExporting(true);
     try {
       const stamp = new Date().toISOString().slice(11, 19).replace(/:/g, '-');
-      const filename = `beast_animator_${stamp}.glb`;
-      if (hasMultiClips) {
+      const filename = useFaceRig
+        ? `beast_face_${stamp}.glb`
+        : `beast_animator_${stamp}.glb`;
+
+      if (useFaceRig) {
+        if (hasMultiClips) {
+          await exportFaceMeshMultiGLB(
+            includedClips.map((c) => ({
+              name: c.name,
+              frames: c.frames,
+              fps: c.fps,
+            })),
+            {
+              fps: settings.fps,
+              filename,
+            },
+          );
+          showNotice(
+            `Exported multi-animation Face .GLB (${includedClips.length} clip${includedClips.length > 1 ? 's' : ''}).`,
+          );
+        } else {
+          await exportFaceMeshGLB(recordedFrames, {
+            fps: settings.fps,
+            filename,
+          });
+          showNotice('Exported rigged Face Mesh .GLB animation.');
+        }
+      } else if (hasMultiClips) {
         await exportMixamoMultiGLB(
           includedClips.map((c) => ({
             name: c.name,
@@ -847,7 +915,22 @@ export default function App() {
           if (frames[i].time <= t) idx = i;
           else break;
         }
+        const nextIdx = Math.min(idx + 1, frames.length - 1);
+        const span = frames[nextIdx].time - frames[idx].time;
+        const alpha =
+          span > 1e-5
+            ? THREE.MathUtils.clamp((t - frames[idx].time) / span, 0, 1)
+            : 0;
+
         applyPoseFrameToRig(frames[idx], curRig);
+        const facePosA = frames[idx].facePositions;
+        if (facePosA) {
+          faceMesh3DRef.current?.interpolateAndApplyPositions(
+            facePosA,
+            frames[nextIdx].facePositions ?? facePosA,
+            alpha,
+          );
+        }
         lastAppliedFrameRef.current = frames[idx];
 
         if (nowMs - lastHudSyncMsRef.current > 80) {
@@ -980,6 +1063,9 @@ export default function App() {
                     curRig,
                     (nowMs - recordStartMsRef.current) / 1000,
                   );
+                  frame.facePositions =
+                    faceMesh3DRef.current?.capturePositions();
+                  lastAppliedFrameRef.current = frame;
                   pushRecordedFrame(frame);
                 }
               }
@@ -1018,6 +1104,8 @@ export default function App() {
               curRig,
               (nowMs - recordStartMsRef.current) / 1000,
             );
+            frame.facePositions = faceMesh3DRef.current?.capturePositions();
+            lastAppliedFrameRef.current = frame;
             pushRecordedFrame(frame);
           }
         }

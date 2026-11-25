@@ -237,11 +237,27 @@ export function smoothRecordedPoseFrames(
       }
     }
 
+    let facePositions: Float32Array | undefined;
+    if (frame.facePositions) {
+      const len = frame.facePositions.length;
+      facePositions = new Float32Array(len);
+      for (let k = -radius; k <= radius; k++) {
+        const idx = THREE.MathUtils.clamp(i + k, 0, frames.length - 1);
+        const src = frames[idx].facePositions;
+        if (!src || src.length !== len) continue;
+        const w = normWeights[k + radius];
+        for (let j = 0; j < len; j++) {
+          facePositions[j] += src[j] * w;
+        }
+      }
+    }
+
     return {
       time: frame.time,
       hipsPosition: [hx, hy, hz],
       rotations,
       ...(faceBlendshapes ? { faceBlendshapes } : {}),
+      ...(facePositions ? { facePositions } : {}),
     };
   });
 }

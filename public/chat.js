@@ -47085,7 +47085,7 @@ var loadFreekyChat = function() {
     });
     async function onGround(m) {
       loadedMeshes = m;
-      var glbFile11 = await fetch("./res/meshes/glb/beast_animator_robot.glb").then((res) => res.arrayBuffer().then((buf) => uploadGLBModel(buf, freekyChat.device)));
+      var glbFile11 = await fetch("./res/meshes/glb/beast_face_test.glb").then((res) => res.arrayBuffer().then((buf) => uploadGLBModel(buf, freekyChat.device)));
       freekyChat.addGlbObjInctance({
         material: { type: "mirror", useTextureFromGlb: true },
         envMapParams: {

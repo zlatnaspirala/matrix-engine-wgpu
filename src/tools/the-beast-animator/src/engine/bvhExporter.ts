@@ -117,11 +117,28 @@ export function resamplePoseFrames(
       }
     }
 
+    let facePositions: Float32Array | undefined;
+    if (
+      fA.facePositions &&
+      fB.facePositions &&
+      fA.facePositions.length === fB.facePositions.length
+    ) {
+      const len = fA.facePositions.length;
+      facePositions = new Float32Array(len);
+      const inv = 1 - alpha;
+      for (let k = 0; k < len; k++) {
+        facePositions[k] = fA.facePositions[k] * inv + fB.facePositions[k] * alpha;
+      }
+    } else if (fA.facePositions) {
+      facePositions = new Float32Array(fA.facePositions);
+    }
+
     out.push({
       time: +(i * dt).toFixed(6),
       hipsPosition,
       rotations,
       ...(faceBlendshapes ? { faceBlendshapes } : {}),
+      ...(facePositions ? { facePositions } : {}),
     });
   }
 

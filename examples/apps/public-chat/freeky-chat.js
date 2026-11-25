@@ -248,14 +248,8 @@ export var loadFreekyChat = function() {
     })
 
     async function onGround(m) {
-
-
       loadedMeshes = m;
-
-
-      // public\res\meshes\glb\beast_animator_robot.glb
-
-      var glbFile11 = await fetch("./res/meshes/glb/beast_animator_robot.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, freekyChat.device)));
+      var glbFile11 = await fetch("./res/meshes/glb/beast_face_test.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, freekyChat.device)));
       freekyChat.addGlbObjInctance({
         material: {type: 'mirror', useTextureFromGlb: true},
         envMapParams: {
@@ -275,8 +269,6 @@ export var loadFreekyChat = function() {
         name: 'robot',
         texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp', './res/textures/env-maps/sky1.webp'],
       }, null, glbFile11);
-
-
 
       // A peer can publish before the scene meshes finish loading.
       for(const [peerId, media] of pendingRemoteStreams) {

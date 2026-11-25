@@ -71,6 +71,7 @@ export interface PoseFrame {
   hipsPosition: [number, number, number];
   rotations: Record<MixamoBoneName, [number, number, number, number]>;
   faceBlendshapes?: FacialBlendshapeMap;
+  facePositions?: Float32Array;
 }
 
 export type MotionSourceMode = 'lab' | 'live' | 'face' | 'video' | 'bvh';
@@ -100,6 +101,7 @@ export interface AnimationTakeClip {
   frames: PoseFrame[];
   fps: 24 | 30 | 60;
   included: boolean;
+  clipType?: 'pose' | 'face';
 }
 
 export function formatMixamoBoneName(

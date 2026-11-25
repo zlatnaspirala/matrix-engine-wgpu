@@ -130,6 +130,25 @@ export function extractFaceRigOutput(
       // Mirror across X axis flips yaw (y) and roll (z) while keeping pitch (x)
       headQuat.set(headQuat.x, -headQuat.y, -headQuat.z, headQuat.w);
     }
+  } else {
+    // Fallback head orientation from landmarks (454/234 temples, 10 forehead, 152 chin)
+    const lms = result.faceLandmarks[0];
+    const sx = mirrorX ? -1 : 1;
+    const right = new THREE.Vector3(
+      (lms[454].x - lms[234].x) * sx,
+      -(lms[454].y - lms[234].y),
+      -(lms[454].z - lms[234].z),
+    ).normalize();
+    const up = new THREE.Vector3(
+      (lms[10].x - lms[152].x) * sx,
+      -(lms[10].y - lms[152].y),
+      -(lms[10].z - lms[152].z),
+    ).normalize();
+    const forward = new THREE.Vector3().crossVectors(right, up).normalize();
+    if (forward.z < 0) forward.negate();
+    const orthoUp = new THREE.Vector3().crossVectors(forward, right).normalize();
+    const basis = new THREE.Matrix4().makeBasis(right, orthoUp, forward);
+    headQuat.setFromRotationMatrix(basis).normalize();
   }
 
   const blendshapes: FacialBlendshapeMap = {};
@@ -146,10 +165,10 @@ export function extractFaceRigOutput(
         if (key.startsWith('eyeBlink')) {
           score = THREE.MathUtils.clamp((score - 0.12) / 0.55, 0, 1);
         } else if (key === 'jawOpen') {
-          // Deadzone against rest jitter (> 0.14) while allowing full intentional mouth opening
-          score = THREE.MathUtils.clamp((score - 0.14) / 0.62, 0, 0.62);
+          // Filter small resting jitter (> 0.09) while allowing smooth full mouth opening
+          score = THREE.MathUtils.clamp((score - 0.09) / 0.65, 0, 0.78);
         } else if (key === 'mouthFunnel') {
-          score = THREE.MathUtils.clamp((score - 0.16) / 0.65, 0, 0.62);
+          score = THREE.MathUtils.clamp((score - 0.12) / 0.65, 0, 0.72);
         }
         blendshapes[key] = THREE.MathUtils.clamp(score, 0, 1);
       }
@@ -227,31 +246,31 @@ export function generateSyntheticFaceDemo(t: number): {
   headQuat: THREE.Quaternion;
   blendshapes: FacialBlendshapeMap;
 } {
-  const yaw = Math.sin(t * 0.9) * 0.24;
-  const pitch = Math.sin(t * 1.4) * 0.11;
-  const roll = Math.cos(t * 0.7) * 0.08;
+  const pitch = Math.sin(t * 1.1) * 0.10;
+  const yaw = Math.sin(t * 0.75) * 0.22;
+  const roll = Math.cos(t * 0.65) * 0.06;
   const headQuat = new THREE.Quaternion().setFromEuler(
     new THREE.Euler(pitch, yaw, roll, 'YXZ'),
   );
 
-  // Natural periodic blink every ~3.2s
-  const blinkPhase = (t % 3.2) / 3.2;
+  // Natural periodic blink every ~3.4s matching MediaPipeFaceMesh3D.updateSyntheticDemo
+  const blinkPhase = (t % 3.4) / 3.4;
   const blink =
     blinkPhase > 0.92
       ? Math.sin(((blinkPhase - 0.92) / 0.08) * Math.PI)
       : 0;
 
-  // Speech & expression cadence (mostly closed resting mouth, gentle limited opening)
-  const rawTalk = Math.sin(t * 2.6) * 0.6 + Math.sin(t * 1.3) * 0.4;
-  const talk = rawTalk > 0.55 ? ((rawTalk - 0.55) / 0.45) * 0.42 : 0;
-  const smile = Math.max(0, Math.sin(t * 0.85) * 0.72);
+  // Speech & expression cadence matching updateSyntheticDemo
+  const wave = Math.sin(t * 2.1);
+  const talk = wave > 0.45 ? ((wave - 0.45) / 0.55) * 0.55 : 0;
+  const smile = Math.max(0, Math.sin(t * 1.1)) * 0.72;
   const brow = Math.max(0, Math.sin(t * 1.3 - 0.5) * 0.65);
   const gaze = Math.sin(t * 1.1);
 
   return {
     headQuat,
     blendshapes: {
-      jawOpen: THREE.MathUtils.clamp(talk, 0, 0.42),
+      jawOpen: THREE.MathUtils.clamp(talk, 0, 0.55),
       mouthSmileLeft: smile,
       mouthSmileRight: smile,
       eyeBlinkLeft: blink,

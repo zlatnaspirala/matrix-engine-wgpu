@@ -14,6 +14,12 @@ import {
   renameMixamoRigBones,
   type ActiveMixamoRig,
 } from './mixamoSkeleton';
+import {
+  FACE_EXPORT_BONES,
+  buildRiggedFaceExportModel,
+  type FaceExportBoneName,
+  type FaceExportRig,
+} from './mediapipeFaceMesh3D';
 import { applyPoseFrameToRig } from './poseRetargeter';
 import { resamplePoseFrames } from './bvhExporter';
 
@@ -516,6 +522,321 @@ export async function exportMixamoGLB(
       },
     ],
     rig,
+    options,
+  );
+}
+
+function measureFaceBasisAndGap(
+  pos: Float32Array,
+  targetQuat: THREE.Quaternion,
+): { faceH: number; lipGapNorm: number } {
+  const getV = (idx: number, out: THREE.Vector3) =>
+    out.set(pos[idx * 3], pos[idx * 3 + 1], pos[idx * 3 + 2]);
+
+  const p454 = new THREE.Vector3();
+  const p234 = new THREE.Vector3();
+  const p10 = new THREE.Vector3();
+  const p152 = new THREE.Vector3();
+  const p13 = new THREE.Vector3();
+  const p14 = new THREE.Vector3();
+
+  getV(454, p454);
+  getV(234, p234);
+  getV(10, p10);
+  getV(152, p152);
+  getV(13, p13);
+  getV(14, p14);
+
+  const right = p454.sub(p234);
+  if (right.lengthSq() < 1e-8) right.set(1, 0, 0);
+  else right.normalize();
+
+  const upVec = p10.clone().sub(p152);
+  const faceH = Math.max(0.06, upVec.length());
+  if (upVec.lengthSq() < 1e-8) upVec.set(0, 1, 0);
+  else upVec.normalize();
+
+  const forward = new THREE.Vector3().crossVectors(right, upVec);
+  if (forward.lengthSq() < 1e-8) forward.set(0, 0, 1);
+  else forward.normalize();
+  if (forward.z < 0) forward.negate();
+
+  const orthoUp = new THREE.Vector3().crossVectors(forward, right).normalize();
+  const basis = new THREE.Matrix4().makeBasis(right, orthoUp, forward);
+  targetQuat.setFromRotationMatrix(basis).normalize();
+
+  const lipGap = Math.max(0, p13.sub(p14).dot(orthoUp));
+  return { faceH, lipGapNorm: lipGap / faceH };
+}
+
+export function buildFaceAnimationClip(
+  rawFrames: PoseFrame[],
+  faceRig: FaceExportRig,
+  fps: number,
+  clipName = 'Beast_Face_Capture',
+): THREE.AnimationClip {
+  const frames = resamplePoseFrames(rawFrames, fps);
+  if (frames.length === 0) {
+    return new THREE.AnimationClip(clipName, 0, []);
+  }
+
+  const times = new Float32Array(frames.length);
+  for (let i = 0; i < frames.length; i++) {
+    times[i] = frames[i].time;
+  }
+
+  const posAttr = faceRig.skinnedMesh.geometry.attributes
+    .position as THREE.BufferAttribute;
+  const canonicalArr = posAttr.array as Float32Array;
+  const qCanonicalRest = new THREE.Quaternion();
+  const restMetrics = measureFaceBasisAndGap(canonicalArr, qCanonicalRest);
+  const qCanonicalRestInv = qCanonicalRest.clone().invert();
+
+  const posBuffers = {} as Record<FaceExportBoneName, Float32Array>;
+  const quatBuffers = {} as Record<FaceExportBoneName, Float32Array>;
+  const scaleBuffers = {} as Record<FaceExportBoneName, Float32Array>;
+
+  for (const name of FACE_EXPORT_BONES) {
+    posBuffers[name] = new Float32Array(frames.length * 3);
+    quatBuffers[name] = new Float32Array(frames.length * 4);
+    scaleBuffers[name] = new Float32Array(frames.length * 3);
+  }
+
+  const qMeasured = new THREE.Quaternion();
+  const qHead = new THREE.Quaternion();
+  const qNeck = new THREE.Quaternion();
+  const qHeadLocal = new THREE.Quaternion();
+  const qBone = new THREE.Quaternion();
+  const eulerTmp = new THREE.Euler();
+
+  for (let i = 0; i < frames.length; i++) {
+    const frame = frames[i];
+    const bs = frame.faceBlendshapes ?? {};
+
+    let measuredLipGapNorm = restMetrics.lipGapNorm;
+    if (frame.facePositions && frame.facePositions.length >= 468 * 3) {
+      const m = measureFaceBasisAndGap(frame.facePositions, qMeasured);
+      qHead.copy(qMeasured).multiply(qCanonicalRestInv).normalize();
+      measuredLipGapNorm = m.lipGapNorm;
+    } else {
+      const nr = frame.rotations.Neck;
+      const hr = frame.rotations.Head;
+      qNeck.set(nr[0], nr[1], nr[2], nr[3]);
+      qHeadLocal.set(hr[0], hr[1], hr[2], hr[3]);
+      qHead.copy(qNeck).multiply(qHeadLocal).normalize();
+    }
+
+    const geomJaw = THREE.MathUtils.clamp(
+      (measuredLipGapNorm - restMetrics.lipGapNorm - 0.008) / 0.135,
+      0,
+      1,
+    );
+    const jaw = THREE.MathUtils.clamp(
+      Math.max(bs.jawOpen ?? 0, geomJaw),
+      0,
+      1,
+    );
+    const funnel = THREE.MathUtils.clamp(bs.mouthFunnel ?? 0, 0, 1);
+    const pucker = THREE.MathUtils.clamp(bs.mouthPucker ?? 0, 0, 1);
+    const smileL = THREE.MathUtils.clamp(bs.mouthSmileLeft ?? 0, 0, 1);
+    const smileR = THREE.MathUtils.clamp(bs.mouthSmileRight ?? 0, 0, 1);
+    const frownL = THREE.MathUtils.clamp(bs.mouthFrownLeft ?? 0, 0, 1);
+    const frownR = THREE.MathUtils.clamp(bs.mouthFrownRight ?? 0, 0, 1);
+    const blinkL = THREE.MathUtils.clamp(bs.eyeBlinkLeft ?? 0, 0, 1);
+    const blinkR = THREE.MathUtils.clamp(bs.eyeBlinkRight ?? 0, 0, 1);
+    const wideL = THREE.MathUtils.clamp(bs.eyeWideLeft ?? 0, 0, 1);
+    const wideR = THREE.MathUtils.clamp(bs.eyeWideRight ?? 0, 0, 1);
+    const browInner = THREE.MathUtils.clamp(bs.browInnerUp ?? 0, 0, 1);
+    const browUpL = THREE.MathUtils.clamp(bs.browOuterUpLeft ?? 0, 0, 1);
+    const browUpR = THREE.MathUtils.clamp(bs.browOuterUpRight ?? 0, 0, 1);
+    const browDnL = THREE.MathUtils.clamp(bs.browDownLeft ?? 0, 0, 1);
+    const browDnR = THREE.MathUtils.clamp(bs.browDownRight ?? 0, 0, 1);
+
+    for (const name of FACE_EXPORT_BONES) {
+      const rest = faceRig.restPositions[name];
+      let px = rest.x;
+      let py = rest.y;
+      let pz = rest.z;
+      let rx = 0;
+      let ry = 0;
+      let rz = 0;
+
+      if (name === 'Head') {
+        // Handled with qHead directly
+      } else if (name === 'Jaw') {
+        rx = jaw * 0.42;
+        py -= jaw * 0.008;
+        pz -= jaw * 0.002;
+      } else if (name === 'UpperLip') {
+        py += jaw * 0.003 + funnel * 0.0035;
+        pz += (pucker + funnel) * 0.004;
+      } else if (name === 'MouthCornerL') {
+        px += smileL * 0.0055 - pucker * 0.0065;
+        py += smileL * 0.0065 - frownL * 0.006 - jaw * 0.002;
+        pz -= smileL * 0.003 - pucker * 0.005;
+        rz = smileL * 0.14 - frownL * 0.14;
+      } else if (name === 'MouthCornerR') {
+        px -= smileR * 0.0055 - pucker * 0.0065;
+        py += smileR * 0.0065 - frownR * 0.006 - jaw * 0.002;
+        pz -= smileR * 0.003 - pucker * 0.005;
+        rz = -smileR * 0.14 + frownR * 0.14;
+      } else if (name === 'UpperLidL') {
+        py += -blinkL * 0.0065 + wideL * 0.0025;
+      } else if (name === 'UpperLidR') {
+        py += -blinkR * 0.0065 + wideR * 0.0025;
+      } else if (name === 'LowerLidL') {
+        py += blinkL * 0.0032;
+      } else if (name === 'LowerLidR') {
+        py += blinkR * 0.0032;
+      } else if (name === 'BrowL') {
+        py += (browInner * 0.65 + browUpL * 0.55 - browDnL * 0.65) * 0.007;
+        rz = (browInner - browUpL) * 0.09;
+      } else if (name === 'BrowR') {
+        py += (browInner * 0.65 + browUpR * 0.55 - browDnR * 0.65) * 0.007;
+        rz = -(browInner - browUpR) * 0.09;
+      }
+
+      posBuffers[name][i * 3] = px;
+      posBuffers[name][i * 3 + 1] = py;
+      posBuffers[name][i * 3 + 2] = pz;
+
+      scaleBuffers[name][i * 3] = 1;
+      scaleBuffers[name][i * 3 + 1] = 1;
+      scaleBuffers[name][i * 3 + 2] = 1;
+
+      if (name === 'Head') {
+        quatBuffers[name][i * 4] = qHead.x;
+        quatBuffers[name][i * 4 + 1] = qHead.y;
+        quatBuffers[name][i * 4 + 2] = qHead.z;
+        quatBuffers[name][i * 4 + 3] = qHead.w;
+      } else {
+        eulerTmp.set(rx, ry, rz, 'YXZ');
+        qBone.setFromEuler(eulerTmp);
+        quatBuffers[name][i * 4] = qBone.x;
+        quatBuffers[name][i * 4 + 1] = qBone.y;
+        quatBuffers[name][i * 4 + 2] = qBone.z;
+        quatBuffers[name][i * 4 + 3] = qBone.w;
+      }
+    }
+  }
+
+  const tracks: THREE.KeyframeTrack[] = [];
+  for (const name of FACE_EXPORT_BONES) {
+    const boneTarget = faceRig.bones[name].uuid;
+    tracks.push(
+      new THREE.VectorKeyframeTrack(
+        `${boneTarget}.position`,
+        times,
+        posBuffers[name],
+      ),
+    );
+    tracks.push(
+      new THREE.VectorKeyframeTrack(
+        `${boneTarget}.scale`,
+        times,
+        scaleBuffers[name],
+      ),
+    );
+    tracks.push(
+      new THREE.QuaternionKeyframeTrack(
+        `${boneTarget}.quaternion`,
+        times,
+        quatBuffers[name],
+      ),
+    );
+  }
+
+  const duration = times[times.length - 1];
+  return new THREE.AnimationClip(clipName, duration, tracks);
+}
+
+export async function buildFaceMeshMultiGLBBuffer(
+  clips: Array<{ name: string; frames: PoseFrame[]; fps?: number }>,
+  options: { fps: number },
+): Promise<ArrayBuffer> {
+  const faceRig = buildRiggedFaceExportModel();
+
+  try {
+    const usedNames = new Set<string>();
+    const builtClips: THREE.AnimationClip[] = [];
+
+    clips.forEach((clipDef, idx) => {
+      if (clipDef.frames.length < 2) return;
+      const baseName = clipDef.name.trim() || `Face_Clip_${idx + 1}`;
+      let uniqueName = baseName;
+      let suffix = 2;
+      while (usedNames.has(uniqueName)) {
+        uniqueName = `${baseName}_${suffix++}`;
+      }
+      usedNames.add(uniqueName);
+
+      builtClips.push(
+        buildFaceAnimationClip(
+          clipDef.frames,
+          faceRig,
+          clipDef.fps ?? options.fps,
+          uniqueName,
+        ),
+      );
+    });
+
+    if (builtClips.length === 0) {
+      throw new Error('No valid face animation clips with at least 2 frames to export.');
+    }
+
+    const exporter = new GLTFExporter();
+    const rawGlbBuffer = (await exporter.parseAsync(faceRig.rootObject, {
+      binary: true,
+      animations: builtClips,
+      onlyVisible: false,
+    })) as ArrayBuffer;
+
+    return normalizeGlbBufferViews(rawGlbBuffer);
+  } finally {
+    faceRig.dispose();
+  }
+}
+
+export async function exportFaceMeshMultiGLB(
+  clips: Array<{ name: string; frames: PoseFrame[]; fps?: number }>,
+  options: {
+    fps: number;
+    filename: string;
+  },
+): Promise<void> {
+  const glbBuffer = await buildFaceMeshMultiGLBBuffer(clips, {
+    fps: options.fps,
+  });
+  const blob = new Blob([glbBuffer], {
+    type: 'model/gltf-binary',
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = options.filename.endsWith('.glb')
+    ? options.filename
+    : `${options.filename}.glb`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+export async function exportFaceMeshGLB(
+  rawFrames: PoseFrame[],
+  options: {
+    fps: number;
+    filename: string;
+  },
+): Promise<void> {
+  return exportFaceMeshMultiGLB(
+    [
+      {
+        name: options.filename.replace(/\.glb$/i, ''),
+        frames: rawFrames,
+        fps: options.fps,
+      },
+    ],
     options,
   );
 }
