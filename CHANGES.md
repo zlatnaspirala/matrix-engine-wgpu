@@ -65,6 +65,14 @@ await carDemo.matrixPhysics.addHeightfield({
 ```
 
 
+Render warn log , this is price for better micro optimisation in render loop fn's.
+```js
+No bind group set at group index 3.
+ - While encoding [RenderPassEncoder "mainRenderPassDesc"].DrawIndexed(36, 1, 0, 0, 0).
+ - While finishing [CommandEncoder (unlabeled)].
+```
+
+
 
 [2.0.0]
 

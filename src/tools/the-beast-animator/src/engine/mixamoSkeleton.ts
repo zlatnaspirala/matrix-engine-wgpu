@@ -80,6 +80,48 @@ export interface ActiveMixamoRig {
   morphMeshes: THREE.Mesh[];
 }
 
+const PALETTE_COLORS = [
+  0x262d3a, // 0: C_SHELL (Graphite matte chassis)
+  0x384254, // 1: C_PLATE (Slate armor plate)
+  0x94a3b8, // 2: C_JOINT (Brushed titanium joint)
+  0xf59e0b, // 3: C_VISOR (Precision amber sensor band)
+  0x181d26, // 4: C_BOOT (Dark sole/boot)
+] as const;
+
+function createMannequinPaletteTexture(): THREE.DataTexture {
+  const width = 256;
+  const height = 64;
+  const slotWidth = 32; // 8 slots across 256px
+  const data = new Uint8Array(width * height * 4);
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const slot = Math.min(
+        PALETTE_COLORS.length - 1,
+        Math.floor(x / slotWidth),
+      );
+      const hex = PALETTE_COLORS[slot];
+      const idx = (y * width + x) * 4;
+      data[idx] = (hex >> 16) & 255;
+      data[idx + 1] = (hex >> 8) & 255;
+      data[idx + 2] = hex & 255;
+      data[idx + 3] = 255;
+    }
+  }
+
+  const tex = new THREE.DataTexture(data, width, height, THREE.RGBAFormat);
+  tex.name = 'Beast_Mannequin_Palette';
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.magFilter = THREE.LinearFilter;
+  tex.minFilter = THREE.LinearFilter;
+  tex.wrapS = THREE.ClampToEdgeWrapping;
+  tex.wrapT = THREE.ClampToEdgeWrapping;
+  tex.generateMipmaps = false;
+  tex.flipY = false;
+  tex.needsUpdate = true;
+  return tex;
+}
+
 function addSkinnedPart(
   parts: THREE.BufferGeometry[],
   geo: THREE.BufferGeometry,
@@ -88,38 +130,65 @@ function addSkinnedPart(
   worldOffset: THREE.Vector3,
   rotationEuler?: THREE.Euler,
 ): void {
-  const g = geo.index ? geo.toNonIndexed() : geo.clone();
+  const g = geo.clone();
+  if (!g.index) {
+    const count = g.attributes.position.count;
+    const idx = new Uint16Array(count);
+    for (let i = 0; i < count; i++) idx[i] = i;
+    g.setIndex(new THREE.BufferAttribute(idx, 1));
+  }
   if (rotationEuler) {
     g.rotateX(rotationEuler.x);
     g.rotateY(rotationEuler.y);
     g.rotateZ(rotationEuler.z);
   }
   g.translate(worldOffset.x, worldOffset.y, worldOffset.z);
-  g.computeVertexNormals();
+  if (!g.attributes.normal) {
+    g.computeVertexNormals();
+  }
+  g.normalizeNormals();
+  const normAttr = g.attributes.normal as THREE.BufferAttribute;
+  for (let i = 0; i < normAttr.count; i++) {
+    const nx = normAttr.getX(i);
+    const ny = normAttr.getY(i);
+    const nz = normAttr.getZ(i);
+    const len = Math.hypot(nx, ny, nz);
+    if (!Number.isFinite(len) || len < 1e-6) {
+      normAttr.setXYZ(i, 0, 1, 0);
+    } else if (Math.abs(len - 1) > 1e-4) {
+      normAttr.setXYZ(i, nx / len, ny / len, nz / len);
+    }
+  }
 
-  // Keep only position and normal before adding color + skin attributes
+  // Keep only position and normal before adding palette uv + skin attributes
   for (const key of Object.keys(g.attributes)) {
     if (key !== 'position' && key !== 'normal') {
       g.deleteAttribute(key);
     }
   }
 
+  const slotIndex = Math.max(
+    0,
+    PALETTE_COLORS.indexOf(colorHex as (typeof PALETTE_COLORS)[number]),
+  );
+  const slotCenterU = (slotIndex * 32 + 16) / 256;
+
   const count = g.attributes.position.count;
-  const col = new THREE.Color(colorHex);
-  const colors = new Float32Array(count * 3);
-  const skinIndices = new Uint16Array(count * 4);
+  const uvs = new Float32Array(count * 2);
+  // Uint8Array ensures GLTFExporter writes JOINTS_0 as UNSIGNED_BYTE (5121),
+  // matching Blender exports and matrix-engine-wgpu's 1-byte-per-component reader.
+  const skinIndices = new Uint8Array(count * 4);
   const skinWeights = new Float32Array(count * 4);
 
   for (let i = 0; i < count; i++) {
-    colors[i * 3] = col.r;
-    colors[i * 3 + 1] = col.g;
-    colors[i * 3 + 2] = col.b;
+    uvs[i * 2] = slotCenterU;
+    uvs[i * 2 + 1] = 0.5;
 
     skinIndices[i * 4] = boneIndex;
     skinWeights[i * 4] = 1.0;
   }
 
-  g.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  g.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
   g.setAttribute('skinIndex', new THREE.BufferAttribute(skinIndices, 4));
   g.setAttribute('skinWeight', new THREE.BufferAttribute(skinWeights, 4));
 
@@ -398,9 +467,11 @@ export function buildMixamoMannequinRig(
 
   const mergedGeo = mergeGeometries(parts, false);
   parts.forEach((p) => p.dispose());
+  mergedGeo.normalizeNormals();
 
+  const paletteTex = createMannequinPaletteTexture();
   const material = new THREE.MeshStandardMaterial({
-    vertexColors: true,
+    map: paletteTex,
     roughness: 0.42,
     metalness: 0.35,
   });
