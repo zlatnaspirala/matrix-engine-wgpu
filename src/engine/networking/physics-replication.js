@@ -9,6 +9,7 @@
 export function activatePhysicsReplication(engine, net, options = {}) {
   const interval = Math.max(25, options.interval || 50);
   const correctionInterval = Math.max(100, options.correctionInterval || 250);
+  const correctionEvery = Math.max(1, Math.round(correctionInterval / interval));
   const knownRemote = new Set();
   const ownerByKey = new Map();
   const lastCorrection = new Map();
@@ -88,7 +89,7 @@ export function activatePhysicsReplication(engine, net, options = {}) {
       ownerByKey.set(message.bodyKey, message.ownerPeerId || sender);
       const isNew = !knownRemote.has(idx);
       setReplicaMode(idx, false);
-      applyState(idx, message.state, isNew || message.seq % 5 === 0);
+      applyState(idx, message.state, isNew || message.seq % correctionEvery === 0);
       return;
     }
 
@@ -152,6 +153,7 @@ export function activatePhysicsReplication(engine, net, options = {}) {
     try {
       const p = physics();
       const me = localPeerId();
+      const owned = [];
       for(const [idx, object] of p._bodyIndexMap) {
         const remoteName = object?.position?.remoteName;
         if(typeof remoteName !== 'string' || !remoteName) continue;
@@ -160,8 +162,12 @@ export function activatePhysicsReplication(engine, net, options = {}) {
         ownerByKey.set(key, owner);
         setReplicaMode(idx, owner === me);
         if(owner !== me) continue;
-
-        const state = await p.getBodyState?.(idx);
+        owned.push({idx, object, key});
+      }
+      const states = await Promise.all(owned.map(item => p.getBodyState?.(item.idx)));
+      for(let i = 0;i < owned.length;i++) {
+        const {idx, object, key} = owned[i];
+        const state = states[i];
         if(!state) continue;
         const now = Date.now();
         const last = lastCorrection.get(idx) || 0;
