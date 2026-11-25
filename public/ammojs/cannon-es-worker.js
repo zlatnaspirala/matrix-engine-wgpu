@@ -1040,6 +1040,18 @@ class MatrixCannon {
     });
   }
 
+  getBodyState(idx, msgID) {
+    const body = this.rigidBodies[idx];
+    if(!body) { self.postMessage({cmd: 'getBodyState', id: msgID, state: null}); return; }
+    self.postMessage({cmd: 'getBodyState', id: msgID, state: {
+      position: {x: body.position.x, y: body.position.y, z: body.position.z},
+      quaternion: {x: body.quaternion.x, y: body.quaternion.y, z: body.quaternion.z, w: body.quaternion.w},
+      linearVelocity: {x: body.velocity.x, y: body.velocity.y, z: body.velocity.z},
+      angularVelocity: {x: body.angularVelocity.x, y: body.angularVelocity.y, z: body.angularVelocity.z},
+      sleeping: body.sleepState === 2
+    }});
+  }
+
   isSleeping(idx, msgID) {
     const b = this.rigidBodies[idx];
     if(b) {
@@ -1227,6 +1239,7 @@ self.onmessage = async ({data}) => {
     case 'createBoundedSpace': cannon.createBoundedSpace(data.ids, data.pos, data.size); break;
     case 'createSphereBoundary': cannon.createSphereBoundary(data.idxs, data.pos, data.radius); break;
     case 'lotteryMachineShake': cannon.lotteryMachineShake(data.ids, data.strength); break;
+    case 'getBodyState': cannon.getBodyState(data.idx, data.id); break;
     case 'isSleeping': cannon.isSleeping(data.idx, data.id); break;
     case 'switchToKinematic': cannon.switchToKinematic(data.idx); break;
     case 'switchToDinamic': cannon.switchToDinamic(data.idx); break;
