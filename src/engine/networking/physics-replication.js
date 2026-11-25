@@ -53,9 +53,10 @@ export function activatePhysicsReplication(engine, net, options = {}) {
     for(const [idx, object] of p._bodyIndexMap || []) {
       const pos = object?.position;
       const remoteName = pos?.remoteName;
-      // Objects explicitly paired with a remote counterpart are eligible.
-      // local-video-* is the owner side in the public-chat example.
-      if(!remoteName || !(object.name?.startsWith(prefix) || pos?.netPhysics === true)) continue;
+      // Any physics body with an explicit remoteName is eligible. The demo's
+      // local-video-* bodies use this too, but custom bodies need no special name
+      // prefix or extra netPhysics flag.
+      if(typeof remoteName !== 'string' || !remoteName) continue;
       const b = idx * stride;
       const t = {
         x: snap[b], y: snap[b + 1], z: snap[b + 2],
