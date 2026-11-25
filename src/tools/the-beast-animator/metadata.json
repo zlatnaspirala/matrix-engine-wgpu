@@ -1,0 +1,6 @@
+{
+  "name": "Kinesis Rig",
+  "description": "Browser motion capture studio converting MediaPipe 3D pose landmarks into Mixamo-compatible BVH and animated GLB files.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
