@@ -1074,11 +1074,12 @@ class MatrixAmmoWorker {
   switchToDinamic(idx) {
     const b = this.rigidBodies[idx];
     if(!b) return;
+    const mass = b._beastDynamicMass || 1;
     b.isKinematic = false;
     b.setCollisionFlags(0);
     const localInertia = this._zero;
-    b.getCollisionShape().calculateLocalInertia(1, localInertia);
-    b.setMassProps(1, localInertia);
+    b.getCollisionShape().calculateLocalInertia(mass, localInertia);
+    b.setMassProps(mass, localInertia);
     b.updateInertiaTensor();
     b.setActivationState(1);
     b.activate();
