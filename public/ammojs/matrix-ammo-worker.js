@@ -1058,6 +1058,10 @@ class MatrixAmmoWorker {
   switchToKinematic(idx) {
     const b = this.rigidBodies[idx];
     if(b) {
+      if(!b.isKinematic) {
+        const invMass = b.getInvMass();
+        b._beastDynamicMass = invMass > 0 ? 1 / invMass : 1;
+      }
       b.isKinematic = true;
       b.setCollisionFlags(2);
       const localInertia = this._zero;
