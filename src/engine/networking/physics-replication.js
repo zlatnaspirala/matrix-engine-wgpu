@@ -98,10 +98,26 @@ export function activatePhysicsReplication(engine, net, options = {}) {
       const target = findBodyByKey(message.bodyKey);
       if(!target) return;
       const v = message.vector || {};
-      if(message.action === 'impulse') p.applyImpulse?.(target.idx, v);
-      else if(message.action === 'torque') p.applyTorque?.(target.idx, v);
-      else if(message.action === 'velocity') p.setBodyVelocity?.(target.idx, v.x, v.y, v.z);
-      else if(message.action === 'shoot') p.shootBody?.(target.idx, v.lx, v.ly, v.lz, v.ax, v.ay, v.az);
+      const executeInput = () => {
+        if(message.action === 'impulse') p.applyImpulse?.(target.idx, v);
+        else if(message.action === 'torque') p.applyTorque?.(target.idx, v);
+        else if(message.action === 'velocity') p.setBodyVelocity?.(target.idx, v.x, v.y, v.z);
+        else if(message.action === 'shoot') p.shootBody?.(target.idx, v.lx, v.ly, v.lz, v.ax, v.ay, v.az);
+      };
+      // Sleeping bodies can hand authority to the peer that wakes them.
+      p.isSleeping?.(target.idx).then(isSleeping => {
+        if(!isSleeping || !sender) { executeInput(); return; }
+        p.getBodyState?.(target.idx).then(state => {
+          if(!state) { executeInput(); return; }
+          p.switchToKinematic?.(target.idx);
+          ownerByKey.set(message.bodyKey, sender);
+          send({
+            type: 'beast-physics-owner', room: net.sessionName,
+            bodyKey: message.bodyKey, ownerPeerId: sender, state,
+            wakeInput: {action: message.action, vector: v}
+          });
+        }).catch(executeInput);
+      }).catch(executeInput);
       return;
     }
 
@@ -109,8 +125,16 @@ export function activatePhysicsReplication(engine, net, options = {}) {
       const target = findBodyByKey(message.bodyKey);
       if(!target) return;
       ownerByKey.set(message.bodyKey, message.ownerPeerId);
-      setReplicaMode(target.idx, message.ownerPeerId === localPeerId());
+      const isOwner = message.ownerPeerId === localPeerId();
+      setReplicaMode(target.idx, isOwner);
       if(message.state) applyState(target.idx, message.state, true);
+      if(isOwner && message.wakeInput) {
+        const v = message.wakeInput.vector || {};
+        if(message.wakeInput.action === 'impulse') p.applyImpulse?.(target.idx, v);
+        else if(message.wakeInput.action === 'torque') p.applyTorque?.(target.idx, v);
+        else if(message.wakeInput.action === 'velocity') p.setBodyVelocity?.(target.idx, v.x, v.y, v.z);
+        else if(message.wakeInput.action === 'shoot') p.shootBody?.(target.idx, v.lx, v.ly, v.lz, v.ax, v.ay, v.az);
+      }
     }
   };
 
