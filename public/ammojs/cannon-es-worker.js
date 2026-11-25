@@ -1052,6 +1052,14 @@ class MatrixCannon {
     }});
   }
 
+  setKinematicRotation(idx, x, y, z, w = 1) {
+    const body = this.rigidBodies[idx];
+    if(!body) return;
+    body.quaternion.set(x, y, z, w);
+    body.aabbNeedsUpdate = true;
+    body.wakeUp();
+  }
+
   isSleeping(idx, msgID) {
     const b = this.rigidBodies[idx];
     if(b) {
@@ -1220,6 +1228,7 @@ self.onmessage = async ({data}) => {
     case 'applyTorque': cannon.applyTorque(data.idx, data.x, data.y, data.z); break;
     case 'setLinearVelocity': cannon.setLinearVelocity(data.idx, data.x, data.y, data.z); break;
     case 'setBodyAngularVelocity': cannon.setBodyAngularVelocity(data.idx, data.x, data.y, data.z); break;
+    case 'setKinematicRotation': cannon.setKinematicRotation(data.idx, data.x, data.y, data.z, data.w); break;
     case 'setKinematicTransform': cannon.setKinematicTransform(data.idx, data.x, data.y, data.z); break;
     case 'setGravity': cannon.setGravity(data.x, data.y, data.z); break;
     case 'addHingeConstraint': cannon.addHingeConstraint(data.idxA, data.idxB, data.options, data.id); break;
