@@ -1074,6 +1074,7 @@ class MatrixCannon {
   switchToKinematic(idx) {
     const b = this.rigidBodies[idx];
     if(b) {
+      if(b.type !== this.CANNON.Body.KINEMATIC) b._beastDynamicMass = b.mass > 0 ? b.mass : 1;
       b.type = this.CANNON.Body.KINEMATIC;
       b.mass = 0;
       b.updateMassProperties();
