@@ -7,7 +7,6 @@
  */
 export function activatePhysicsReplication(engine, net, options = {}) {
   const interval = options.interval || 50;
-  const prefix = options.localPrefix || 'local-video-';
   const knownRemote = new Set();
   const lastSent = new Map();
   let timer = null;
