@@ -1033,6 +1033,18 @@ class MatrixAmmoWorker {
     }});
   }
 
+  setKinematicRotation(idx, x, y, z, w = 1) {
+    const body = this.rigidBodies[idx];
+    if(!body) return;
+    const q = new this.Ammo.btQuaternion(x, y, z, w);
+    const transform = body.getWorldTransform();
+    transform.setRotation(q);
+    body.setWorldTransform(transform);
+    body.getMotionState()?.setWorldTransform(transform);
+    this.Ammo.destroy(q);
+    body.activate();
+  }
+
   isSleeping(idx, msgID) {
     const body = this.rigidBodies[idx];
     if(!body) return;
@@ -1185,6 +1197,7 @@ self.onmessage = async ({data}) => {
     case 'applyTorque': ammo.applyTorque(data.idx, data.x, data.y, data.z); break;
     case 'setLinearVelocity': ammo.setLinearVelocity(data.idx, data.x, data.y, data.z); break;
     case 'setBodyAngularVelocity': ammo.setBodyAngularVelocity(data.idx, data.x, data.y, data.z); break;
+    case 'setKinematicRotation': ammo.setKinematicRotation(data.idx, data.x, data.y, data.z, data.w); break;
     case 'setKinematicTransform': ammo.setKinematicTransform(data.idx, data.x, data.y, data.z); break;
     case 'setGravity': ammo.setGravity(data.x, data.y, data.z); break;
     case 'setSleepingThresholds': ammo.setSleepingThresholds(data.idx, data.linear, data.angular); break;
