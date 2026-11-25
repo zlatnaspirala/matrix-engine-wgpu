@@ -5,6 +5,7 @@ import {MeshMorpher} from "../../../src/engine/procedural-mesh.js";
 import {PVector} from "../../../src/engine/matrix-class.js";
 import {activateNet2} from "../../../src/engine/networking/net.js";
 import {uploadGLBModel} from "../../../src/engine/loaders/webgpu-gltf.js";
+import {activatePhysicsReplication} from "../../../src/engine/networking/physics-replication.js";
 
 export var loadFreekyChat = function() {
 
@@ -187,6 +188,9 @@ export var loadFreekyChat = function() {
         signalingUrl: 'ws://localhost:2020',
         media: {audio: true, video: true}
       });
+
+      // Replicate physics-owned local video bodies to their remote kinematic twins.
+      freekyChat.physicsReplication = activatePhysicsReplication(freekyChat, freekyChat.net);
 
       //  subMesh.position.netObject = subMesh.name;
       addEventListener('net-ready', () => {
