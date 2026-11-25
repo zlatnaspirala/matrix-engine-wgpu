@@ -510,6 +510,12 @@ class MatterPhysicsWorker {
     }});
   }
 
+  setKinematicRotation(idx, x, y, z, w = 1) {
+    const body = this.rigidBodies[idx];
+    if(!body) return;
+    this.Body.setAngle(body, 2 * Math.atan2(z, w));
+  }
+
   isSleeping(idx, msgID) {
     const body = this.rigidBodies[idx];
     if(!body) return;
@@ -601,6 +607,7 @@ self.onmessage = async ({data}) => {
     case 'applyClothForce':
       m.applyClothForce(data.startIndex, data.x, data.y, data.z);
       break;
+    case 'setKinematicRotation': m.setKinematicRotation(data.idx, data.x, data.y, data.z, data.w); break;
     case 'setKinematicTransform':
       m.setKinematicTransform(data.idx, data.x, data.y, data.z);
       break;
