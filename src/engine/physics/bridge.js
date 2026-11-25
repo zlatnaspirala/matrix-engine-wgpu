@@ -339,6 +339,8 @@ export class PhysicsBridge {
 
   switchToDinamic(idx) {
     if(idx === undefined) return;
+    const meObj = this._bodyIndexMap.get(idx);
+    if(meObj) meObj.isKinematic = false;
     this._worker.postMessage({cmd: 'switchToDinamic', idx});
   }
 
