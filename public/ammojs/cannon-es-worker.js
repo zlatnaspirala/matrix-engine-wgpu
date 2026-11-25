@@ -1087,7 +1087,7 @@ class MatrixCannon {
     const b = this.rigidBodies[idx];
     if(b) {
       b.type = this.CANNON.Body.DYNAMIC;
-      b.mass = 1;
+      b.mass = b._beastDynamicMass || 1;
       b.updateMassProperties();
       b.wakeUp();
     }
