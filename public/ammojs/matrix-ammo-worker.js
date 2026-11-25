@@ -684,6 +684,8 @@ class MatrixAmmoWorker {
       this._transform.setIdentity();
       this._transform.setOrigin(pos);
       ms.setWorldTransform(this._transform);
+      body.setWorldTransform(this._transform);
+      this.dynamicsWorld.updateSingleAabb(body);
     }
   }
 
