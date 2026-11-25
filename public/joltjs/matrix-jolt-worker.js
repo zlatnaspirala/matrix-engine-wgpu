@@ -1097,6 +1097,20 @@ class MatrixJolt {
     self.postMessage({cmd: 'getPosition', id: msgID, position: {x: t.GetX(), y: t.GetY(), z: t.GetZ()}});
   }
 
+  getBodyState(idx, msgID) {
+    const body = this.rigidBodies[idx];
+    if(!body) { self.postMessage({cmd: 'getBodyState', id: msgID, state: null}); return; }
+    const p = body.GetPosition(), q = body.GetRotation();
+    const v = body.GetLinearVelocity(), w = body.GetAngularVelocity();
+    self.postMessage({cmd: 'getBodyState', id: msgID, state: {
+      position: {x: p.GetX(), y: p.GetY(), z: p.GetZ()},
+      quaternion: {x: q.GetX(), y: q.GetY(), z: q.GetZ(), w: q.GetW()},
+      linearVelocity: {x: v.GetX(), y: v.GetY(), z: v.GetZ()},
+      angularVelocity: {x: w.GetX(), y: w.GetY(), z: w.GetZ()},
+      sleeping: !body.IsActive()
+    }});
+  }
+
   isSleeping(idx, msgID) {
     const body = this.rigidBodies[idx];
     if(!body) return;
@@ -1301,6 +1315,7 @@ self.onmessage = async ({data}) => {
     case 'speedUpSimulation': jolt.speedUpSimulation(data.value); break;
     case 'removeRigidBody': jolt.removeRigidBody(data.idx, data.flags); break;
     case 'createChain': jolt.createChain(data.ids, data.size, data.mass, data.marginSpace); break;
+    case 'getBodyState': jolt.getBodyState(data.idx, data.id); break;
     case 'isSleeping': jolt.isSleeping(data.idx, data.id); break;
     case 'switchToKinematic': jolt.switchToKinematic(data.idx); break;
     case 'switchToDinamic': jolt.switchToDinamic(data.idx); break;
