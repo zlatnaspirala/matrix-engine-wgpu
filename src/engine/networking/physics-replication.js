@@ -8,7 +8,6 @@
 export function activatePhysicsReplication(engine, net, options = {}) {
   const interval = options.interval || 50;
   const knownRemote = new Set();
-  const lastSent = new Map();
   let timer = null;
   let disposed = false;
   let sequence = 0;
@@ -62,10 +61,8 @@ export function activatePhysicsReplication(engine, net, options = {}) {
         qx: snap[b + 3], qy: snap[b + 4], qz: snap[b + 5], qw: snap[b + 6]
       };
       if(![t.x, t.y, t.z, t.qx, t.qy, t.qz, t.qw].every(Number.isFinite)) continue;
-      const old = lastSent.get(idx);
-      if(old && Math.abs(old.x-t.x)+Math.abs(old.y-t.y)+Math.abs(old.z-t.z)+
-        Math.abs(old.qx-t.qx)+Math.abs(old.qy-t.qy)+Math.abs(old.qz-t.qz)+Math.abs(old.qw-t.qw) < 0.001) continue;
-      lastSent.set(idx, t);
+      // Repeat unchanged transforms too: the remote body may not have been
+      // registered yet when the first packet arrived.
       net.send({
         type: 'beast-physics-transform',
         room: net.sessionName,
@@ -85,7 +82,6 @@ export function activatePhysicsReplication(engine, net, options = {}) {
       if(timer) clearInterval(timer);
       removeEventListener('webrtc-message', receive);
       knownRemote.clear();
-      lastSent.clear();
     }
   };
 }
