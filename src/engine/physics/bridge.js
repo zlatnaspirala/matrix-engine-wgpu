@@ -246,16 +246,12 @@ export class PhysicsBridge {
   }
 
   setKinematicTransform(idx, x, y, z = 0) {
-    let count = 0;
-    for(const [idx_, meObj] of this._bodyIndexMap) {
-      if(!meObj.isKinematic && idx_ !== idx) continue;
-      meObj.position.setPosition(x, y, z, false);
-      count++;
-    }
-    this._kinematicCount = count;
-    if(count > 0) {
-      this._worker.postMessage({cmd: 'setKinematicTransform', count, idx: idx, x: x, y: y, z: z});
-    }
+    // Update only the addressed render object. Updating every kinematic object
+    // here made all remote replicas collapse onto the last received position.
+    const meObj = this._bodyIndexMap.get(idx);
+    if(meObj?.position?.setPosition) meObj.position.setPosition(x, y, z, false);
+    if(idx === undefined || idx < 0) return;
+    this._worker.postMessage({cmd: 'setKinematicTransform', count: 1, idx, x, y, z});
   }
 
   updatePhysics() {
@@ -335,7 +331,9 @@ export class PhysicsBridge {
   }
 
   switchToKinematic(idx) {
-    if(idx === undefined) return;
+    if(idx === undefined || idx < 0) return;
+    const meObj = this._bodyIndexMap.get(idx);
+    if(meObj) meObj.isKinematic = true;
     this._worker.postMessage({cmd: 'switchToKinematic', idx});
   }
 
