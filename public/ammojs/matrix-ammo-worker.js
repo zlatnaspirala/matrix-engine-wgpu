@@ -1058,6 +1058,7 @@ class MatrixAmmoWorker {
   switchToKinematic(idx) {
     const b = this.rigidBodies[idx];
     if(b) {
+      b.isKinematic = true;
       b.setCollisionFlags(2);
       const localInertia = this._zero;
       b.setMassProps(0, localInertia);
@@ -1068,6 +1069,8 @@ class MatrixAmmoWorker {
 
   switchToDinamic(idx) {
     const b = this.rigidBodies[idx];
+    if(!b) return;
+    b.isKinematic = false;
     b.setCollisionFlags(0);
     const localInertia = this._zero;
     b.getCollisionShape().calculateLocalInertia(1, localInertia);
