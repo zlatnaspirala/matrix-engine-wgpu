@@ -101,6 +101,7 @@ export function activatePhysicsReplication(engine, net, options = {}) {
       if(message.action === 'impulse') p.applyImpulse?.(target.idx, v);
       else if(message.action === 'torque') p.applyTorque?.(target.idx, v);
       else if(message.action === 'velocity') p.setBodyVelocity?.(target.idx, v.x, v.y, v.z);
+      else if(message.action === 'shoot') p.shootBody?.(target.idx, v.lx, v.ly, v.lz, v.ax, v.ay, v.az);
       return;
     }
 
@@ -134,6 +135,8 @@ export function activatePhysicsReplication(engine, net, options = {}) {
   const p = physics();
   const originalImpulse = p?.applyImpulse?.bind(p);
   const originalTorque = p?.applyTorque?.bind(p);
+  const originalVelocity = p?.setBodyVelocity?.bind(p);
+  const originalShoot = p?.shootBody?.bind(p);
   if(p && originalImpulse) {
     p.applyImpulse = (idx, vector) => {
       if(forwardInput('impulse', idx, vector)) return;
@@ -144,6 +147,18 @@ export function activatePhysicsReplication(engine, net, options = {}) {
     p.applyTorque = (idx, vector) => {
       if(forwardInput('torque', idx, vector)) return;
       return originalTorque(idx, vector);
+    };
+  }
+  if(p && originalVelocity) {
+    p.setBodyVelocity = (idx, x, y, z) => {
+      if(forwardInput('velocity', idx, {x, y, z})) return;
+      return originalVelocity(idx, x, y, z);
+    };
+  }
+  if(p && originalShoot) {
+    p.shootBody = (idx, lx, ly, lz, ax, ay, az) => {
+      if(forwardInput('shoot', idx, {lx, ly, lz, ax, ay, az})) return;
+      return originalShoot(idx, lx, ly, lz, ax, ay, az);
     };
   }
 
@@ -205,6 +220,8 @@ export function activatePhysicsReplication(engine, net, options = {}) {
       removeEventListener('webrtc-message', receive);
       if(p && originalImpulse) p.applyImpulse = originalImpulse;
       if(p && originalTorque) p.applyTorque = originalTorque;
+      if(p && originalVelocity) p.setBodyVelocity = originalVelocity;
+      if(p && originalShoot) p.shootBody = originalShoot;
       knownRemote.clear();
       ownerByKey.clear();
       lastCorrection.clear();
