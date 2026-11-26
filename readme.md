@@ -9,10 +9,8 @@
 ## Logo
 
 <img width="400" height="400" src="https://raw.githubusercontent.com/zlatnaspirala/matrix-engine-wgpu/refs/heads/main/non-project-files/logo-origin.png?raw=true" />
-*Logo includes the official WebGPU logo. WebGPU logo by W3C Licensed under Creative Commons Attribution 4.0*
 
-Android the beast logo
-<img width="128" height="128" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/public/res/icons/512.webp?raw=true" />
+>_Logo includes the official WebGPU logo. WebGPU logo by W3C Licensed under Creative Commons Attribution 4.0_
 
 ---
 
@@ -74,9 +72,12 @@ Code Creator does not need its own JavaScript bundle; use it from the watcher bu
 https://github.com/user-attachments/assets/d7d647e4-2672-488f-a1c7-cf8706e34fd8
 
 
-## Navite hybrid port
+## Native hybrid port
   Ported on android (used android studio) Page examples.html:
  - https://play.google.com/store/apps/details?id=nikolalukic.beast.engine&pli=1
+
+>_The Beast Native builds (Android) logo._
+<img width="128" height="128" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/public/res/icons/512.webp?raw=true" />
 
 
 ## Roadmap/sync to external parts
