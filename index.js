@@ -21,6 +21,7 @@ import {byId, CameraPath, FullScreenManagerElement, getOrientation, isMobile, OR
 import {uploadGLBModel} from "./src/engine/loaders/webgpu-gltf.js";
 import {MeshMorpher} from "./src/engine/procedural-mesh.js";
 import {CollisionSystem} from "./src/engine/collision-sub-system.js";
+import {BlockLoader} from "./src/engine/block-loader.js";
 import {KaleidoscopeEmitter} from "./src/engine/effects/kaleidoscopeEffectInstance.js";
 import {KaleidoscopeEffect, KaleidoscopePresets} from "./src/engine/effects/KaleidoscopeEffect.js";
 import {PVector} from "./src/engine/matrix-class.js";
@@ -117,6 +118,7 @@ export {
   SWITCHER,
   OSCILLATOR,
   CollisionSystem,
+  BlockLoader,
   MapCreator,
   ProjectileSystem,
   MeshMorpher,
