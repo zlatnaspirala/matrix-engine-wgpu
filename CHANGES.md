@@ -8,18 +8,18 @@
  - MotionBlurPass
  - CloudsVolumetric
  - CloudsVolumetric2
- - Networking is now modular 
+ - Networking is now modular/driven:
     - Kurento/Openvidu support
     - Native nodejs singnaling server (npm run dedicated)
-
     NETWORK API Level same :  NET DRIVE (kurento,node signaling)
 
  - addHeightfield for AMMO ,cannonjs + example
  - addVehicle for AMMO, cannonjs + example
 
-  - Test claude vs  chatgpt race gaem with the beast
-  
+ - Test claude vs  chatgpt race gaem with the beast
 
+
+NET:
 ```js
 // Easy way
 freekyChat.net = activateNet2({
