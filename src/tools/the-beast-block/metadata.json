@@ -1,0 +1,6 @@
+{
+  "name": "VolumeForge — 3D Blocking Volume & Collision Map Creator",
+  "description": "Precision 3D voxel and blocking-volume collision map editor with -1 to +1 unit cube space, grid snapping, transform gizmos, undo/redo history, and JSON engine export.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
