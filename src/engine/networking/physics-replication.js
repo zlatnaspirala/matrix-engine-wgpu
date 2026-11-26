@@ -1,9 +1,7 @@
 /**
- * Lightweight pose replication for paired rigid bodies in the native WebRTC demo.
- *
- * One peer simulates each paired body. Other peers keep a kinematic copy and
- * receive only position + rotation. This deliberately uses the existing
- * PhysicsBridge API and does not modify physics workers or forward inputs.
+ * Pose replication for paired video cubes in the native WebRTC public-chat demo.
+ * The peer whose ID is embedded in local-video-<peerId> owns that body.
+ * Its remote-video twin is kinematic and receives authoritative pose updates.
  */
 export function activatePhysicsReplication(engine, net, options = {}) {
   const interval = Math.max(25, options.interval || 50);
@@ -26,10 +24,16 @@ export function activatePhysicsReplication(engine, net, options = {}) {
     return null;
   };
 
-  const electedOwner = () => {
-    const ids = [peerId(), ...Array.from(net?.peers?.keys?.() || []).map(String)]
-      .filter(Boolean).sort();
-    return ids[0] || '';
+  const ownerFor = object => {
+    const name = String(object?.name || '');
+    const remoteName = String(object?.position?.remoteName || '');
+    if(name.startsWith('local-video-')) return name.slice('local-video-'.length);
+    if(remoteName.startsWith('local-video-')) return remoteName.slice('local-video-'.length);
+    return '';
+  };
+
+  const sendTo = (message, target) => {
+    if(net?.send) net.send({...message, toRemote: [target]}, [target]);
   };
 
   const setReplicaMode = (idx, isOwner) => {
@@ -48,24 +52,36 @@ export function activatePhysicsReplication(engine, net, options = {}) {
   const receive = event => {
     const message = event.detail?.data;
     const sender = String(event.detail?.peerId || '');
-    if(!started || !message || message.type !== 'beast-physics-pose') return;
-    if(message.room !== net?.sessionName || !sender || message.ownerPeerId === peerId()) return;
-    if(typeof message.remoteName !== 'string' || !message.remoteName) return;
-    if(!message.position || !message.quaternion) return;
+    if(!started || !message || message.room !== net?.sessionName || !sender) return;
+    const p = physics();
+    if(!p) return;
 
-    const body = findBody(message.remoteName);
-    if(!body) return; // The periodic publisher will send again after scene creation.
+    if(message.type === 'beast-physics-pose') {
+      if(message.ownerPeerId !== sender || message.ownerPeerId === peerId()) return;
+      if(typeof message.remoteName !== 'string' || !message.remoteName ||
+         !message.position || !message.quaternion) return;
 
-    const sequenceKey = bodyKey(message.remoteName, message.sceneName || '');
-    const previous = lastSequence.get(sequenceKey) || 0;
-    if(Number(message.seq) <= previous) return;
-    lastSequence.set(sequenceKey, Number(message.seq) || previous + 1);
+      const body = findBody(message.remoteName);
+      if(!body || ownerFor(body.object) !== message.ownerPeerId) return;
+      const seqKey = sender + '|' + message.remoteName;
+      const previous = lastSequence.get(seqKey) || 0;
+      if(Number(message.seq) <= previous) return;
+      lastSequence.set(seqKey, Number(message.seq) || previous + 1);
 
-    setReplicaMode(body.idx, false);
-    const {x, y, z} = message.position;
-    const q = message.quaternion;
-    physics()?.setKinematicTransform?.(body.idx, x, y, z);
-    physics()?.setKinematicRotation?.(body.idx, q.x, q.y, q.z, q.w);
+      setReplicaMode(body.idx, false);
+      const pos = message.position, q = message.quaternion;
+      p.setKinematicTransform?.(body.idx, pos.x, pos.y, pos.z);
+      p.setKinematicRotation?.(body.idx, q.x, q.y, q.z, q.w);
+      return;
+    }
+
+    if(message.type === 'beast-physics-input') {
+      if(message.ownerPeerId !== peerId() || !message.targetName) return;
+      const target = findBody(message.targetName);
+      if(!target || ownerFor(target.object) !== peerId()) return;
+      if(message.action === 'impulse') p.applyImpulse?.(target.idx, message.vector || {});
+      else if(message.action === 'torque') p.applyTorque?.(target.idx, message.vector || {});
+    }
   };
 
   const publish = async () => {
@@ -73,14 +89,13 @@ export function activatePhysicsReplication(engine, net, options = {}) {
     const me = peerId();
     if(disposed || !started || !me || !net?.send || !p?._bodyIndexMap) return;
 
-    const owner = electedOwner();
     for(const [idx, object] of p._bodyIndexMap) {
       const remoteName = object?.position?.remoteName;
       if(typeof remoteName !== 'string' || !remoteName) continue;
-
-      const key = bodyKey(object.name, remoteName);
+      const owner = ownerFor(object);
+      if(!owner) continue;
       const isOwner = owner === me;
-      setReplicaMode(idx, !isOwner);
+      setReplicaMode(idx, isOwner);
       if(!isOwner || inFlight.has(idx)) continue;
 
       inFlight.add(idx);
@@ -97,7 +112,7 @@ export function activatePhysicsReplication(engine, net, options = {}) {
           ownerPeerId: me,
           sceneName: object.name,
           remoteName,
-          bodyKey: key,
+          bodyKey: bodyKey(object.name, remoteName),
           position,
           quaternion
         });
@@ -109,6 +124,39 @@ export function activatePhysicsReplication(engine, net, options = {}) {
     }
   };
 
+  const forwardInput = (action, idx, vector) => {
+    const object = physics()?._bodyIndexMap?.get(idx);
+    const remoteName = object?.position?.remoteName;
+    const owner = ownerFor(object);
+    if(!object || !remoteName || !owner || owner === peerId()) return false;
+    sendTo({
+      type: 'beast-physics-input',
+      room: net.sessionName,
+      ownerPeerId: owner,
+      targetName: remoteName,
+      action,
+      vector,
+      seq: ++sequence
+    }, owner);
+    return true;
+  };
+
+  const p = physics();
+  const originalImpulse = p?.applyImpulse?.bind(p);
+  const originalTorque = p?.applyTorque?.bind(p);
+  if(p && originalImpulse) {
+    p.applyImpulse = (idx, vector) => {
+      if(forwardInput('impulse', idx, vector)) return;
+      return originalImpulse(idx, vector);
+    };
+  }
+  if(p && originalTorque) {
+    p.applyTorque = (idx, vector) => {
+      if(forwardInput('torque', idx, vector)) return;
+      return originalTorque(idx, vector);
+    };
+  }
+
   const start = () => {
     if(disposed || started || !peerId()) return;
     started = true;
@@ -118,11 +166,6 @@ export function activatePhysicsReplication(engine, net, options = {}) {
 
   addEventListener('webrtc-message', receive);
   addEventListener('net-ready', start);
-  addEventListener('webrtc-peer-ready', () => {
-    // Ownership is recalculated from the current peer list on the next tick.
-  });
-
-  // Support callers that activate replication after net-ready has already fired.
   if(peerId()) start();
 
   return {
@@ -131,6 +174,8 @@ export function activatePhysicsReplication(engine, net, options = {}) {
       if(timer) clearInterval(timer);
       removeEventListener('webrtc-message', receive);
       removeEventListener('net-ready', start);
+      if(p && originalImpulse) p.applyImpulse = originalImpulse;
+      if(p && originalTorque) p.applyTorque = originalTorque;
       remoteBodies.clear();
       lastSequence.clear();
       inFlight.clear();
