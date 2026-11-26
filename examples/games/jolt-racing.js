@@ -148,10 +148,15 @@ export var joltRaceGame = function() {
           COURSE.zRadius * Math.cos(angle)
         ) * 180 / Math.PI;
         const y = terrainHeight(p.x, p.z);
+        const tangentX = -COURSE.xRadius * Math.sin(angle);
+        const tangentZ = COURSE.zRadius * Math.cos(angle);
+        const tangentLength = Math.hypot(tangentX, tangentZ) || 1;
+        const normalX = tangentZ / tangentLength;
+        const normalZ = -tangentX / tangentLength;
         for(const side of [-1, 1]) {
           world.addMeshObj({
             name: `checkpoint-${index}-post-${side}`,
-            position: {x: p.x + side * 4.7, y: y + 1.8, z: p.z},
+            position: {x: p.x + normalX * side * 4.7, y: y + 1.8, z: p.z + normalZ * side * 4.7},
             scale: [0.55, 3.6, 0.55],
             texturesPaths: ['./res/textures/gold-1.webp'],
             material: {type: 'standard', share: true},
@@ -321,23 +326,17 @@ export var joltRaceGame = function() {
 
           const gate = checkpoints[nextCheckpoint];
           if(Math.hypot(position.x - gate.x, position.z - gate.z) < 8.5) {
-            nextCheckpoint++;
-            if(nextCheckpoint >= checkpoints.length) {
-              nextCheckpoint = 0;
-            } else if(nextCheckpoint === 0) {
-              // The start/finish gate is checkpoint zero; crossing it completes a lap.
+            if(nextCheckpoint === 0) {
+              lap++;
+              const now = performance.now();
+              const lapTime = (now - lapStartedAt) / 1000;
+              if(!bestLap || lapTime < bestLap) bestLap = lapTime;
+              lapStartedAt = now;
+              nextCheckpoint = 1;
+            } else {
+              nextCheckpoint++;
+              if(nextCheckpoint >= checkpoints.length) nextCheckpoint = 0;
             }
-          }
-
-          // A lap is counted only after the three intermediate gates and then
-          // crossing the start/finish gate in the correct order.
-          if(nextCheckpoint === 0 && Math.hypot(position.x - checkpoints[0].x, position.z - checkpoints[0].z) < 8.5) {
-            lap++;
-            const now = performance.now();
-            const lapTime = (now - lapStartedAt) / 1000;
-            if(!bestLap || lapTime < bestLap) bestLap = lapTime;
-            lapStartedAt = now;
-            nextCheckpoint = 1;
           }
 
           const now = performance.now();
