@@ -19,6 +19,21 @@ export var loadFreekyChat = function() {
   let pendingLocalStream = null;
   let creatingLocalVideoCube = false;
 
+  // Stable per-peer spawn slot: the same peer's local cube and remote twin
+  // must land at the same coordinates on every participant, without all peers
+  // being spawned at the origin.
+  const videoCubePosition = peerId => {
+    const id = String(peerId || 'local');
+    let hash = 2166136261;
+    for(let i = 0;i < id.length;i++) {
+      hash ^= id.charCodeAt(i);
+      hash = Math.imul(hash, 16777619);
+    }
+    const x = ((hash >>> 0) & 0xffff) / 65535 * 36 - 18;
+    const z = (((hash >>> 16) & 0xffff) / 65535 * 24) - 22;
+    return {x, y: 8, z};
+  };
+
   // Native WebRTC owns exactly one DOM video element per remote stream.
   // The example only consumes that element for the engine's video texture.
   const addRemoteVideoCube = async (peerId, stream, video, trackId) => {
@@ -48,7 +63,7 @@ export var loadFreekyChat = function() {
     const index = remoteVideoCubes.size;
     const object = freekyChat.addMeshObj({
       material: {type: 'standard'},
-      position: {x: 0, y: 8, z: -10},
+      position: videoCubePosition(localConnectionId),
       rotation: {x: 0, y: 0, z: 90},
       rotationSpeed: {x: 0, y: 0, z: 0},
       scale: [2, 2, 2],
@@ -100,7 +115,7 @@ export var loadFreekyChat = function() {
     const safeConnectionId = String(localConnectionId).replace(/[^a-zA-Z0-9_-]/g, '_');
     const object = freekyChat.addMeshObj({
       material: {type: 'standard'},
-      position: {x: 0, y: 8, z: -10},
+      position: videoCubePosition(peerId),
       rotation: {x: 0, y: 0, z: 90},
       rotationSpeed: {x: 0, y: 0, z: 0},
       scale: [2, 2, 2],
