@@ -36149,8 +36149,10 @@ function addRaycastsListener(canvasId = "canvas1", eventName = "click") {
     const { rayOrigin, rayDirection, screen: screen2 } = getRayFromMouse(event, canvas, camera);
     let closestHit = null;
     for (const object of app.mainRenderBundle) {
-      if (!object.raycast?.enabled) continue;
-      const { boxMin, boxMax } = computeWorldVertsAndAABB(object);
+      if (!object?.raycast?.enabled || typeof object.getModelMatrix !== "function") continue;
+      const bounds = computeWorldVertsAndAABB(object);
+      if (!bounds) continue;
+      const { boxMin, boxMax } = bounds;
       const hitAABB = rayIntersectsAABB(rayOrigin, rayDirection, boxMin, boxMax);
       if (!hitAABB) continue;
       const sphereHit = rayIntersectsSphere(rayOrigin, rayDirection, object.position, object.raycast.radius);
@@ -39498,16 +39500,10 @@ var PhysicsBridge = class {
     this._worker.postMessage({ cmd: "setKinematicRotation", idx, x: x2, y: y2, z, w });
   }
   setKinematicTransform(idx, x2, y2, z = 0) {
-    let count = 0;
-    for (const [idx_, meObj] of this._bodyIndexMap) {
-      if (!meObj.isKinematic && idx_ !== idx) continue;
-      meObj.position.setPosition(x2, y2, z);
-      count++;
-    }
-    this._kinematicCount = count;
-    if (count > 0) {
-      this._worker.postMessage({ cmd: "setKinematicTransform", count, idx, x: x2, y: y2, z });
-    }
+    const meObj = this._bodyIndexMap.get(idx);
+    if (meObj?.position?.setPosition) meObj.position.setPosition(x2, y2, z, false);
+    if (idx === void 0 || idx < 0) return;
+    this._worker.postMessage({ cmd: "setKinematicTransform", count: 1, idx, x: x2, y: y2, z });
   }
   updatePhysics() {
     this._worker.postMessage({ cmd: "step" });
@@ -39572,11 +39568,15 @@ var PhysicsBridge = class {
     this._worker.postMessage({ cmd: "deactivate", idx });
   }
   switchToKinematic(idx) {
-    if (idx === void 0) return;
+    if (idx === void 0 || idx < 0) return;
+    const meObj = this._bodyIndexMap.get(idx);
+    if (meObj) meObj.isKinematic = true;
     this._worker.postMessage({ cmd: "switchToKinematic", idx });
   }
   switchToDinamic(idx) {
     if (idx === void 0) return;
+    const meObj = this._bodyIndexMap.get(idx);
+    if (meObj) meObj.isKinematic = false;
     this._worker.postMessage({ cmd: "switchToDinamic", idx });
   }
   setSleepingThresholds(idx, linear, angular) {
@@ -39683,6 +39683,10 @@ var PhysicsBridge = class {
   }
   isSleeping(idx) {
     return this._send("isSleeping", { idx });
+  }
+  getBodyState(idx) {
+    if (idx === void 0 || idx < 0) return Promise.resolve(null);
+    return this._send("getBodyState", { idx });
   }
   setKinematicInterpolate(idx, targetX, targetY, targetZ = 0, lerpFactor) {
     this._worker.postMessage({ cmd: "setKinematicInterpolate", idx, targetX, targetY, targetZ, lerpFactor });
@@ -39812,6 +39816,10 @@ var PhysicsBridge = class {
         break;
       case "getDiceFace":
         this._pending.get(data.id)?.(data.face);
+        this._pending.delete(data.id);
+        break;
+      case "getBodyState":
+        this._pending.get(data.id)?.(data.state || null);
         this._pending.delete(data.id);
         break;
       case "isSleeping":
@@ -46870,6 +46878,168 @@ var StreamSlotManager = {
   }
 };
 
+// src/engine/networking/physics-replication.js
+function activatePhysicsReplication(engine, net, options2 = {}) {
+  const interval = Math.max(25, options2.interval || 50);
+  const remoteBodies = /* @__PURE__ */ new Set();
+  const lastSequence = /* @__PURE__ */ new Map();
+  const inFlight = /* @__PURE__ */ new Set();
+  let timer = null;
+  let started = false;
+  let disposed = false;
+  let sequence = 0;
+  const physics = () => engine?.matrixPhysics;
+  const peerId = () => String(net?.id || "");
+  const bodyKey = (name2, remoteName) => [String(name2), String(remoteName)].sort().join("|");
+  const findBody = (name2) => {
+    for (const [idx, object] of physics()?._bodyIndexMap || []) {
+      if (object?.name === name2) return { idx, object };
+    }
+    return null;
+  };
+  const ownerFor = (object) => {
+    const name2 = String(object?.name || "");
+    const remoteName = String(object?.position?.remoteName || "");
+    if (name2.startsWith("local-video-")) return name2.slice("local-video-".length);
+    if (remoteName.startsWith("local-video-")) return remoteName.slice("local-video-".length);
+    return "";
+  };
+  const sendTo = (message, target) => {
+    if (net?.send) net.send({ ...message, toRemote: [target] }, [target]);
+  };
+  const setReplicaMode = (idx, isOwner) => {
+    const p2 = physics();
+    if (isOwner) {
+      if (remoteBodies.has(idx)) {
+        p2?.switchToDinamic?.(idx);
+        remoteBodies.delete(idx);
+      }
+    } else if (!remoteBodies.has(idx)) {
+      p2?.switchToKinematic?.(idx);
+      remoteBodies.add(idx);
+    }
+  };
+  const receive = (event) => {
+    const message = event.detail?.data;
+    const sender = String(event.detail?.peerId || "");
+    if (!started || !message || message.room !== net?.sessionName || !sender) return;
+    const p2 = physics();
+    if (!p2) return;
+    if (message.type === "beast-physics-pose") {
+      if (message.ownerPeerId !== sender || message.ownerPeerId === peerId()) return;
+      if (typeof message.remoteName !== "string" || !message.remoteName || !message.position || !message.quaternion) return;
+      const body2 = findBody(message.remoteName);
+      if (!body2 || ownerFor(body2.object) !== message.ownerPeerId) return;
+      const seqKey = sender + "|" + message.remoteName;
+      const previous = lastSequence.get(seqKey) || 0;
+      if (Number(message.seq) <= previous) return;
+      lastSequence.set(seqKey, Number(message.seq) || previous + 1);
+      setReplicaMode(body2.idx, false);
+      const pos2 = message.position, q = message.quaternion;
+      p2.setKinematicTransform?.(body2.idx, pos2.x, pos2.y, pos2.z);
+      p2.setKinematicRotation?.(body2.idx, q.x, q.y, q.z, q.w);
+      return;
+    }
+    if (message.type === "beast-physics-input") {
+      if (message.ownerPeerId !== peerId() || !message.targetName) return;
+      const target = findBody(message.targetName);
+      if (!target || ownerFor(target.object) !== peerId()) return;
+      if (message.action === "impulse") p2.applyImpulse?.(target.idx, message.vector || {});
+      else if (message.action === "torque") p2.applyTorque?.(target.idx, message.vector || {});
+    }
+  };
+  const publish = async () => {
+    const p2 = physics();
+    const me = peerId();
+    if (disposed || !started || !me || !net?.send || !p2?._bodyIndexMap) return;
+    for (const [idx, object] of p2._bodyIndexMap) {
+      const remoteName = object?.position?.remoteName;
+      if (typeof remoteName !== "string" || !remoteName) continue;
+      const owner = ownerFor(object);
+      if (!owner) continue;
+      const isOwner = owner === me;
+      setReplicaMode(idx, isOwner);
+      if (!isOwner || inFlight.has(idx)) continue;
+      inFlight.add(idx);
+      try {
+        const [position, quaternion] = await Promise.all([
+          p2.getPosition?.(idx),
+          p2.getQuaternion?.(idx)
+        ]);
+        if (disposed || !position || !quaternion) continue;
+        net.send({
+          type: "beast-physics-pose",
+          room: net.sessionName,
+          seq: ++sequence,
+          ownerPeerId: me,
+          sceneName: object.name,
+          remoteName,
+          bodyKey: bodyKey(object.name, remoteName),
+          position,
+          quaternion
+        });
+      } catch (error) {
+        console.warn("[physics-replication] pose read failed:", object?.name, error);
+      } finally {
+        inFlight.delete(idx);
+      }
+    }
+  };
+  const forwardInput = (action, idx, vector) => {
+    const object = physics()?._bodyIndexMap?.get(idx);
+    const remoteName = object?.position?.remoteName;
+    const owner = ownerFor(object);
+    if (!object || !remoteName || !owner || owner === peerId()) return false;
+    sendTo({
+      type: "beast-physics-input",
+      room: net.sessionName,
+      ownerPeerId: owner,
+      targetName: remoteName,
+      action,
+      vector,
+      seq: ++sequence
+    }, owner);
+    return true;
+  };
+  const p = physics();
+  const originalImpulse = p?.applyImpulse?.bind(p);
+  const originalTorque = p?.applyTorque?.bind(p);
+  if (p && originalImpulse) {
+    p.applyImpulse = (idx, vector) => {
+      if (forwardInput("impulse", idx, vector)) return;
+      return originalImpulse(idx, vector);
+    };
+  }
+  if (p && originalTorque) {
+    p.applyTorque = (idx, vector) => {
+      if (forwardInput("torque", idx, vector)) return;
+      return originalTorque(idx, vector);
+    };
+  }
+  const start = () => {
+    if (disposed || started || !peerId()) return;
+    started = true;
+    timer = setInterval(publish, interval);
+    publish();
+  };
+  addEventListener("webrtc-message", receive);
+  addEventListener("net-ready", start);
+  if (peerId()) start();
+  return {
+    dispose() {
+      disposed = true;
+      if (timer) clearInterval(timer);
+      removeEventListener("webrtc-message", receive);
+      removeEventListener("net-ready", start);
+      if (p && originalImpulse) p.applyImpulse = originalImpulse;
+      if (p && originalTorque) p.applyTorque = originalTorque;
+      remoteBodies.clear();
+      lastSequence.clear();
+      inFlight.clear();
+    }
+  };
+}
+
 // examples/apps/public-chat/freeky-chat.js
 var loadFreekyChat = function() {
   let MYCUBE;
@@ -46881,6 +47051,17 @@ var loadFreekyChat = function() {
   let localVideoCube = null;
   let pendingLocalStream = null;
   let creatingLocalVideoCube = false;
+  const videoCubePosition = (peerId) => {
+    const id2 = String(peerId || "local");
+    let hash = 2166136261;
+    for (let i = 0; i < id2.length; i++) {
+      hash ^= id2.charCodeAt(i);
+      hash = Math.imul(hash, 16777619);
+    }
+    const x2 = (hash >>> 0 & 65535) / 65535 * 36 - 18;
+    const z = (hash >>> 16 & 65535) / 65535 * 24 - 22;
+    return { x: x2, y: 8, z };
+  };
   const addRemoteVideoCube = async (peerId, stream, video, trackId) => {
     if (!loadedMeshes?.cube || !freekyChat) {
       pendingRemoteStreams.set(peerId, { stream, video, trackId });
@@ -46906,7 +47087,7 @@ var loadFreekyChat = function() {
     const index = remoteVideoCubes.size;
     const object = freekyChat.addMeshObj({
       material: { type: "standard" },
-      position: { x: (index - 0.5) * 9, y: 8, z: -10 },
+      position: videoCubePosition(peerId),
       rotation: { x: 0, y: 0, z: 90 },
       rotationSpeed: { x: 0, y: 0, z: 0 },
       scale: [2, 2, 2],
@@ -46953,7 +47134,7 @@ var loadFreekyChat = function() {
     const safeConnectionId = String(localConnectionId).replace(/[^a-zA-Z0-9_-]/g, "_");
     const object = freekyChat.addMeshObj({
       material: { type: "standard" },
-      position: { x: 0, y: 8, z: -10 },
+      position: videoCubePosition(localConnectionId),
       rotation: { x: 0, y: 0, z: 90 },
       rotationSpeed: { x: 0, y: 0, z: 0 },
       scale: [2, 2, 2],
@@ -47033,6 +47214,7 @@ var loadFreekyChat = function() {
         signalingUrl: "ws://localhost:2020",
         media: { audio: true, video: true }
       });
+      freekyChat.physicsReplication = activatePhysicsReplication(freekyChat, freekyChat.net);
       addEventListener("net-ready", () => {
         console.log("net-ready- net-ready");
       });
