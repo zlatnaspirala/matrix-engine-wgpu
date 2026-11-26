@@ -47246,11 +47246,23 @@ var loadFreekyChat = function() {
       freekyChat.canvas.addEventListener("ray.hit.event", (e) => {
         console.log("ray.hit.event detected");
         let b = app.matrixPhysics.getBodyByName(e.detail.hitObject.name);
-        app.matrixPhysics.applyImpulse(b, new PVector(
-          e.detail.rayDirection[0] * strength,
-          e.detail.rayDirection[1] * strength,
-          e.detail.rayDirection[2] * strength
-        ));
+        const hitNormal = e.detail.hitNormal;
+        const rayDirection = e.detail.rayDirection;
+        let impulseDirection;
+        if (hitNormal && hitNormal.length >= 3) {
+          const length2 = Math.hypot(hitNormal[0], hitNormal[1], hitNormal[2]);
+          impulseDirection = length2 > 1e-4 ? [hitNormal[0] / length2, hitNormal[1] / length2, hitNormal[2] / length2] : null;
+        }
+        if (!impulseDirection && rayDirection?.length >= 3) {
+          impulseDirection = [-rayDirection[0], -rayDirection[1], -rayDirection[2]];
+        }
+        if (impulseDirection) {
+          app.matrixPhysics.applyImpulse(b, new PVector(
+            impulseDirection[0] * strength,
+            impulseDirection[1] * strength,
+            impulseDirection[2] * strength
+          ));
+        }
         applyWindToCloth();
       });
       function applyWindToCloth(startIndex = 1, count = 121, nx = 10) {

@@ -17,6 +17,9 @@
  - addHeightfield for AMMO ,cannonjs + example
  - addVehicle for AMMO, cannonjs + example
 
+  - Test claude vs  chatgpt race gaem with the beast
+  
+
 ```js
 // Easy way
 freekyChat.net = activateNet2({
