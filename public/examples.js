@@ -16126,14 +16126,14 @@ var Position = class {
   get Z() {
     return parseFloat(this.z);
   }
-  setPosition(newx, newy, newz) {
+  setPosition(newx, newy, newz, EMIT = false) {
     this.x = newx;
     this.y = newy;
     this.z = newz;
     this.targetX = newx;
     this.targetY = newy;
     this.targetZ = newz;
-    this.inMove = true;
+    if (EMIT === true) this.inMove = true;
   }
 };
 var Rotation = class {
@@ -22769,6 +22769,8 @@ fn fsMain(input : VSOut) -> FragOut {
 var GeometryFactory = class _GeometryFactory {
   static create(type2, size2 = 1, segments = 16, options2 = {}) {
     switch (type2) {
+      case "heightfield":
+        return _GeometryFactory.heightfield(options2.heightData, options2.columns, options2.rows, options2.elementSize || 1);
       case "quad":
         return _GeometryFactory.quad(size2);
       case "cube":
@@ -22827,6 +22829,43 @@ var GeometryFactory = class _GeometryFactory {
       default:
         throw new Error(`Unknown geometry: ${type2}`);
     }
+  }
+  static heightfield(heightData, columns, rows, elementSize = 1) {
+    if (!heightData || !Number.isInteger(columns) || !Number.isInteger(rows) || columns < 2 || rows < 2 || heightData.length !== columns * rows) {
+      throw new RangeError("heightfield requires heightData with columns * rows samples and dimensions >= 2");
+    }
+    const positions = new Float32Array(columns * rows * 3);
+    const uvs = new Float32Array(columns * rows * 2);
+    const vertexCount = columns * rows;
+    if (vertexCount > 65535) {
+      throw new RangeError("ProceduralMeshObj currently uses uint16 indices; heightfield must contain <= 65535 vertices");
+    }
+    const indices = new Uint16Array((columns - 1) * (rows - 1) * 6);
+    const halfX = (columns - 1) * elementSize * 0.5;
+    const halfZ = (rows - 1) * elementSize * 0.5;
+    for (let z2 = 0; z2 < rows; z2++) {
+      for (let x3 = 0; x3 < columns; x3++) {
+        const i2 = z2 * columns + x3;
+        positions[i2 * 3] = x3 * elementSize - halfX;
+        positions[i2 * 3 + 1] = heightData[i2];
+        positions[i2 * 3 + 2] = z2 * elementSize - halfZ;
+        uvs[i2 * 2] = x3 / (columns - 1);
+        uvs[i2 * 2 + 1] = z2 / (rows - 1);
+      }
+    }
+    let t3 = 0;
+    for (let z2 = 0; z2 < rows - 1; z2++) {
+      for (let x3 = 0; x3 < columns - 1; x3++) {
+        const a2 = z2 * columns + x3, b2 = a2 + 1, c2 = a2 + columns, d2 = c2 + 1;
+        indices[t3++] = a2;
+        indices[t3++] = c2;
+        indices[t3++] = b2;
+        indices[t3++] = b2;
+        indices[t3++] = c2;
+        indices[t3++] = d2;
+      }
+    }
+    return { positions, uvs, indices };
   }
   static computeFlatNormals(positions, indices) {
     const normals = new Float32Array(positions.length);
@@ -47850,8 +47889,10 @@ function addRaycastsListener(canvasId = "canvas1", eventName = "click") {
     const { rayOrigin, rayDirection, screen: screen2 } = getRayFromMouse(event, canvas, camera);
     let closestHit = null;
     for (const object of app.mainRenderBundle) {
-      if (!object.raycast?.enabled) continue;
-      const { boxMin, boxMax } = computeWorldVertsAndAABB(object);
+      if (!object?.raycast?.enabled || typeof object.getModelMatrix !== "function") continue;
+      const bounds = computeWorldVertsAndAABB(object);
+      if (!bounds) continue;
+      const { boxMin, boxMax } = bounds;
       const hitAABB = rayIntersectsAABB(rayOrigin, rayDirection, boxMin, boxMax);
       if (!hitAABB) continue;
       const sphereHit = rayIntersectsSphere(rayOrigin, rayDirection, object.position, object.raycast.radius);
@@ -51254,16 +51295,10 @@ var PhysicsBridge = class {
     this._worker.postMessage({ cmd: "setKinematicRotation", idx, x: x3, y: y3, z: z2, w: w2 });
   }
   setKinematicTransform(idx, x3, y3, z2 = 0) {
-    let count = 0;
-    for (const [idx_, meObj] of this._bodyIndexMap) {
-      if (!meObj.isKinematic && idx_ !== idx) continue;
-      meObj.position.setPosition(x3, y3, z2);
-      count++;
-    }
-    this._kinematicCount = count;
-    if (count > 0) {
-      this._worker.postMessage({ cmd: "setKinematicTransform", count, idx, x: x3, y: y3, z: z2 });
-    }
+    const meObj = this._bodyIndexMap.get(idx);
+    if (meObj?.position?.setPosition) meObj.position.setPosition(x3, y3, z2, false);
+    if (idx === void 0 || idx < 0) return;
+    this._worker.postMessage({ cmd: "setKinematicTransform", count: 1, idx, x: x3, y: y3, z: z2 });
   }
   updatePhysics() {
     this._worker.postMessage({ cmd: "step" });
@@ -51328,11 +51363,15 @@ var PhysicsBridge = class {
     this._worker.postMessage({ cmd: "deactivate", idx });
   }
   switchToKinematic(idx) {
-    if (idx === void 0) return;
+    if (idx === void 0 || idx < 0) return;
+    const meObj = this._bodyIndexMap.get(idx);
+    if (meObj) meObj.isKinematic = true;
     this._worker.postMessage({ cmd: "switchToKinematic", idx });
   }
   switchToDinamic(idx) {
     if (idx === void 0) return;
+    const meObj = this._bodyIndexMap.get(idx);
+    if (meObj) meObj.isKinematic = false;
     this._worker.postMessage({ cmd: "switchToDinamic", idx });
   }
   setSleepingThresholds(idx, linear, angular) {
@@ -51366,7 +51405,34 @@ var PhysicsBridge = class {
     if (constraintIdx === void 0) return;
     this._worker.postMessage({ cmd: "enableAngularMotor", constraintIdx, enable, targetVelocity, maxMotorImpulse });
   }
-  // Ammo only. Meshes are created with physics: {enabled: false}; the vehicle registers the bodies.
+  // Heightfield terrain for Ammo, Cannon, and Jolt. heightData is a row-major Float32Array (rows * columns).
+  // The selected physics worker owns the native heightfield shape for its lifetime.
+  addHeightfield({ heightData, columns, rows, elementSize = 1, position = { x: 0, y: 0, z: 0 }, minHeight, maxHeight, friction = 1, name: name2 = "heightfield" } = {}) {
+    if (!(heightData instanceof Float32Array)) throw new TypeError("heightData must be a Float32Array");
+    if (!Number.isInteger(columns) || !Number.isInteger(rows) || columns < 2 || rows < 2) {
+      throw new RangeError("Heightfield columns and rows must both be integers >= 2");
+    }
+    if (heightData.length !== columns * rows) {
+      throw new RangeError(`heightData length must equal columns * rows (${columns * rows})`);
+    }
+    if (!Number.isFinite(elementSize) || elementSize <= 0) throw new RangeError("elementSize must be > 0");
+    return this._send("addBody", {
+      pOptions: {
+        geometry: "Heightfield",
+        heightData,
+        columns,
+        rows,
+        elementSize,
+        position,
+        minHeight,
+        maxHeight,
+        friction,
+        mass: 0,
+        name: name2
+      }
+    }).then((idx) => idx);
+  }
+  // Ammo, Cannon, and Jolt vehicles register chassis and wheel snapshot slots here.
   addVehicle(chassisObj, wheelObjs, pOptions) {
     return this._send("addVehicle", { pOptions }).then(({ idx, vid, wheelStart }) => {
       for (const [i2, obj2] of [[idx, chassisObj], ...wheelObjs.map((w2, k2) => [wheelStart + k2, w2])]) {
@@ -51412,6 +51478,10 @@ var PhysicsBridge = class {
   }
   isSleeping(idx) {
     return this._send("isSleeping", { idx });
+  }
+  getBodyState(idx) {
+    if (idx === void 0 || idx < 0) return Promise.resolve(null);
+    return this._send("getBodyState", { idx });
   }
   setKinematicInterpolate(idx, targetX, targetY, targetZ = 0, lerpFactor) {
     this._worker.postMessage({ cmd: "setKinematicInterpolate", idx, targetX, targetY, targetZ, lerpFactor });
@@ -51541,6 +51611,10 @@ var PhysicsBridge = class {
         break;
       case "getDiceFace":
         this._pending.get(data.id)?.(data.face);
+        this._pending.delete(data.id);
+        break;
+      case "getBodyState":
+        this._pending.get(data.id)?.(data.state || null);
         this._pending.delete(data.id);
         break;
       case "isSleeping":
@@ -85535,16 +85609,48 @@ var carAmmo = function() {
       }, onLoad, { scale: [1, 1, 1] });
     });
     async function onLoad(m2) {
-      carDemo.addMeshObj({
+      const terrainColumns = 65, terrainRows = 65, terrainElementSize = 2;
+      const terrainHeights = new Float32Array(terrainColumns * terrainRows);
+      for (let z2 = 0; z2 < terrainRows; z2++) {
+        for (let x3 = 0; x3 < terrainColumns; x3++) {
+          const nx = (x3 - (terrainColumns - 1) * 0.5) / ((terrainColumns - 1) * 0.5);
+          const nz = (z2 - (terrainRows - 1) * 0.5) / ((terrainRows - 1) * 0.5);
+          const hills = Math.sin(nx * 5.2) * Math.cos(nz * 4.4) * 1.15;
+          const ridge = Math.sin((nx + nz) * 3.1) * 0.55;
+          const bowl = Math.max(0, 1 - (nx * nx + nz * nz)) * 0.8;
+          terrainHeights[z2 * terrainColumns + x3] = 2.5 + hills + ridge + bowl;
+        }
+      }
+      carDemo.addProceduralMeshObj({
+        name: "car-terrain",
         position: { x: 0, y: 0, z: -10 },
-        scale: [50, 0.01, 50],
+        scale: [1, 1, 1],
+        geometryA: {
+          type: "heightfield",
+          size: 1,
+          segments: terrainColumns - 1,
+          options: {
+            heightData: terrainHeights,
+            columns: terrainColumns,
+            rows: terrainRows,
+            elementSize: terrainElementSize
+          }
+        },
         texturesPaths: ["res/icons/editor/chatgpt-gen-bg-inv.webp"],
-        name: "ground",
-        mesh: m2.cube,
+        material: { type: "standard" },
         physics: { enabled: false }
       });
+      await carDemo.matrixPhysics.addHeightfield({
+        heightData: terrainHeights,
+        columns: terrainColumns,
+        rows: terrainRows,
+        elementSize: terrainElementSize,
+        position: { x: 0, y: 0, z: -10 },
+        friction: 1,
+        name: "car-terrain"
+      });
       const chassis = carDemo.addMeshObj({
-        position: { x: 0, y: 3, z: -10 },
+        position: { x: 0, y: 7, z: -10 },
         scale: [1, 0.5, 2],
         texturesPaths: ["./res/textures/rust.jpg"],
         name: "car",
@@ -85552,7 +85658,7 @@ var carAmmo = function() {
         physics: { enabled: false }
       });
       const wheels = [0, 1, 2, 3].map((i2) => carDemo.addMeshObj({
-        position: { x: 0, y: 3, z: -10 },
+        position: { x: 0, y: 6, z: -10 },
         scale: [0.25, 0.5, 0.5],
         texturesPaths: ["./res/textures/gold-1.webp"],
         name: "wheel" + i2,
@@ -85561,7 +85667,7 @@ var carAmmo = function() {
       }));
       const vid = await carDemo.matrixPhysics.addVehicle(chassis, wheels, {
         name: "car",
-        position: { x: 0, y: 3, z: -10 },
+        position: { x: 0, y: 6, z: -10 },
         rotation: { x: 0, y: 180, z: 0 },
         scale: [1, 0.5, 2],
         mass: 800,
@@ -85591,6 +85697,230 @@ var carAmmo = function() {
     }
   });
   window.app = carDemo;
+};
+
+// examples/physics-heightfield-cannon.js
+var heightfieldCannon = function() {
+  const world = new MatrixEngineWGPU({
+    canvasSize: "fullscreen",
+    useCannon: true,
+    fastRender: 0.9,
+    MAX_SPOTLIGHTS: 1,
+    MAX_BONES: 0,
+    mainCameraParams: { type: "WASD", responseCoef: 1e3 },
+    clearColor: { r: 0, g: 0.122, b: 0.122, a: 1 }
+  }, () => {
+    world.addLight();
+    addEventListener("PhysicsReady", () => {
+      downloadMeshes({
+        cube: "./res/meshes/blender/cube.obj",
+        ball: "./res/meshes/shapes/sphere.obj"
+      }, onMeshesLoaded, { scale: [1, 1, 1] });
+    });
+    async function onMeshesLoaded(meshes) {
+      const columns = 65, rows = 65, elementSize = 2;
+      const heights = new Float32Array(columns * rows);
+      for (let z2 = 0; z2 < rows; z2++) {
+        for (let x3 = 0; x3 < columns; x3++) {
+          const nx = (x3 - (columns - 1) * 0.5) / ((columns - 1) * 0.5);
+          const nz = (z2 - (rows - 1) * 0.5) / ((rows - 1) * 0.5);
+          const hills = Math.sin(nx * 5.2) * Math.cos(nz * 4.4) * 1.15;
+          const ridge = Math.sin((nx + nz) * 3.1) * 0.55;
+          const bowl = Math.max(0, 1 - (nx * nx + nz * nz)) * 0.8;
+          heights[z2 * columns + x3] = 2.5 + hills + ridge + bowl;
+        }
+      }
+      world.addProceduralMeshObj({
+        name: "cannon-heightfield-visual",
+        position: { x: 0, y: 0, z: -10 },
+        scale: [1, 1, 1],
+        geometryA: {
+          type: "heightfield",
+          size: 1,
+          segments: columns - 1,
+          options: { heightData: heights, columns, rows, elementSize }
+        },
+        texturesPaths: ["res/icons/editor/chatgpt-gen-bg-inv.webp"],
+        material: { type: "standard" },
+        physics: { enabled: false }
+      });
+      await world.matrixPhysics.addHeightfield({
+        heightData: heights,
+        columns,
+        rows,
+        elementSize,
+        position: { x: 0, y: 0, z: -10 },
+        friction: 0.9,
+        name: "cannon-heightfield"
+      });
+      const chassis = world.addMeshObj({
+        position: { x: 0, y: 5.2, z: -10 },
+        scale: [1, 0.5, 2],
+        texturesPaths: ["./res/textures/rust.jpg"],
+        name: "cannon-car-chassis",
+        mesh: meshes.cube,
+        physics: { enabled: false }
+      });
+      const wheelMeshes = [0, 1, 2, 3].map((i2) => world.addMeshObj({
+        position: { x: 0, y: 4.5, z: -10 },
+        scale: [0.25, 0.5, 0.5],
+        texturesPaths: ["./res/textures/gold-1.webp"],
+        name: "cannon-car-wheel-" + i2,
+        mesh: meshes.cube,
+        physics: { enabled: false }
+      }));
+      const vehicleId = await world.matrixPhysics.addVehicle(chassis, wheelMeshes, {
+        name: "cannon-heightfield-car",
+        position: { x: 0, y: 5.2, z: -10 },
+        rotation: { x: 0, y: 180, z: 0 },
+        scale: [1, 0.5, 2],
+        mass: 800,
+        friction: 0.5,
+        vehicle: {
+          wheelRadius: 0.5,
+          suspensionRestLength: 0.6,
+          wheelConnectionY: -0.45,
+          suspensionStiffness: 30,
+          frictionSlip: 5,
+          rollInfluence: 0.01
+        }
+      });
+      const camera = world.cameras.WASD;
+      camera.setYaw(0);
+      camera.setPitch(-0.35);
+      camera.setFollow(chassis.position, [0, 6, 14], 0.08);
+      let lastEngine = 0, lastSteering = 0, lastBrake = 0;
+      world.autoUpdate.push({
+        update: () => {
+          camera.updateFollow();
+          const digital = camera._digital;
+          const engine = digital & 2 ? 1500 : digital & 1 ? -800 : 0;
+          const steering = digital & 4 ? 0.4 : digital & 8 ? -0.4 : 0;
+          const brake = digital & 16 ? 60 : 0;
+          if (engine === lastEngine && steering === lastSteering && brake === lastBrake) return;
+          lastEngine = engine;
+          lastSteering = steering;
+          lastBrake = brake;
+          world.matrixPhysics.vehicleControl(vehicleId, engine, steering, brake);
+        }
+      });
+      world.lightContainer[0].setPosY(40);
+      world.lightContainer[0].setIntensity(70);
+    }
+  });
+  window.app = world;
+};
+
+// examples/physics-heightfield-jolt.js
+var heightfieldJolt = function() {
+  const world = new MatrixEngineWGPU({
+    canvasSize: "fullscreen",
+    useJolt: true,
+    fastRender: 0.9,
+    MAX_SPOTLIGHTS: 1,
+    MAX_BONES: 0,
+    mainCameraParams: { type: "WASD", responseCoef: 1e3 },
+    clearColor: { r: 0, g: 0.122, b: 0.122, a: 1 }
+  }, () => {
+    world.addLight();
+    addEventListener("PhysicsReady", () => {
+      downloadMeshes({
+        cube: "./res/meshes/blender/cube.obj",
+        ball: "./res/meshes/shapes/sphere.obj"
+      }, onMeshesLoaded, { scale: [1, 1, 1] });
+    });
+    async function onMeshesLoaded(meshes) {
+      const columns = 65, rows = 65, elementSize = 2;
+      const heights = new Float32Array(columns * rows);
+      for (let z2 = 0; z2 < rows; z2++) {
+        for (let x3 = 0; x3 < columns; x3++) {
+          const nx = (x3 - (columns - 1) * 0.5) / ((columns - 1) * 0.5);
+          const nz = (z2 - (rows - 1) * 0.5) / ((rows - 1) * 0.5);
+          const hills = Math.sin(nx * 5.2) * Math.cos(nz * 4.4) * 1.15;
+          const ridge = Math.sin((nx + nz) * 3.1) * 0.55;
+          const bowl = Math.max(0, 1 - (nx * nx + nz * nz)) * 0.8;
+          heights[z2 * columns + x3] = 2.5 + hills + ridge + bowl;
+        }
+      }
+      world.addProceduralMeshObj({
+        name: "jolt-heightfield-visual",
+        position: { x: 0, y: 0, z: -10 },
+        scale: [1, 1, 1],
+        geometryA: {
+          type: "heightfield",
+          size: 1,
+          segments: columns - 1,
+          options: { heightData: heights, columns, rows, elementSize }
+        },
+        texturesPaths: ["res/icons/editor/chatgpt-gen-bg-inv.webp"],
+        material: { type: "standard" },
+        physics: { enabled: false }
+      });
+      await world.matrixPhysics.addHeightfield({
+        heightData: heights,
+        columns,
+        rows,
+        elementSize,
+        position: { x: 0, y: 0, z: -10 },
+        friction: 0.9,
+        name: "jolt-heightfield"
+      });
+      const chassis = world.addMeshObj({
+        position: { x: 0, y: 5.2, z: -10 },
+        scale: [1, 0.5, 2],
+        texturesPaths: ["./res/textures/rust.jpg"],
+        name: "jolt-car-chassis",
+        mesh: meshes.cube,
+        physics: { enabled: false }
+      });
+      const wheelMeshes = [0, 1, 2, 3].map((i2) => world.addMeshObj({
+        position: { x: 0, y: 4.5, z: -10 },
+        scale: [0.25, 0.5, 0.5],
+        texturesPaths: ["./res/textures/gold-1.webp"],
+        name: "jolt-car-wheel-" + i2,
+        mesh: meshes.cube,
+        physics: { enabled: false }
+      }));
+      const vehicleId = await world.matrixPhysics.addVehicle(chassis, wheelMeshes, {
+        name: "jolt-heightfield-car",
+        position: { x: 0, y: 5.2, z: -10 },
+        rotation: { x: 0, y: 180, z: 0 },
+        scale: [1, 0.5, 2],
+        mass: 800,
+        friction: 0.5,
+        vehicle: {
+          wheelRadius: 0.5,
+          suspensionRestLength: 0.6,
+          wheelConnectionY: -0.45,
+          suspensionStiffness: 30,
+          frictionSlip: 5,
+          rollInfluence: 0.01
+        }
+      });
+      const camera = world.cameras.WASD;
+      camera.setYaw(0);
+      camera.setPitch(-0.35);
+      camera.setFollow(chassis.position, [0, 6, 14], 0.08);
+      let lastEngine = 0, lastSteering = 0, lastBrake = 0;
+      world.autoUpdate.push({
+        update: () => {
+          camera.updateFollow();
+          const digital = camera._digital;
+          const engine = digital & 1 ? 1500 : digital & 2 ? -800 : 0;
+          const steering = digital & 4 ? 0.4 : digital & 8 ? -0.4 : 0;
+          const brake = digital & 16 ? 60 : 0;
+          if (engine === lastEngine && steering === lastSteering && brake === lastBrake) return;
+          lastEngine = engine;
+          lastSteering = steering;
+          lastBrake = brake;
+          world.matrixPhysics.vehicleControl(vehicleId, engine, steering, brake);
+        }
+      });
+      world.lightContainer[0].setPosY(40);
+      world.lightContainer[0].setIntensity(70);
+    }
+  });
+  window.app = world;
 };
 
 // examples.js
@@ -85664,6 +85994,8 @@ byId2("loadPoseToGLB").addEventListener("click", () => switchDemo("49"));
 byId2("loadSlot").addEventListener("click", () => switchDemo("50"));
 byId2("volumetrixTexProj").addEventListener("click", () => switchDemo("51"));
 byId2("loadFluidsSlot").addEventListener("click", () => switchDemo("52"));
+byId2("heightfield-cannon").addEventListener("click", () => switchDemo("54"));
+byId2("heightfield-jolt").addEventListener("click", () => switchDemo("55"));
 byId2("jamb").addEventListener("click", () => window.open("https://goldenspiral.itch.io/jamb-3d-deluxe", "_blank"));
 byId2("moba").addEventListener("click", () => window.open("https://maximumroulette.com/apps/fohb", "_blank"));
 if (urlQuery["demo"] === "1") {
@@ -85772,6 +86104,12 @@ if (urlQuery["demo"] === "1") {
   loadFluidsSlot();
 } else if (urlQuery["demo"] === "53") {
   carAmmo();
+} else if (urlQuery["demo"] === "54") {
+  heightfieldCannon();
+} else if (urlQuery["demo"] === "55") {
+  heightfieldJolt();
+} else if (urlQuery["demo"] === "56") {
+  joltRaceGame();
 } else {
   loadObjFile();
 }

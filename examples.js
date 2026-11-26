@@ -60,7 +60,6 @@ import {loadFluidsSlot} from "./examples/games/slot-fluid-mashine/slot.js";
 import {carAmmo} from "./examples/physics-car-ammo.js";
 import {heightfieldCannon} from "./examples/physics-heightfield-cannon.js";
 import {heightfieldJolt} from "./examples/physics-heightfield-jolt.js";
-import {joltRaceGame} from "./examples/games/jolt-racing.js";
 
 const switchDemo = (id) => {
   const url = new URL(window.location.href);
@@ -130,7 +129,7 @@ byId('volumetrixTexProj').addEventListener("click", () => switchDemo('51'));
 byId('loadFluidsSlot').addEventListener("click", () => switchDemo('52'));
 byId('heightfield-cannon').addEventListener("click", () => switchDemo('54'));
 byId('heightfield-jolt').addEventListener("click", () => switchDemo('55'));
-byId('jolt-racing').addEventListener("click", () => switchDemo('56'));
+// byId('jolt-racing').addEventListener("click", () => switchDemo('56'));
 
 byId('jamb').addEventListener("click", () => window.open('https://goldenspiral.itch.io/jamb-3d-deluxe', '_blank'));
 byId('moba').addEventListener("click", () => window.open('https://maximumroulette.com/apps/fohb', '_blank'));
