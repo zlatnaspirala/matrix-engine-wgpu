@@ -63,7 +63,7 @@ export var loadFreekyChat = function() {
     const index = remoteVideoCubes.size;
     const object = freekyChat.addMeshObj({
       material: {type: 'standard'},
-      position: videoCubePosition(localConnectionId),
+      position: videoCubePosition(peerId),
       rotation: {x: 0, y: 0, z: 90},
       rotationSpeed: {x: 0, y: 0, z: 0},
       scale: [2, 2, 2],
@@ -115,7 +115,7 @@ export var loadFreekyChat = function() {
     const safeConnectionId = String(localConnectionId).replace(/[^a-zA-Z0-9_-]/g, '_');
     const object = freekyChat.addMeshObj({
       material: {type: 'standard'},
-      position: videoCubePosition(peerId),
+      position: videoCubePosition(localConnectionId),
       rotation: {x: 0, y: 0, z: 90},
       rotationSpeed: {x: 0, y: 0, z: 0},
       scale: [2, 2, 2],
