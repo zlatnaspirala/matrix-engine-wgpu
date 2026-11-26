@@ -1,0 +1,3426 @@
+{
+  "format": "blocking-volumes-v1",
+  "exportedAt": "2026-11-26T20:54:41.518Z",
+  "coordinateSpace": {
+    "cubeLocalMin": [
+      -1,
+      -1,
+      -1
+    ],
+    "cubeLocalMax": [
+      1,
+      1,
+      1
+    ],
+    "cubeUnitSize": [
+      2,
+      2,
+      2
+    ],
+    "handedness": "right-handed-y-up",
+    "rotationOrder": "XYZ"
+  },
+  "count": 85,
+  "volumes": [
+    {
+      "id": "qdm_1",
+      "name": "North/South Arena Deck (N)",
+      "category": "solid",
+      "position": [
+        0,
+        0.5,
+        47
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        60,
+        0.5,
+        27
+      ],
+      "halfExtents": [
+        60,
+        0.5,
+        27
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_2",
+      "name": "North/South Arena Deck (S)",
+      "category": "solid",
+      "position": [
+        0,
+        0.5,
+        -47
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        60,
+        0.5,
+        27
+      ],
+      "halfExtents": [
+        60,
+        0.5,
+        27
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_3",
+      "name": "East/West Flank Deck (E)",
+      "category": "solid",
+      "position": [
+        41,
+        0.5,
+        0
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        19,
+        0.5,
+        20
+      ],
+      "halfExtents": [
+        19,
+        0.5,
+        20
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_4",
+      "name": "East/West Flank Deck (W)",
+      "category": "solid",
+      "position": [
+        -41,
+        0.5,
+        0
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        19,
+        0.5,
+        20
+      ],
+      "halfExtents": [
+        19,
+        0.5,
+        20
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_5",
+      "name": "Central Lava Pit",
+      "category": "hazard",
+      "position": [
+        0,
+        0.2,
+        0
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        22,
+        0.2,
+        20
+      ],
+      "halfExtents": [
+        22,
+        0.2,
+        20
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_6",
+      "name": "Center Obelisk Base",
+      "category": "solid",
+      "position": [
+        0,
+        3.5,
+        0
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        6,
+        3.5,
+        6
+      ],
+      "halfExtents": [
+        6,
+        3.5,
+        6
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_7",
+      "name": "Quad / Rail Pad",
+      "category": "trigger",
+      "position": [
+        0,
+        8.2,
+        0
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        3.5,
+        1.2,
+        3.5
+      ],
+      "halfExtents": [
+        3.5,
+        1.2,
+        3.5
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_8",
+      "name": "Citadel End Wall (N)",
+      "category": "solid",
+      "position": [
+        0,
+        9,
+        73
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        60,
+        8,
+        1
+      ],
+      "halfExtents": [
+        60,
+        8,
+        1
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_9",
+      "name": "Citadel End Wall (S)",
+      "category": "solid",
+      "position": [
+        0,
+        9,
+        -73
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        60,
+        8,
+        1
+      ],
+      "halfExtents": [
+        60,
+        8,
+        1
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_10",
+      "name": "Citadel Side Wall (E)",
+      "category": "solid",
+      "position": [
+        59,
+        9,
+        0
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        8,
+        72
+      ],
+      "halfExtents": [
+        1,
+        8,
+        72
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_11",
+      "name": "Citadel Side Wall (W)",
+      "category": "solid",
+      "position": [
+        -59,
+        9,
+        0
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        8,
+        72
+      ],
+      "halfExtents": [
+        1,
+        8,
+        72
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_12",
+      "name": "Gothic Wall Buttress Q1",
+      "category": "solid",
+      "position": [
+        56.5,
+        8.5,
+        36
+      ],
+      "rotationDeg": [
+        0,
+        45,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0.785398,
+        0
+      ],
+      "scale": [
+        2.4,
+        7.5,
+        2.4
+      ],
+      "halfExtents": [
+        2.4,
+        7.5,
+        2.4
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_13",
+      "name": "Gothic Wall Buttress Q2",
+      "category": "solid",
+      "position": [
+        56.5,
+        8.5,
+        -36
+      ],
+      "rotationDeg": [
+        0,
+        -45,
+        0
+      ],
+      "rotationRad": [
+        0,
+        -0.785398,
+        0
+      ],
+      "scale": [
+        2.4,
+        7.5,
+        2.4
+      ],
+      "halfExtents": [
+        2.4,
+        7.5,
+        2.4
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_14",
+      "name": "Gothic Wall Buttress Q3",
+      "category": "solid",
+      "position": [
+        -56.5,
+        8.5,
+        36
+      ],
+      "rotationDeg": [
+        0,
+        -45,
+        0
+      ],
+      "rotationRad": [
+        0,
+        -0.785398,
+        0
+      ],
+      "scale": [
+        2.4,
+        7.5,
+        2.4
+      ],
+      "halfExtents": [
+        2.4,
+        7.5,
+        2.4
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_15",
+      "name": "Gothic Wall Buttress Q4",
+      "category": "solid",
+      "position": [
+        -56.5,
+        8.5,
+        -36
+      ],
+      "rotationDeg": [
+        0,
+        45,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0.785398,
+        0
+      ],
+      "scale": [
+        2.4,
+        7.5,
+        2.4
+      ],
+      "halfExtents": [
+        2.4,
+        7.5,
+        2.4
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_16",
+      "name": "Corner Tower Monolith Q1",
+      "category": "solid",
+      "position": [
+        52,
+        10,
+        66
+      ],
+      "rotationDeg": [
+        0,
+        45,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0.785398,
+        0
+      ],
+      "scale": [
+        4,
+        9,
+        4
+      ],
+      "halfExtents": [
+        4,
+        9,
+        4
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_17",
+      "name": "Corner Tower Monolith Q2",
+      "category": "solid",
+      "position": [
+        52,
+        10,
+        -66
+      ],
+      "rotationDeg": [
+        0,
+        -45,
+        0
+      ],
+      "rotationRad": [
+        0,
+        -0.785398,
+        0
+      ],
+      "scale": [
+        4,
+        9,
+        4
+      ],
+      "halfExtents": [
+        4,
+        9,
+        4
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_18",
+      "name": "Corner Tower Monolith Q3",
+      "category": "solid",
+      "position": [
+        -52,
+        10,
+        66
+      ],
+      "rotationDeg": [
+        0,
+        -45,
+        0
+      ],
+      "rotationRad": [
+        0,
+        -0.785398,
+        0
+      ],
+      "scale": [
+        4,
+        9,
+        4
+      ],
+      "halfExtents": [
+        4,
+        9,
+        4
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_19",
+      "name": "Corner Tower Monolith Q4",
+      "category": "solid",
+      "position": [
+        -52,
+        10,
+        -66
+      ],
+      "rotationDeg": [
+        0,
+        45,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0.785398,
+        0
+      ],
+      "scale": [
+        4,
+        9,
+        4
+      ],
+      "halfExtents": [
+        4,
+        9,
+        4
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_20",
+      "name": "Spawn Gatehouse Pier Q1",
+      "category": "solid",
+      "position": [
+        20,
+        7,
+        50
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        10,
+        6,
+        1.5
+      ],
+      "halfExtents": [
+        10,
+        6,
+        1.5
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_21",
+      "name": "Spawn Gatehouse Pier Q2",
+      "category": "solid",
+      "position": [
+        20,
+        7,
+        -50
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        10,
+        6,
+        1.5
+      ],
+      "halfExtents": [
+        10,
+        6,
+        1.5
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_22",
+      "name": "Spawn Gatehouse Pier Q3",
+      "category": "solid",
+      "position": [
+        -20,
+        7,
+        50
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        10,
+        6,
+        1.5
+      ],
+      "halfExtents": [
+        10,
+        6,
+        1.5
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_23",
+      "name": "Spawn Gatehouse Pier Q4",
+      "category": "solid",
+      "position": [
+        -20,
+        7,
+        -50
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        10,
+        6,
+        1.5
+      ],
+      "halfExtents": [
+        10,
+        6,
+        1.5
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_24",
+      "name": "Spawn Center Arch Block (N)",
+      "category": "solid",
+      "position": [
+        0,
+        10,
+        50
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        12,
+        3,
+        1.5
+      ],
+      "halfExtents": [
+        12,
+        3,
+        1.5
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_25",
+      "name": "Spawn Center Arch Block (S)",
+      "category": "solid",
+      "position": [
+        0,
+        10,
+        -50
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        12,
+        3,
+        1.5
+      ],
+      "halfExtents": [
+        12,
+        3,
+        1.5
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_26",
+      "name": "Spawn Divider Cover (N)",
+      "category": "solid",
+      "position": [
+        0,
+        2.5,
+        58
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        6,
+        1.5,
+        1.4
+      ],
+      "halfExtents": [
+        6,
+        1.5,
+        1.4
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_27",
+      "name": "Spawn Divider Cover (S)",
+      "category": "solid",
+      "position": [
+        0,
+        2.5,
+        -58
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        6,
+        1.5,
+        1.4
+      ],
+      "halfExtents": [
+        6,
+        1.5,
+        1.4
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_28",
+      "name": "Team Spawn Trigger (N)",
+      "category": "trigger",
+      "position": [
+        0,
+        2.5,
+        66
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        10,
+        1.5,
+        4
+      ],
+      "halfExtents": [
+        10,
+        1.5,
+        4
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_29",
+      "name": "Team Spawn Trigger (S)",
+      "category": "trigger",
+      "position": [
+        0,
+        2.5,
+        -66
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        10,
+        1.5,
+        4
+      ],
+      "halfExtents": [
+        10,
+        1.5,
+        4
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_30",
+      "name": "Bastion Room Inner Wall Q1",
+      "category": "solid",
+      "position": [
+        32,
+        7,
+        36
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1.4,
+        6,
+        11
+      ],
+      "halfExtents": [
+        1.4,
+        6,
+        11
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_31",
+      "name": "Bastion Room Inner Wall Q2",
+      "category": "solid",
+      "position": [
+        32,
+        7,
+        -36
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1.4,
+        6,
+        11
+      ],
+      "halfExtents": [
+        1.4,
+        6,
+        11
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_32",
+      "name": "Bastion Room Inner Wall Q3",
+      "category": "solid",
+      "position": [
+        -32,
+        7,
+        36
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1.4,
+        6,
+        11
+      ],
+      "halfExtents": [
+        1.4,
+        6,
+        11
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_33",
+      "name": "Bastion Room Inner Wall Q4",
+      "category": "solid",
+      "position": [
+        -32,
+        7,
+        -36
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1.4,
+        6,
+        11
+      ],
+      "halfExtents": [
+        1.4,
+        6,
+        11
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_34",
+      "name": "Bastion Room Cross Wall Q1",
+      "category": "solid",
+      "position": [
+        44,
+        7,
+        24
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        8,
+        6,
+        1.4
+      ],
+      "halfExtents": [
+        8,
+        6,
+        1.4
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_35",
+      "name": "Bastion Room Cross Wall Q2",
+      "category": "solid",
+      "position": [
+        44,
+        7,
+        -24
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        8,
+        6,
+        1.4
+      ],
+      "halfExtents": [
+        8,
+        6,
+        1.4
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_36",
+      "name": "Bastion Room Cross Wall Q3",
+      "category": "solid",
+      "position": [
+        -44,
+        7,
+        24
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        8,
+        6,
+        1.4
+      ],
+      "halfExtents": [
+        8,
+        6,
+        1.4
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_37",
+      "name": "Bastion Room Cross Wall Q4",
+      "category": "solid",
+      "position": [
+        -44,
+        7,
+        -24
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        8,
+        6,
+        1.4
+      ],
+      "halfExtents": [
+        8,
+        6,
+        1.4
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_38",
+      "name": "Bastion Cover Crate Q1",
+      "category": "solid",
+      "position": [
+        44,
+        2.5,
+        38
+      ],
+      "rotationDeg": [
+        0,
+        30,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0.523599,
+        0
+      ],
+      "scale": [
+        2.4,
+        1.5,
+        2.4
+      ],
+      "halfExtents": [
+        2.4,
+        1.5,
+        2.4
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_39",
+      "name": "Bastion Cover Crate Q2",
+      "category": "solid",
+      "position": [
+        44,
+        2.5,
+        -38
+      ],
+      "rotationDeg": [
+        0,
+        -30,
+        0
+      ],
+      "rotationRad": [
+        0,
+        -0.523599,
+        0
+      ],
+      "scale": [
+        2.4,
+        1.5,
+        2.4
+      ],
+      "halfExtents": [
+        2.4,
+        1.5,
+        2.4
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_40",
+      "name": "Bastion Cover Crate Q3",
+      "category": "solid",
+      "position": [
+        -44,
+        2.5,
+        38
+      ],
+      "rotationDeg": [
+        0,
+        -30,
+        0
+      ],
+      "rotationRad": [
+        0,
+        -0.523599,
+        0
+      ],
+      "scale": [
+        2.4,
+        1.5,
+        2.4
+      ],
+      "halfExtents": [
+        2.4,
+        1.5,
+        2.4
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_41",
+      "name": "Bastion Cover Crate Q4",
+      "category": "solid",
+      "position": [
+        -44,
+        2.5,
+        -38
+      ],
+      "rotationDeg": [
+        0,
+        30,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0.523599,
+        0
+      ],
+      "scale": [
+        2.4,
+        1.5,
+        2.4
+      ],
+      "halfExtents": [
+        2.4,
+        1.5,
+        2.4
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_42",
+      "name": "Flank Corridor Shield (E)",
+      "category": "solid",
+      "position": [
+        35,
+        4,
+        0
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1.4,
+        3,
+        7
+      ],
+      "halfExtents": [
+        1.4,
+        3,
+        7
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_43",
+      "name": "Flank Corridor Shield (W)",
+      "category": "solid",
+      "position": [
+        -35,
+        4,
+        0
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1.4,
+        3,
+        7
+      ],
+      "halfExtents": [
+        1.4,
+        3,
+        7
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_44",
+      "name": "Side Jump Pad (E)",
+      "category": "trigger",
+      "position": [
+        52,
+        1.5,
+        0
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        3,
+        0.5,
+        3
+      ],
+      "halfExtents": [
+        3,
+        0.5,
+        3
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_45",
+      "name": "Side Jump Pad (W)",
+      "category": "trigger",
+      "position": [
+        -52,
+        1.5,
+        0
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        3,
+        0.5,
+        3
+      ],
+      "halfExtents": [
+        3,
+        0.5,
+        3
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_46",
+      "name": "Corridor Baffle Wall Q1",
+      "category": "solid",
+      "position": [
+        49,
+        4.5,
+        13
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        4.5,
+        3.5,
+        1.2
+      ],
+      "halfExtents": [
+        4.5,
+        3.5,
+        1.2
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_47",
+      "name": "Corridor Baffle Wall Q2",
+      "category": "solid",
+      "position": [
+        49,
+        4.5,
+        -13
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        4.5,
+        3.5,
+        1.2
+      ],
+      "halfExtents": [
+        4.5,
+        3.5,
+        1.2
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_48",
+      "name": "Corridor Baffle Wall Q3",
+      "category": "solid",
+      "position": [
+        -49,
+        4.5,
+        13
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        4.5,
+        3.5,
+        1.2
+      ],
+      "halfExtents": [
+        4.5,
+        3.5,
+        1.2
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_49",
+      "name": "Corridor Baffle Wall Q4",
+      "category": "solid",
+      "position": [
+        -49,
+        4.5,
+        -13
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        4.5,
+        3.5,
+        1.2
+      ],
+      "halfExtents": [
+        4.5,
+        3.5,
+        1.2
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_50",
+      "name": "East/West Span Bridge (E)",
+      "category": "solid",
+      "position": [
+        14,
+        6.5,
+        0
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        8.5,
+        0.5,
+        4.2
+      ],
+      "halfExtents": [
+        8.5,
+        0.5,
+        4.2
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_51",
+      "name": "East/West Span Bridge (W)",
+      "category": "solid",
+      "position": [
+        -14,
+        6.5,
+        0
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        8.5,
+        0.5,
+        4.2
+      ],
+      "halfExtents": [
+        8.5,
+        0.5,
+        4.2
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_52",
+      "name": "North/South Span Bridge (N)",
+      "category": "solid",
+      "position": [
+        0,
+        6.5,
+        13
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        4.2,
+        0.5,
+        7.5
+      ],
+      "halfExtents": [
+        4.2,
+        0.5,
+        7.5
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_53",
+      "name": "North/South Span Bridge (S)",
+      "category": "solid",
+      "position": [
+        0,
+        6.5,
+        -13
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        4.2,
+        0.5,
+        7.5
+      ],
+      "halfExtents": [
+        4.2,
+        0.5,
+        7.5
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_54",
+      "name": "Bridge Side Clip (E)",
+      "category": "clip",
+      "position": [
+        14,
+        7.8,
+        4
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        8.2,
+        0.8,
+        0.25
+      ],
+      "halfExtents": [
+        8.2,
+        0.8,
+        0.25
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_55",
+      "name": "Bridge Side Clip (W)",
+      "category": "clip",
+      "position": [
+        -14,
+        7.8,
+        4
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        8.2,
+        0.8,
+        0.25
+      ],
+      "halfExtents": [
+        8.2,
+        0.8,
+        0.25
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_56",
+      "name": "Bridge Side Clip MirrorZ (E)",
+      "category": "clip",
+      "position": [
+        14,
+        7.8,
+        -4
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        8.2,
+        0.8,
+        0.25
+      ],
+      "halfExtents": [
+        8.2,
+        0.8,
+        0.25
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_57",
+      "name": "Bridge Side Clip MirrorZ (W)",
+      "category": "clip",
+      "position": [
+        -14,
+        7.8,
+        -4
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        8.2,
+        0.8,
+        0.25
+      ],
+      "halfExtents": [
+        8.2,
+        0.8,
+        0.25
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_58",
+      "name": "Bridge Approach Ramp (E)",
+      "category": "solid",
+      "position": [
+        30,
+        4,
+        0
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        -22
+      ],
+      "rotationRad": [
+        0,
+        0,
+        -0.383972
+      ],
+      "scale": [
+        8.4,
+        0.5,
+        4.2
+      ],
+      "halfExtents": [
+        8.4,
+        0.5,
+        4.2
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_59",
+      "name": "Bridge Approach Ramp (W)",
+      "category": "solid",
+      "position": [
+        -30,
+        4,
+        0
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        22
+      ],
+      "rotationRad": [
+        0,
+        0,
+        0.383972
+      ],
+      "scale": [
+        8.4,
+        0.5,
+        4.2
+      ],
+      "halfExtents": [
+        8.4,
+        0.5,
+        4.2
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_60",
+      "name": "North/South Bridge Ramp (N)",
+      "category": "solid",
+      "position": [
+        0,
+        4,
+        28
+      ],
+      "rotationDeg": [
+        22,
+        0,
+        0
+      ],
+      "rotationRad": [
+        0.383972,
+        0,
+        0
+      ],
+      "scale": [
+        4.2,
+        0.5,
+        8.4
+      ],
+      "halfExtents": [
+        4.2,
+        0.5,
+        8.4
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_61",
+      "name": "North/South Bridge Ramp (S)",
+      "category": "solid",
+      "position": [
+        0,
+        4,
+        -28
+      ],
+      "rotationDeg": [
+        -22,
+        0,
+        0
+      ],
+      "rotationRad": [
+        -0.383972,
+        0,
+        0
+      ],
+      "scale": [
+        4.2,
+        0.5,
+        8.4
+      ],
+      "halfExtents": [
+        4.2,
+        0.5,
+        8.4
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_62",
+      "name": "Upper Sniper Balcony Q1",
+      "category": "solid",
+      "position": [
+        46,
+        12.5,
+        52
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        11,
+        0.5,
+        10
+      ],
+      "halfExtents": [
+        11,
+        0.5,
+        10
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_63",
+      "name": "Upper Sniper Balcony Q2",
+      "category": "solid",
+      "position": [
+        46,
+        12.5,
+        -52
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        11,
+        0.5,
+        10
+      ],
+      "halfExtents": [
+        11,
+        0.5,
+        10
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_64",
+      "name": "Upper Sniper Balcony Q3",
+      "category": "solid",
+      "position": [
+        -46,
+        12.5,
+        52
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        11,
+        0.5,
+        10
+      ],
+      "halfExtents": [
+        11,
+        0.5,
+        10
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_65",
+      "name": "Upper Sniper Balcony Q4",
+      "category": "solid",
+      "position": [
+        -46,
+        12.5,
+        -52
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        11,
+        0.5,
+        10
+      ],
+      "halfExtents": [
+        11,
+        0.5,
+        10
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_66",
+      "name": "Balcony Support Pillar Q1",
+      "category": "solid",
+      "position": [
+        37,
+        6.5,
+        44
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1.6,
+        5.5,
+        1.6
+      ],
+      "halfExtents": [
+        1.6,
+        5.5,
+        1.6
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_67",
+      "name": "Balcony Support Pillar Q2",
+      "category": "solid",
+      "position": [
+        37,
+        6.5,
+        -44
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1.6,
+        5.5,
+        1.6
+      ],
+      "halfExtents": [
+        1.6,
+        5.5,
+        1.6
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_68",
+      "name": "Balcony Support Pillar Q3",
+      "category": "solid",
+      "position": [
+        -37,
+        6.5,
+        44
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1.6,
+        5.5,
+        1.6
+      ],
+      "halfExtents": [
+        1.6,
+        5.5,
+        1.6
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_69",
+      "name": "Balcony Support Pillar Q4",
+      "category": "solid",
+      "position": [
+        -37,
+        6.5,
+        -44
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1.6,
+        5.5,
+        1.6
+      ],
+      "halfExtents": [
+        1.6,
+        5.5,
+        1.6
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_70",
+      "name": "Upper Gallery Ramp Q1",
+      "category": "solid",
+      "position": [
+        28,
+        9.5,
+        56
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        22
+      ],
+      "rotationRad": [
+        0,
+        0,
+        0.383972
+      ],
+      "scale": [
+        8.4,
+        0.5,
+        3.6
+      ],
+      "halfExtents": [
+        8.4,
+        0.5,
+        3.6
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_71",
+      "name": "Upper Gallery Ramp Q2",
+      "category": "solid",
+      "position": [
+        28,
+        9.5,
+        -56
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        22
+      ],
+      "rotationRad": [
+        0,
+        0,
+        0.383972
+      ],
+      "scale": [
+        8.4,
+        0.5,
+        3.6
+      ],
+      "halfExtents": [
+        8.4,
+        0.5,
+        3.6
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_72",
+      "name": "Upper Gallery Ramp Q3",
+      "category": "solid",
+      "position": [
+        -28,
+        9.5,
+        56
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        -22
+      ],
+      "rotationRad": [
+        0,
+        0,
+        -0.383972
+      ],
+      "scale": [
+        8.4,
+        0.5,
+        3.6
+      ],
+      "halfExtents": [
+        8.4,
+        0.5,
+        3.6
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_73",
+      "name": "Upper Gallery Ramp Q4",
+      "category": "solid",
+      "position": [
+        -28,
+        9.5,
+        -56
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        -22
+      ],
+      "rotationRad": [
+        0,
+        0,
+        -0.383972
+      ],
+      "scale": [
+        8.4,
+        0.5,
+        3.6
+      ],
+      "halfExtents": [
+        8.4,
+        0.5,
+        3.6
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_74",
+      "name": "Upper Sky Catwalk Q1",
+      "category": "solid",
+      "position": [
+        46,
+        12.5,
+        22
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        3.5,
+        0.5,
+        20
+      ],
+      "halfExtents": [
+        3.5,
+        0.5,
+        20
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_75",
+      "name": "Upper Sky Catwalk Q2",
+      "category": "solid",
+      "position": [
+        46,
+        12.5,
+        -22
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        3.5,
+        0.5,
+        20
+      ],
+      "halfExtents": [
+        3.5,
+        0.5,
+        20
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_76",
+      "name": "Upper Sky Catwalk Q3",
+      "category": "solid",
+      "position": [
+        -46,
+        12.5,
+        22
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        3.5,
+        0.5,
+        20
+      ],
+      "halfExtents": [
+        3.5,
+        0.5,
+        20
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_77",
+      "name": "Upper Sky Catwalk Q4",
+      "category": "solid",
+      "position": [
+        -46,
+        12.5,
+        -22
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        3.5,
+        0.5,
+        20
+      ],
+      "halfExtents": [
+        3.5,
+        0.5,
+        20
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_78",
+      "name": "Arena Mega Pillar Q1",
+      "category": "solid",
+      "position": [
+        22,
+        8.5,
+        22
+      ],
+      "rotationDeg": [
+        0,
+        45,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0.785398,
+        0
+      ],
+      "scale": [
+        2.4,
+        7.5,
+        2.4
+      ],
+      "halfExtents": [
+        2.4,
+        7.5,
+        2.4
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_79",
+      "name": "Arena Mega Pillar Q2",
+      "category": "solid",
+      "position": [
+        22,
+        8.5,
+        -22
+      ],
+      "rotationDeg": [
+        0,
+        -45,
+        0
+      ],
+      "rotationRad": [
+        0,
+        -0.785398,
+        0
+      ],
+      "scale": [
+        2.4,
+        7.5,
+        2.4
+      ],
+      "halfExtents": [
+        2.4,
+        7.5,
+        2.4
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_80",
+      "name": "Arena Mega Pillar Q3",
+      "category": "solid",
+      "position": [
+        -22,
+        8.5,
+        22
+      ],
+      "rotationDeg": [
+        0,
+        -45,
+        0
+      ],
+      "rotationRad": [
+        0,
+        -0.785398,
+        0
+      ],
+      "scale": [
+        2.4,
+        7.5,
+        2.4
+      ],
+      "halfExtents": [
+        2.4,
+        7.5,
+        2.4
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_81",
+      "name": "Arena Mega Pillar Q4",
+      "category": "solid",
+      "position": [
+        -22,
+        8.5,
+        -22
+      ],
+      "rotationDeg": [
+        0,
+        45,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0.785398,
+        0
+      ],
+      "scale": [
+        2.4,
+        7.5,
+        2.4
+      ],
+      "halfExtents": [
+        2.4,
+        7.5,
+        2.4
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_82",
+      "name": "Courtyard Angled Bunker Q1",
+      "category": "solid",
+      "position": [
+        16,
+        2.8,
+        34
+      ],
+      "rotationDeg": [
+        0,
+        25,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0.436332,
+        0
+      ],
+      "scale": [
+        4.2,
+        1.8,
+        1.4
+      ],
+      "halfExtents": [
+        4.2,
+        1.8,
+        1.4
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_83",
+      "name": "Courtyard Angled Bunker Q2",
+      "category": "solid",
+      "position": [
+        16,
+        2.8,
+        -34
+      ],
+      "rotationDeg": [
+        0,
+        -25,
+        0
+      ],
+      "rotationRad": [
+        0,
+        -0.436332,
+        0
+      ],
+      "scale": [
+        4.2,
+        1.8,
+        1.4
+      ],
+      "halfExtents": [
+        4.2,
+        1.8,
+        1.4
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_84",
+      "name": "Courtyard Angled Bunker Q3",
+      "category": "solid",
+      "position": [
+        -16,
+        2.8,
+        34
+      ],
+      "rotationDeg": [
+        0,
+        -25,
+        0
+      ],
+      "rotationRad": [
+        0,
+        -0.436332,
+        0
+      ],
+      "scale": [
+        4.2,
+        1.8,
+        1.4
+      ],
+      "halfExtents": [
+        4.2,
+        1.8,
+        1.4
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "qdm_85",
+      "name": "Courtyard Angled Bunker Q4",
+      "category": "solid",
+      "position": [
+        -16,
+        2.8,
+        -34
+      ],
+      "rotationDeg": [
+        0,
+        25,
+        0
+      ],
+      "rotationRad": [
+        0,
+        0.436332,
+        0
+      ],
+      "scale": [
+        4.2,
+        1.8,
+        1.4
+      ],
+      "halfExtents": [
+        4.2,
+        1.8,
+        1.4
+      ],
+      "localMin": [
+        -1,
+        -1,
+        -1
+      ],
+      "localMax": [
+        1,
+        1,
+        1
+      ]
+    }
+  ]
+}

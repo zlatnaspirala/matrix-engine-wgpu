@@ -44,6 +44,14 @@ export var testJolt = function() {
       physicsPlayground.canvas.addEventListener("ray.hit.event", (e) => {
         console.log('ray.hit.event detected', e.detail.hitObject.name);
         let b = app.matrixPhysics.getBodyByName(e.detail.hitObject.name);
+
+        console.log({
+          name: e.detail.hitObject.name,
+          bodyIndex: b,
+          softBody: app.matrixPhysics._clothMap
+            .get(b)
+        });
+
         app.matrixPhysics.applyImpulse(b, new PVector(
           e.detail.rayDirection[0] * strength,
           e.detail.rayDirection[1] * strength,
