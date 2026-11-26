@@ -243,10 +243,30 @@ export var loadFreekyChat = function() {
       freekyChat.canvas.addEventListener("ray.hit.event", (e) => {
         console.log('ray.hit.event detected');
         let b = app.matrixPhysics.getBodyByName(e.detail.hitObject.name);
-        app.matrixPhysics.applyImpulse(b, new PVector(
-          e.detail.rayDirection[0] * strength,
-          e.detail.rayDirection[1] * strength,
-          e.detail.rayDirection[2] * strength))
+
+        // Push away from the side that was hit. Ray direction points into the
+        // object, so using it directly makes the impulse feel reversed when
+        // clicking from the opposite side. hitNormal is outward-facing.
+        const hitNormal = e.detail.hitNormal;
+        const rayDirection = e.detail.rayDirection;
+        let impulseDirection;
+        if(hitNormal && hitNormal.length >= 3) {
+          const length = Math.hypot(hitNormal[0], hitNormal[1], hitNormal[2]);
+          impulseDirection = length > 0.0001
+            ? [hitNormal[0] / length, hitNormal[1] / length, hitNormal[2] / length]
+            : null;
+        }
+        if(!impulseDirection && rayDirection?.length >= 3) {
+          // Fallback for AABB hits without a normal: push back toward the camera.
+          impulseDirection = [-rayDirection[0], -rayDirection[1], -rayDirection[2]];
+        }
+        if(impulseDirection) {
+          app.matrixPhysics.applyImpulse(b, new PVector(
+            impulseDirection[0] * strength,
+            impulseDirection[1] * strength,
+            impulseDirection[2] * strength
+          ));
+        }
         // if(e.detail.hitObject.name === 'test') {
         applyWindToCloth()
         // }
