@@ -1,3 +1,11 @@
+/**
+ * This file created by:
+ * @author Nikola Lukic
+ * @email zlatnaspirala@gmail.com mart 2024-2026
+ * npm import/export sync with
+ * @version 2.2.0
+ */
+
 import MatrixEngineWGPU from "./src/world.js";
 import {downloadMeshes, makeObjSeqArg} from "./src/engine/loader-obj.js";
 import {
@@ -6,36 +14,126 @@ import {
   getRayFromMouse2, rayIntersectsSphere,
   computeWorldVertsAndAABB, rayIntersectsAABB,
   computeAABB,
-  touchCoordinate
+  touchCoordinate,
+  rayIntersectsSphere2
 } from "./src/engine/raycast.js";
-import {CameraPath, getOrientation, isMobile, ORBIT, OSCILLATOR, randomFloatFromTo, randomIntFromTo, SWITCHER} from "./src/engine/utils.js";
+import {byId, CameraPath, FullScreenManagerElement, getOrientation, isMobile, ORBIT, OSCILLATOR, randomFloatFromTo, randomIntFromTo, SWITCHER, vecOf} from "./src/engine/utils.js";
 import {uploadGLBModel} from "./src/engine/loaders/webgpu-gltf.js";
 import {MeshMorpher} from "./src/engine/procedural-mesh.js";
 import {CollisionSystem} from "./src/engine/collision-sub-system.js";
+import {BlockLoader} from "./src/engine/block-loader.js";
 import {KaleidoscopeEmitter} from "./src/engine/effects/kaleidoscopeEffectInstance.js";
 import {KaleidoscopeEffect, KaleidoscopePresets} from "./src/engine/effects/KaleidoscopeEffect.js";
 import {PVector} from "./src/engine/matrix-class.js";
 import {MapCreator} from "./src/engine/buildin/map-creator/map-creator.js";
 import {ProjectileSystem} from './src/engine/procedures/fps-projectile.js';
-import {MobileDOM} from './src/engine/cameras.js';
+import {CinematicCamera, FirstPersonCamera, MobileDOM, PlaneCamera, RPGCamera, WASDCamera} from './src/engine/cameras.js';
 import {mb} from "./src/engine/utils.js";
 import {GenGeoTexture2} from "./src/engine/effects/gen-tex2.js";
 import {MatrixStream} from "./src/engine/networking/net.js";
-import {GaussianSplatScene, SplatColorAnimator, SplatPositionAnimator} from "./src/engine/effects/splat.js";
-import {initializeSpritesForMesh, SpritesPack2D} from "./src/engine/effects/sprite2d2.js";
+import {GaussianSplatLayer, GaussianSplatScene, SplatColorAnimator, SplatPositionAnimator} from "./src/engine/effects/splat.js";
+import {initializeSpritesForMesh, SpriteInstance, SpritesPack2D} from "./src/engine/effects/sprite2d2.js";
 import {InstancedKinematicOperations} from "./src/engine/procedures/InstancedKinematicOperations.js";
-import {geoTypesForMorph} from "./src/engine/geometry-factory.js";
+import {followPath, loadNavMesh} from "./src/engine/buildin/navigation-plane/navigation.js";
+import {Player} from "./src/engine/plugin/player-object/player.js";
+import {MEConfig} from "./src/me-config.js";
+import {mocapCsCmuEdu} from "./public/res/bvh/mocap.cs.cmu.edu/mocap.js";
+import {DragRotateController} from "./src/engine/procedures/drag-rotate-object.js";
+import {SeismicPortalAdapter} from "./src/engine/buildin/externalDataHandler/adapters/seismicPortal/seismicPortal.js";
+import {ChartsEffect} from "./src/engine/effects/datagrams.js";
+import {GeometryFactory, geometryTypes, geoTypesForMorph} from "./src/engine/geometry-factory.js";
+import {WaterSimEffect} from "./src/engine/effects/waterSimEffect.js";
+import {animateRotationY} from "./src/engine/procedures/sceneobjectKinematics.js";
+import {BVHSkeletal} from "./src/engine/loaders/raw-bvh-skeletal.js";
+import {ParticleActionEmitter} from './src/engine/effects/particles.js'
+import {AudioSplatFieldEffect} from "./src/engine/effects/reacte-audio.js";
+import {MatrixTTS} from "./src/engine/tts.js";
+import {EarthquakeEffect} from "./src/engine/effects/seismic.js";
+import {ExternalDataHandler} from "./src/engine/buildin/externalDataHandler/externalDataHandler.js";
+import {CoinGeckoAdapter} from "./src/engine/buildin/externalDataHandler/adapters/coingecko/coingecko.js";
+import {PointerEffect} from "./src/engine/effects/pointerEffect.js";
+import {MANABarEffect} from "./src/engine/effects/mana-bar.js";
+import {HPBarEffect} from "./src/engine/effects/energy-bar.js";
+import {FlameEffect} from "./src/engine/effects/flame.js";
+import {FlameEmitter} from "./src/engine/effects/flame-emmiter.js";
+import {CloudsVolumetric} from "./src/engine/postprocessing/clouds-volumetric.js";
+import {CloudsVolumetric2} from "./src/engine/postprocessing/cloudes-volumetric-2.js";
+import {NativeWebRTC} from "./src/engine/networking/native-webrtc.js";
+import {BloodBurst} from "./src/engine/effects/blood-target.js";
+import {DepthWebcamVoxelEffect} from "./src/engine/effects/camera-depth.js";
+import {LaserProjectile} from "./src/engine/effects/laser.js";
+import {SplatFaceEffect} from "./src/engine/effects/splatFace.js";
+import {WaterSimSphereEffect} from "./src/engine/effects/waterSimEffectSphere.js";
 
 window.MatrixEngineWGPU = MatrixEngineWGPU;
 
 window.theBeast = {
-  MatrixEngineWGPU,
+  MEConfig,
+  KaleidoscopePresets,
+  MobileDOM,
+  geoTypesForMorph,
   touchCoordinate,
-  addRaycastsListener,
+  mb,
+  mocapCsCmuEdu,
+  geometryTypes,
+  MatrixEngineWGPU,
+  SplatFaceEffect,
+  WaterSimSphereEffect,
+  BloodBurst,
+  LaserProjectile,
+  DepthWebcamVoxelEffect,
+  CloudsVolumetric,
+  CloudsVolumetric2,
+  NativeWebRTC,
+  ExternalDataHandler,
+  FlameEmitter,
+  FullScreenManagerElement,
+  GaussianSplatLayer,
+  FirstPersonCamera,
+  PlaneCamera,
+  RPGCamera,
+  CoinGeckoAdapter,
+  SpriteInstance, // no example
+  WASDCamera,
   KaleidoscopeEffect,
+  AudioSplatFieldEffect,
+  EarthquakeEffect,
+  CinematicCamera,
   InstancedKinematicOperations,
   SpritesPack2D,
-  mb,
+  GeometryFactory,
+  Player,
+  ParticleActionEmitter,
+  DragRotateController,
+  SeismicPortalAdapter,
+  ChartsEffect,
+  PointerEffect,
+  HPBarEffect,
+  FlameEffect,
+  MANABarEffect,
+  GaussianSplatScene,
+  SplatColorAnimator,
+  SplatPositionAnimator,
+  KaleidoscopeEmitter,
+  PVector,
+  CameraPath,
+  SWITCHER,
+  OSCILLATOR,
+  CollisionSystem,
+  BlockLoader,
+  MapCreator,
+  ProjectileSystem,
+  MeshMorpher,
+  GenGeoTexture2,
+  MatrixStream,
+  WaterSimEffect,
+  MatrixTTS,
+  addRaycastsListener,
+  rayIntersectsSphere2,
+  byId,
+  vecOf,
+  BVHSkeletal,
+  animateRotationY,
   initializeSpritesForMesh,
   downloadMeshes,
   rayIntersectsSphere,
@@ -52,22 +150,7 @@ window.theBeast = {
   isMobile,
   ORBIT,
   getOrientation,
-  KaleidoscopePresets,
-  GaussianSplatScene,
-  SplatColorAnimator,
-  SplatPositionAnimator,
-  KaleidoscopeEmitter,
-  PVector,
-  CameraPath,
-  SWITCHER,
-  OSCILLATOR,
-  CollisionSystem,
-  MapCreator,
-  ProjectileSystem,
-  MeshMorpher,
-  GenGeoTexture2,
-  MatrixStream,
-  MobileDOM,
-  geoTypesForMorph
+  loadNavMesh,
+  followPath,
 }
- 
+
