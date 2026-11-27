@@ -1,6 +1,6 @@
 # The Beast Animator (`the-beast-nui-animator`)
 
-Browser-based Natural User Interface (NUI) motion capture studio that converts live webcam video, uploaded video tracks, and 478-point MediaPipe Face Mesh streams into **Mixamo-compatible `.bvh`** and **multi-animation `.glb`** files ready for **The Beast Engine (`matrix-engine-wgpu`)**, **Blender**, **Three.js**, and **Mixamo (`mixamo.com`)** pipelines.
+Browser-based Natural User Interface (NUI) motion capture studio that converts live webcam video, uploaded video tracks, and 478-point MediaPipe Face Mesh streams into **Mixamo-compatible `.bvh`** and **multi-animation `.glb`** files ready for **The Beast Engine (`matrix-engine-wgpu`)**, **Blender**, and **Mixamo (`mixamo.com`)** pipelines.
 
 Created by **Nikola Lukic** (`zlatnaspirala@gmail.com`) with **Google AI Studio**.
 
@@ -9,7 +9,7 @@ Created by **Nikola Lukic** (`zlatnaspirala@gmail.com`) with **Google AI Studio*
 ## Project Ecosystem & Distribution
 
 - **Standalone Application & Upstream Updates:**
-  [`https://github.com/zlatnaspirala/the-beast-nui-animator`](https://github.com/zlatnaspirala/the-beast-nui-animator)
+  [`https://github.com/zlatnaspirala/the-beast-animator`](https://github.com/zlatnaspirala/the-beast-nui-animator)
   This repository is the standalone NUI motion-capture studio where new tracking, retargeting, recording, and export features are developed and maintained.
 - **Engine Distribution Target (`matrix-engine-wgpu` / The Beast Project):**
   [`https://github.com/zlatnaspirala/matrix-engine-wgpu`](https://github.com/zlatnaspirala/matrix-engine-wgpu)

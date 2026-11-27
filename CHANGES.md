@@ -3,6 +3,22 @@
 
 [2.2.x]
  New postproccessing
+
+ - Added Google AI Studio projects:
+
+   - https://github.com/zlatnaspirala/the-beast-animator
+   
+   Browser-based Natural User Interface (NUI) motion capture studio that converts live webcam video, uploaded video tracks, and 478-point MediaPipe Face Mesh streams into **Mixamo-compatible `.bvh`** and **multi-animation `.glb`** files ready for **The Beast Engine (`matrix-engine-wgpu`)**, **Blender**, and **Mixamo (`mixamo.com`)** pipelines.
+
+
+   - https://github.com/zlatnaspirala/the-beast-block
+   like a tools - totally indipendent but distributed in engine repo.
+
+    A compact 3D blocking volume, level layout, and physics/asset metadata creator built for game engines.
+    - **Upstream Updates:** [https://github.com/zlatnaspirala/the-beast-block](https://github.com/zlatnaspirala/the-beast-block)
+    - **Distributed Into:** The Beast Engine — [https://github.com/zlatnaspirala/matrix-engine-wgpu](https://github.com/zlatnaspirala/matrix-engine-wgpu)
+    - **License:** [MIT](./LICENSE)
+
  - FXAA
  - GRADE
  - MotionBlurPass
