@@ -19,6 +19,7 @@
     "build.jamb": "esbuild main.js --bundle --outfile=public/app.js --format=esm",
     "hang3d": "esbuild ./examples/games/first-person-shooter/hang3d.js --bundle --outfile=public/app.js --format=esm --watch",
     "chat": "esbuild ./examples/apps/public-chat/freeky-chat.js --bundle --outfile=public/chat.js --format=esm --watch",
+    "race-game": "esbuild ./examples/games/barbarian-road-machines/brm.js --bundle --outfile=public/brm.js --format=esm --watch",
 
     "empty": "esbuild empty.js --bundle --outfile=public/empty.js --format=esm --watch",
 
