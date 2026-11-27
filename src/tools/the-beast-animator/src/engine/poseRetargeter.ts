@@ -12,8 +12,12 @@ import type { ActiveMixamoRig } from './mixamoSkeleton';
 // MediaPipe Pose 33 Landmark indices
 const LM = {
   NOSE: 0,
+  LEFT_EYE: 2,
+  RIGHT_EYE: 5,
   LEFT_EAR: 7,
   RIGHT_EAR: 8,
+  MOUTH_LEFT: 9,
+  MOUTH_RIGHT: 10,
   LEFT_SHOULDER: 11,
   RIGHT_SHOULDER: 12,
   LEFT_ELBOW: 13,
@@ -35,6 +39,25 @@ const LM = {
   LEFT_FOOT_INDEX: 31,
   RIGHT_FOOT_INDEX: 32,
 } as const;
+
+const MIRROR_POSE_PAIRS: ReadonlyArray<[number, number]> = [
+  [1, 4],
+  [2, 5],
+  [3, 6],
+  [7, 8],
+  [9, 10],
+  [11, 12],
+  [13, 14],
+  [15, 16],
+  [17, 18],
+  [19, 20],
+  [21, 22],
+  [23, 24],
+  [25, 26],
+  [27, 28],
+  [29, 30],
+  [31, 32],
+];
 
 // Reusable scratch math objects (zero per-frame allocations)
 const _vA = new THREE.Vector3();
@@ -100,6 +123,14 @@ export function retargetLandmarksToPoseFrame(
   for (let i = 0; i < 33; i++) {
     pts[i] = toThreeVec(worldLandmarks[i], options.mirrorX, new THREE.Vector3());
   }
+  if (options.mirrorX) {
+    // Mirroring across X turns anatomical Left into anatomical Right on the mirrored avatar
+    for (const [lIdx, rIdx] of MIRROR_POSE_PAIRS) {
+      const tmp = pts[lIdx];
+      pts[lIdx] = pts[rIdx];
+      pts[rIdx] = tmp;
+    }
+  }
 
   const lHip = pts[LM.LEFT_HIP];
   const rHip = pts[LM.RIGHT_HIP];
@@ -148,24 +179,80 @@ export function retargetLandmarksToPoseFrame(
   canonicalWorld.Spine1.copy(qHips).slerp(qChest, 0.66);
   canonicalWorld.Spine2.copy(qChest);
 
-  // 3. NECK & HEAD
+  // 3. NECK & HEAD (stabilized with eyes/mouth/ears + chest-relative anatomical clamp)
+  const chestRightAxis = new THREE.Vector3(1, 0, 0).applyQuaternion(qChest);
+  const chestUpAxis = new THREE.Vector3(0, 1, 0).applyQuaternion(qChest);
+  const chestFwdAxis = new THREE.Vector3(0, 0, 1).applyQuaternion(qChest);
+
   const lEar = pts[LM.LEFT_EAR];
   const rEar = pts[LM.RIGHT_EAR];
+  const lEye = pts[LM.LEFT_EYE];
+  const rEye = pts[LM.RIGHT_EYE];
   const nose = pts[LM.NOSE];
   const earMid = new THREE.Vector3().addVectors(lEar, rEar).multiplyScalar(0.5);
+  const eyeMid = new THREE.Vector3().addVectors(lEye, rEye).multiplyScalar(0.5);
+  const mouthMid = new THREE.Vector3()
+    .addVectors(pts[LM.MOUTH_LEFT], pts[LM.MOUTH_RIGHT])
+    .multiplyScalar(0.5);
 
-  const headLeft = _vA.subVectors(lEar, rEar);
-  safeNormalize(headLeft, _xAxis);
-  const headFwd = _vB.subVectors(nose, earMid);
-  safeNormalize(headFwd, _zAxis);
+  const earSpanVec = new THREE.Vector3().subVectors(lEar, rEar);
+  const eyeSpanVec = new THREE.Vector3().subVectors(lEye, rEye);
+  const headLeft = new THREE.Vector3();
+  if (earSpanVec.lengthSq() > 1e-4) {
+    headLeft.addScaledVector(earSpanVec.normalize(), 0.65);
+  }
+  if (eyeSpanVec.lengthSq() > 1e-4) {
+    headLeft.addScaledVector(eyeSpanVec.normalize(), 0.35);
+  }
+  safeNormalize(headLeft, chestRightAxis);
+  // Prevent inverted 180-deg ear flip relative to torso right axis
+  if (headLeft.dot(chestRightAxis) < -0.25) {
+    headLeft.negate();
+  }
 
-  _yAxis.crossVectors(headFwd, headLeft);
-  safeNormalize(_yAxis, new THREE.Vector3(0, 1, 0));
+  // Face forward vector with slight vertical correction (tragus/ear sits ~1.5cm above nose tip)
+  const headFwd = new THREE.Vector3().subVectors(nose, earMid);
+  headFwd.y += 0.015;
+  if (headFwd.lengthSq() < 1e-5) {
+    headFwd.copy(chestFwdAxis);
+  } else {
+    headFwd.normalize();
+  }
+  if (headFwd.dot(chestFwdAxis) < -0.3) {
+    headFwd.copy(chestFwdAxis);
+  }
+
+  const faceUp = new THREE.Vector3().subVectors(eyeMid, mouthMid);
+  const upFromFwd = new THREE.Vector3().crossVectors(headFwd, headLeft);
+  const headUp = new THREE.Vector3();
+  if (faceUp.lengthSq() > 1e-5) {
+    faceUp.normalize();
+    if (faceUp.dot(chestUpAxis) < 0) faceUp.negate();
+    headUp.addScaledVector(faceUp, 0.6);
+  }
+  if (upFromFwd.lengthSq() > 1e-5) {
+    upFromFwd.normalize();
+    if (upFromFwd.dot(chestUpAxis) < 0) upFromFwd.negate();
+    headUp.addScaledVector(upFromFwd, 0.4);
+  }
+  safeNormalize(headUp, chestUpAxis);
+
   _xAxis.copy(headLeft);
-  _zAxis.crossVectors(_xAxis, _yAxis).normalize();
+  _zAxis.crossVectors(_xAxis, headUp);
+  safeNormalize(_zAxis, chestFwdAxis);
   _yAxis.crossVectors(_zAxis, _xAxis).normalize();
+  _xAxis.crossVectors(_yAxis, _zAxis).normalize();
 
-  const qHead = basisToQuat(_xAxis, _yAxis, _zAxis, new THREE.Quaternion());
+  const qHeadRaw = basisToQuat(_xAxis, _yAxis, _zAxis, new THREE.Quaternion());
+  // Clamp relative head Euler angles vs chest so webcam depth noise cannot fold head into torso
+  const qRelHead = qChest.clone().invert().multiply(qHeadRaw).normalize();
+  const relEuler = new THREE.Euler().setFromQuaternion(qRelHead, 'YXZ');
+  relEuler.x = THREE.MathUtils.clamp(relEuler.x, -0.70, 0.60);
+  relEuler.y = THREE.MathUtils.clamp(relEuler.y, -1.25, 1.25);
+  relEuler.z = THREE.MathUtils.clamp(relEuler.z, -0.55, 0.55);
+  qRelHead.setFromEuler(relEuler);
+  const qHead = qChest.clone().multiply(qRelHead).normalize();
+
   canonicalWorld.Neck.copy(qChest).slerp(qHead, 0.45);
   canonicalWorld.Head.copy(qHead);
 

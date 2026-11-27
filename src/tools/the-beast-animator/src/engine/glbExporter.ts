@@ -388,28 +388,16 @@ export async function buildMixamoMultiGLBBuffer(
           uvPatches.push({ geo });
         }
         const si = geo.attributes.skinIndex;
-        if (si && !(si.array instanceof Uint8Array)) {
-          let maxJoint = 0;
+        if (si && !(si.array instanceof Uint16Array)) {
+          const u16 = new Uint16Array(si.count * 4);
           for (let i = 0; i < si.count; i++) {
-            maxJoint = Math.max(
-              maxJoint,
-              si.getX(i),
-              si.getY(i),
-              si.getZ(i),
-              si.getW(i),
-            );
+            u16[i * 4] = si.getX(i);
+            u16[i * 4 + 1] = si.getY(i);
+            u16[i * 4 + 2] = si.getZ(i);
+            u16[i * 4 + 3] = si.getW(i);
           }
-          if (maxJoint < 256) {
-            const u8 = new Uint8Array(si.count * 4);
-            for (let i = 0; i < si.count; i++) {
-              u8[i * 4] = si.getX(i);
-              u8[i * 4 + 1] = si.getY(i);
-              u8[i * 4 + 2] = si.getZ(i);
-              u8[i * 4 + 3] = si.getW(i);
-            }
-            skinIndexPatches.push({ geo, prev: si });
-            geo.setAttribute('skinIndex', new THREE.BufferAttribute(u8, 4));
-          }
+          skinIndexPatches.push({ geo, prev: si });
+          geo.setAttribute('skinIndex', new THREE.BufferAttribute(u16, 4));
         }
       }
 
@@ -526,32 +514,44 @@ export async function exportMixamoGLB(
   );
 }
 
-function measureFaceBasisAndGap(
+interface FaceFrameMetrics {
+  faceH: number;
+  lipGapNorm: number;
+  mouthWidthNorm: number;
+  cornerLiftNorm: number;
+  eyeGapNormL: number;
+  eyeGapNormR: number;
+  browHeightNormL: number;
+  browHeightNormR: number;
+}
+
+function measureFaceMetrics(
   pos: Float32Array,
   targetQuat: THREE.Quaternion,
-): { faceH: number; lipGapNorm: number } {
-  const getV = (idx: number, out: THREE.Vector3) =>
-    out.set(pos[idx * 3], pos[idx * 3 + 1], pos[idx * 3 + 2]);
+): FaceFrameMetrics {
+  const v = (idx: number) =>
+    new THREE.Vector3(pos[idx * 3], pos[idx * 3 + 1], pos[idx * 3 + 2]);
 
-  const p454 = new THREE.Vector3();
-  const p234 = new THREE.Vector3();
-  const p10 = new THREE.Vector3();
-  const p152 = new THREE.Vector3();
-  const p13 = new THREE.Vector3();
-  const p14 = new THREE.Vector3();
-
-  getV(454, p454);
-  getV(234, p234);
-  getV(10, p10);
-  getV(152, p152);
-  getV(13, p13);
-  getV(14, p14);
+  const p454 = v(454);
+  const p234 = v(234);
+  const p10 = v(10);
+  const p152 = v(152);
+  const p13 = v(13);
+  const p14 = v(14);
+  const p61 = v(61);
+  const p291 = v(291);
+  const p386 = v(386);
+  const p374 = v(374);
+  const p159 = v(159);
+  const p145 = v(145);
+  const p334 = v(334);
+  const p105 = v(105);
 
   const right = p454.sub(p234);
   if (right.lengthSq() < 1e-8) right.set(1, 0, 0);
   else right.normalize();
 
-  const upVec = p10.clone().sub(p152);
+  const upVec = p10.sub(p152);
   const faceH = Math.max(0.06, upVec.length());
   if (upVec.lengthSq() < 1e-8) upVec.set(0, 1, 0);
   else upVec.normalize();
@@ -565,8 +565,17 @@ function measureFaceBasisAndGap(
   const basis = new THREE.Matrix4().makeBasis(right, orthoUp, forward);
   targetQuat.setFromRotationMatrix(basis).normalize();
 
-  const lipGap = Math.max(0, p13.sub(p14).dot(orthoUp));
-  return { faceH, lipGapNorm: lipGap / faceH };
+  const cornerMid = p61.clone().add(p291).multiplyScalar(0.5);
+  return {
+    faceH,
+    lipGapNorm: Math.max(0, p13.clone().sub(p14).dot(orthoUp)) / faceH,
+    mouthWidthNorm: p61.distanceTo(p291) / faceH,
+    cornerLiftNorm: cornerMid.sub(p13).dot(orthoUp) / faceH,
+    eyeGapNormL: Math.max(0, p386.clone().sub(p374).dot(orthoUp)) / faceH,
+    eyeGapNormR: Math.max(0, p159.clone().sub(p145).dot(orthoUp)) / faceH,
+    browHeightNormL: p334.sub(p386).dot(orthoUp) / faceH,
+    browHeightNormR: p105.sub(p159).dot(orthoUp) / faceH,
+  };
 }
 
 export function buildFaceAnimationClip(
@@ -585,11 +594,11 @@ export function buildFaceAnimationClip(
     times[i] = frames[i].time;
   }
 
-  const posAttr = faceRig.skinnedMesh.geometry.attributes
-    .position as THREE.BufferAttribute;
-  const canonicalArr = posAttr.array as Float32Array;
   const qCanonicalRest = new THREE.Quaternion();
-  const restMetrics = measureFaceBasisAndGap(canonicalArr, qCanonicalRest);
+  const restMetrics = measureFaceMetrics(
+    faceRig.restFaceVertices,
+    qCanonicalRest,
+  );
   const qCanonicalRestInv = qCanonicalRest.clone().invert();
 
   const posBuffers = {} as Record<FaceExportBoneName, Float32Array>;
@@ -613,11 +622,10 @@ export function buildFaceAnimationClip(
     const frame = frames[i];
     const bs = frame.faceBlendshapes ?? {};
 
-    let measuredLipGapNorm = restMetrics.lipGapNorm;
+    let fm: FaceFrameMetrics | null = null;
     if (frame.facePositions && frame.facePositions.length >= 468 * 3) {
-      const m = measureFaceBasisAndGap(frame.facePositions, qMeasured);
+      fm = measureFaceMetrics(frame.facePositions, qMeasured);
       qHead.copy(qMeasured).multiply(qCanonicalRestInv).normalize();
-      measuredLipGapNorm = m.lipGapNorm;
     } else {
       const nr = frame.rotations.Neck;
       const hr = frame.rotations.Head;
@@ -626,31 +634,116 @@ export function buildFaceAnimationClip(
       qHead.copy(qNeck).multiply(qHeadLocal).normalize();
     }
 
-    const geomJaw = THREE.MathUtils.clamp(
-      (measuredLipGapNorm - restMetrics.lipGapNorm - 0.008) / 0.135,
-      0,
-      1,
-    );
+    const geomJaw = fm
+      ? THREE.MathUtils.clamp(
+          (fm.lipGapNorm - restMetrics.lipGapNorm - 0.005) / 0.125,
+          0,
+          1,
+        )
+      : 0;
     const jaw = THREE.MathUtils.clamp(
       Math.max(bs.jawOpen ?? 0, geomJaw),
       0,
       1,
     );
+
+    const geomSmile = fm
+      ? THREE.MathUtils.clamp(
+          ((fm.cornerLiftNorm - restMetrics.cornerLiftNorm) / 0.04) * 0.65 +
+            ((fm.mouthWidthNorm - restMetrics.mouthWidthNorm) / 0.05) * 0.35,
+          0,
+          1,
+        )
+      : 0;
+    const geomPucker = fm
+      ? THREE.MathUtils.clamp(
+          (restMetrics.mouthWidthNorm - fm.mouthWidthNorm) / 0.05,
+          0,
+          1,
+        )
+      : 0;
+    const geomBlinkL =
+      fm && restMetrics.eyeGapNormL > 0.005
+        ? THREE.MathUtils.clamp(
+            1 - fm.eyeGapNormL / restMetrics.eyeGapNormL,
+            0,
+            1,
+          )
+        : 0;
+    const geomBlinkR =
+      fm && restMetrics.eyeGapNormR > 0.005
+        ? THREE.MathUtils.clamp(
+            1 - fm.eyeGapNormR / restMetrics.eyeGapNormR,
+            0,
+            1,
+          )
+        : 0;
+    const geomBrowDeltaL = fm
+      ? THREE.MathUtils.clamp(
+          (fm.browHeightNormL - restMetrics.browHeightNormL) / 0.035,
+          -1,
+          1,
+        )
+      : 0;
+    const geomBrowDeltaR = fm
+      ? THREE.MathUtils.clamp(
+          (fm.browHeightNormR - restMetrics.browHeightNormR) / 0.035,
+          -1,
+          1,
+        )
+      : 0;
+
     const funnel = THREE.MathUtils.clamp(bs.mouthFunnel ?? 0, 0, 1);
-    const pucker = THREE.MathUtils.clamp(bs.mouthPucker ?? 0, 0, 1);
-    const smileL = THREE.MathUtils.clamp(bs.mouthSmileLeft ?? 0, 0, 1);
-    const smileR = THREE.MathUtils.clamp(bs.mouthSmileRight ?? 0, 0, 1);
+    const pucker = THREE.MathUtils.clamp(
+      Math.max(bs.mouthPucker ?? 0, geomPucker),
+      0,
+      1,
+    );
+    const smileL = THREE.MathUtils.clamp(
+      Math.max(bs.mouthSmileLeft ?? 0, geomSmile),
+      0,
+      1,
+    );
+    const smileR = THREE.MathUtils.clamp(
+      Math.max(bs.mouthSmileRight ?? 0, geomSmile),
+      0,
+      1,
+    );
     const frownL = THREE.MathUtils.clamp(bs.mouthFrownLeft ?? 0, 0, 1);
     const frownR = THREE.MathUtils.clamp(bs.mouthFrownRight ?? 0, 0, 1);
-    const blinkL = THREE.MathUtils.clamp(bs.eyeBlinkLeft ?? 0, 0, 1);
-    const blinkR = THREE.MathUtils.clamp(bs.eyeBlinkRight ?? 0, 0, 1);
+    const blinkL = THREE.MathUtils.clamp(
+      Math.max(bs.eyeBlinkLeft ?? 0, geomBlinkL),
+      0,
+      1,
+    );
+    const blinkR = THREE.MathUtils.clamp(
+      Math.max(bs.eyeBlinkRight ?? 0, geomBlinkR),
+      0,
+      1,
+    );
     const wideL = THREE.MathUtils.clamp(bs.eyeWideLeft ?? 0, 0, 1);
     const wideR = THREE.MathUtils.clamp(bs.eyeWideRight ?? 0, 0, 1);
     const browInner = THREE.MathUtils.clamp(bs.browInnerUp ?? 0, 0, 1);
-    const browUpL = THREE.MathUtils.clamp(bs.browOuterUpLeft ?? 0, 0, 1);
-    const browUpR = THREE.MathUtils.clamp(bs.browOuterUpRight ?? 0, 0, 1);
-    const browDnL = THREE.MathUtils.clamp(bs.browDownLeft ?? 0, 0, 1);
-    const browDnR = THREE.MathUtils.clamp(bs.browDownRight ?? 0, 0, 1);
+    const browUpL = THREE.MathUtils.clamp(
+      Math.max(bs.browOuterUpLeft ?? 0, Math.max(0, geomBrowDeltaL)),
+      0,
+      1,
+    );
+    const browUpR = THREE.MathUtils.clamp(
+      Math.max(bs.browOuterUpRight ?? 0, Math.max(0, geomBrowDeltaR)),
+      0,
+      1,
+    );
+    const browDnL = THREE.MathUtils.clamp(
+      Math.max(bs.browDownLeft ?? 0, Math.max(0, -geomBrowDeltaL)),
+      0,
+      1,
+    );
+    const browDnR = THREE.MathUtils.clamp(
+      Math.max(bs.browDownRight ?? 0, Math.max(0, -geomBrowDeltaR)),
+      0,
+      1,
+    );
 
     for (const name of FACE_EXPORT_BONES) {
       const rest = faceRig.restPositions[name];
@@ -664,36 +757,36 @@ export function buildFaceAnimationClip(
       if (name === 'Head') {
         // Handled with qHead directly
       } else if (name === 'Jaw') {
-        rx = jaw * 0.42;
-        py -= jaw * 0.008;
-        pz -= jaw * 0.002;
+        rx = jaw * 0.46;
+        py -= jaw * 0.009;
+        pz -= jaw * 0.0025;
       } else if (name === 'UpperLip') {
-        py += jaw * 0.003 + funnel * 0.0035;
-        pz += (pucker + funnel) * 0.004;
+        py += jaw * 0.0035 + funnel * 0.004;
+        pz += (pucker + funnel) * 0.005;
       } else if (name === 'MouthCornerL') {
-        px += smileL * 0.0055 - pucker * 0.0065;
-        py += smileL * 0.0065 - frownL * 0.006 - jaw * 0.002;
-        pz -= smileL * 0.003 - pucker * 0.005;
-        rz = smileL * 0.14 - frownL * 0.14;
+        px += smileL * 0.0065 - pucker * 0.0075;
+        py += smileL * 0.0075 - frownL * 0.0065 - jaw * 0.002;
+        pz -= smileL * 0.0035 - pucker * 0.006;
+        rz = smileL * 0.16 - frownL * 0.16;
       } else if (name === 'MouthCornerR') {
-        px -= smileR * 0.0055 - pucker * 0.0065;
-        py += smileR * 0.0065 - frownR * 0.006 - jaw * 0.002;
-        pz -= smileR * 0.003 - pucker * 0.005;
-        rz = -smileR * 0.14 + frownR * 0.14;
+        px -= smileR * 0.0065 - pucker * 0.0075;
+        py += smileR * 0.0075 - frownR * 0.0065 - jaw * 0.002;
+        pz -= smileR * 0.0035 - pucker * 0.006;
+        rz = -smileR * 0.16 + frownR * 0.16;
       } else if (name === 'UpperLidL') {
-        py += -blinkL * 0.0065 + wideL * 0.0025;
+        py += -blinkL * 0.0085 + wideL * 0.003;
       } else if (name === 'UpperLidR') {
-        py += -blinkR * 0.0065 + wideR * 0.0025;
+        py += -blinkR * 0.0085 + wideR * 0.003;
       } else if (name === 'LowerLidL') {
-        py += blinkL * 0.0032;
+        py += blinkL * 0.004;
       } else if (name === 'LowerLidR') {
-        py += blinkR * 0.0032;
+        py += blinkR * 0.004;
       } else if (name === 'BrowL') {
-        py += (browInner * 0.65 + browUpL * 0.55 - browDnL * 0.65) * 0.007;
-        rz = (browInner - browUpL) * 0.09;
+        py += (browInner * 0.65 + browUpL * 0.6 - browDnL * 0.7) * 0.0085;
+        rz = (browInner - browUpL) * 0.11;
       } else if (name === 'BrowR') {
-        py += (browInner * 0.65 + browUpR * 0.55 - browDnR * 0.65) * 0.007;
-        rz = -(browInner - browUpR) * 0.09;
+        py += (browInner * 0.65 + browUpR * 0.6 - browDnR * 0.7) * 0.0085;
+        rz = -(browInner - browUpR) * 0.11;
       }
 
       posBuffers[name][i * 3] = px;
@@ -750,11 +843,33 @@ export function buildFaceAnimationClip(
   return new THREE.AnimationClip(clipName, duration, tracks);
 }
 
+function selectNeutralReferencePositions(
+  clips: Array<{ frames: PoseFrame[] }>,
+): Float32Array | undefined {
+  let bestPos: Float32Array | undefined;
+  let bestScore = Infinity;
+  const qTmp = new THREE.Quaternion();
+
+  for (const clip of clips) {
+    for (const f of clip.frames) {
+      if (!f.facePositions || f.facePositions.length < 468 * 3) continue;
+      const m = measureFaceMetrics(f.facePositions, qTmp);
+      const score = m.lipGapNorm + (f.faceBlendshapes?.jawOpen ?? 0) * 0.25;
+      if (score < bestScore) {
+        bestScore = score;
+        bestPos = f.facePositions;
+      }
+    }
+  }
+  return bestPos;
+}
+
 export async function buildFaceMeshMultiGLBBuffer(
   clips: Array<{ name: string; frames: PoseFrame[]; fps?: number }>,
   options: { fps: number },
 ): Promise<ArrayBuffer> {
-  const faceRig = buildRiggedFaceExportModel();
+  const refPositions = selectNeutralReferencePositions(clips);
+  const faceRig = buildRiggedFaceExportModel(refPositions);
 
   try {
     const usedNames = new Set<string>();

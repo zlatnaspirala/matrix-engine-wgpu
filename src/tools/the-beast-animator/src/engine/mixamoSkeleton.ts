@@ -175,9 +175,9 @@ function addSkinnedPart(
 
   const count = g.attributes.position.count;
   const uvs = new Float32Array(count * 2);
-  // Uint8Array ensures GLTFExporter writes JOINTS_0 as UNSIGNED_BYTE (5121),
-  // matching Blender exports and matrix-engine-wgpu's 1-byte-per-component reader.
-  const skinIndices = new Uint8Array(count * 4);
+  // Uint16Array ensures GLTFExporter writes JOINTS_0 as UNSIGNED_SHORT (5123),
+  // matching glTF 2.0, Blender, Three.js, and matrix-engine-wgpu's Uint16Array reader.
+  const skinIndices = new Uint16Array(count * 4);
   const skinWeights = new Float32Array(count * 4);
 
   for (let i = 0; i < count; i++) {
