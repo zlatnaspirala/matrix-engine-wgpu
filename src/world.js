@@ -82,7 +82,7 @@ if('serviceWorker' in navigator) {
         }
       }).catch((cacheErr) => {
         APP_READY = true;
-        console.warn('cacheErr[APP_READY forced]:', cacheErr);
+        console.info('cacheErr[APP_READY forced]:', cacheErr);
       });
     });
   }
@@ -610,7 +610,7 @@ export default class MatrixEngineWGPU {
     console.log("%c ----------------------------------------------------------------------------------------------------------------- ", LOG_FUNNY);
     console.log("%c 🧬 Matrix-Engine-Wgpu 🧬 ", LOG_FUNNY_BIG_NEON);
     console.log("%c ----------------------------------------------------------------------------------------------------------------- ", LOG_FUNNY);
-    console.log("%c Version 2.1.0 [The Beast] ", LOG_FUNNY);
+    console.log("%c Version 2.2.0 [The Beast] ", LOG_FUNNY);
     console.log("%c👽", LOG_FUNNY_EXTRABIG);
     console.log(
       "%cMatrix Engine WGPU - Gate is open \n" +
@@ -618,7 +618,7 @@ export default class MatrixEngineWGPU {
       " - Optimised MediaPipe buildin library implemented (use buildin render or use the beast render).\n" +
       " - Code Creator - standalone (use engine from npm) ai top level code generator.\n" +
       " - Creative power with intuitive visual scripting work flow and ai graph generetor.\n" +
-      " - New Features: NUI-Commander Game runner, Mediapipe Face/Pose/Hand, Culling render mode CPU/GPU, FXAA, Horizontal-Z-Buffer ray/reflection, sprite2DPack (effect pass) .\n" +
+      " - New Features: FXAA, gradle, motion blur, NUI-Commander Game runner, Mediapipe Face/Pose/Hand, Culling render mode CPU/GPU, FXAA, Horizontal-Z-Buffer ray/reflection, sprite2DPack (effect pass) .\n" +
       "   2DSprite batch manager, new game template for Jumping Cube game and PlaneCamera (3d projection but follow in 2d plane x/y).\n" +
       "🔥 Mobile support: chrome-android tested. 🔥", LOG_FUNNY);
     console.log(
