@@ -294,6 +294,7 @@ export default class FluxCodexVertex {
     <hr>
     <span>Scene</span>
     <button onclick="app.editor.fluxCodexVertex.addNode('getSceneObject')">Get Scene Object</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('getRuntimeSceneObject')">Get Runtime Scene Object</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('getSceneLight')">Get Scene Light</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('getObjectAnimation')">Get Object Animation</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('setPosition')">Set Position</button>
@@ -311,6 +312,7 @@ export default class FluxCodexVertex {
     <button onclick="app.editor.fluxCodexVertex.addNode('setRotateZ')">Set RotateZ</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('setTexture')">Set Texture</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('onTargetPositionReach')">onTargetPositionReach</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('bindTargetPositionReach')">Bind Target Position Reach</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('dynamicFunction')">Function Dinamic</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('refFunction')">Function by Ref</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('getSubObject')">Get Sub Object</button>
@@ -1854,7 +1856,9 @@ export default class FluxCodexVertex {
           {name: "delay", type: "number"},
         ],
         outputs: [
-          {name: "execOut", type: "action"}
+          {name: "execOut", type: "action"},
+          {name: "complete", type: "action"},
+          {name: "objects", type: "any"},
         ],
         fields: [
           {key: "material", value: "standard"},
@@ -2751,6 +2755,20 @@ export default class FluxCodexVertex {
         exposeProps: ["name", "position", "rotation", "scale"],
       }),
 
+      getRuntimeSceneObject: (id, x, y) => ({
+        noExec: true, id,
+        title: "Get Runtime Scene Object", x, y,
+        category: "scene",
+        inputs: [{name: "objectName", type: "string"}],
+        outputs: [
+          {name: "object", type: "object"},
+          {name: "position", type: "object"},
+          {name: "name", type: "string"},
+        ],
+        fields: [{key: "objectName", value: ""}],
+        builtIn: true,
+      }),
+
       getShaderGraph: (id, x, y) => ({
         noExec: true, id,
         title: "Set Shader Graph", x, y,
@@ -3181,6 +3199,21 @@ export default class FluxCodexVertex {
         noExec: true,
         inputs: [{name: "exec", type: "action"}, {name: "position", type: "object"}],
         outputs: [{name: "exec", type: "action"}],
+        _listenerAttached: false,
+      }),
+
+      bindTargetPositionReach: (id, x, y) => ({
+        id, x, y,
+        title: "Bind Target Position Reach",
+        category: "action",
+        inputs: [
+          {name: "exec", type: "action"},
+          {name: "position", type: "object"},
+        ],
+        outputs: [
+          {name: "execOut", type: "action"},
+          {name: "reached", type: "action"},
+        ],
         _listenerAttached: false,
       }),
 
@@ -3660,6 +3693,7 @@ LIST OF INTEREST OBJECT:
     if(node.title === "On Key" && pinName == "keyCode") return node.lastKey;
     if(node.title === "Generator Pyramid" && pinName == "objectNames") return node._returnCache;
     if(node.title === "Generator Wall" && pinName == "objectNames") return node._returnCache;
+    if(node.title === "Generator" && pinName === "objects") return node._returnCache;
 
     if(node.title === "Audio Reactive Node") {
       if(pinName === "low") {
@@ -3748,6 +3782,23 @@ LIST OF INTEREST OBJECT:
 
     const inputPin = node.inputs?.find(p => p.name === pinName);
     if(inputPin) return inputPin.default ?? 0;
+
+    if(node.title === "Get Runtime Scene Object") {
+      const nameLink = this.links.find(l =>
+        l.to.node === nodeId && l.to.pin === "objectName"
+      );
+      const nameField = node.fields?.find(f => f.key === "objectName");
+      const objectName = nameLink
+        ? this.getValue(nameLink.from.node, nameLink.from.pin, visited)
+        : nameField?.value;
+      if(!objectName || !app?.getSceneObjectByName) return undefined;
+      const runtimeObject = app.getSceneObjectByName(objectName);
+      if(!runtimeObject) return undefined;
+      if(pinName === "object") return runtimeObject;
+      if(pinName === "position") return runtimeObject.position;
+      if(pinName === "name") return runtimeObject.name;
+      return undefined;
+    }
 
     if(node.title === "Get Scene Object" || node.title === "Get Scene Animation" || node.title === "Get Scene Light") {
       const objName = this._getSceneSelectedName(node);
@@ -4178,12 +4229,38 @@ LIST OF INTEREST OBJECT:
       return;
     }
 
-    if(n.title === "On Target Position Reach") {
+    if(n.title === "Bind Target Position Reach") {
+      let pos = this.getValue(nodeId, "position");
+      // Accept either a Position reference or a scene-object reference.
+      if(pos && typeof pos.onTargetPositionReach !== "function" && pos.position) {
+        pos = pos.position;
+      }
+      if(!pos || typeof pos.onTargetPositionReach !== "function") {
+        console.warn("[Bind Target Position Reach] Expected a live Position reference.");
+        this.enqueueOutputs(n, "execOut");
+        return;
+      }
 
+      if(!n._boundPositions || typeof n._boundPositions.has !== "function") {
+        n._boundPositions = new WeakSet();
+      }
+      if(!n._boundPositions.has(pos)) {
+        const graph = this;
+        const previousHandler = pos.onTargetPositionReach;
+        const handler = function(...args) {
+          if(typeof previousHandler === "function") previousHandler.apply(this, args);
+          graph.enqueueOutputs(n, "reached");
+        };
+        pos.onTargetPositionReach = handler;
+        n._boundPositions.add(pos);
+      }
+      n._listenerAttached = true;
+      this.enqueueOutputs(n, "execOut");
+      return;
+    } else if(n.title === "On Target Position Reach") {
       const pos = this.getValue(nodeId, "position");
       console.info("On Target Position Reach ", pos);
       if(!pos) return;
-      // Attach listener (engine-agnostic)
       pos.onTargetPositionReach = () => {
         this.triggerNode(n);
         this.enqueueOutputs(n, "exec");
@@ -4396,7 +4473,18 @@ LIST OF INTEREST OBJECT:
         const createdField = n.fields.find(f => f.key === "created");
         if(createdField.value == "false" || createdField.value == false) {
           console.log('!GEN! ONCE!');
-          app.physicsBodiesGenerator(mat, pos, rot, texturePath, name, geo, raycast, scale, sum, delay);
+          app.physicsBodiesGenerator(mat, pos, rot, texturePath, name, geo, raycast, scale, sum, delay)
+            .then(() => {
+              const generatedObjects = Array.from(
+                {length: Math.max(0, Number(sum) || 0)},
+                (_, index) => app.getSceneObjectByName(`${name}_${index}`)
+              ).filter(Boolean);
+              n._returnCache = generatedObjects;
+              this.enqueueOutputs(n, "complete");
+            })
+            .catch(error => {
+              console.error("[Generator] Runtime object generation failed:", error);
+            });
           // createdField.value = true;
         }
 
