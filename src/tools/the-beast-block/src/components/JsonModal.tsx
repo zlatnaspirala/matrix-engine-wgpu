@@ -73,24 +73,24 @@ export const JsonModal: React.FC<JsonModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-2 sm:p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-1.5 sm:p-3"
       role="dialog"
       aria-modal="true"
       aria-label="Engine JSON Export and Import"
     >
-      <div className="flex max-h-[90vh] w-full max-w-2xl flex-col rounded-lg border border-lime-400/20 bg-[#151922] shadow-2xl">
+      <div className="flex max-h-[92vh] w-full max-w-2xl flex-col rounded-md border border-[#00ff00]/25 bg-[#151922] shadow-2xl">
         {/* Modal Header */}
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-lime-400/15 px-4 sm:px-5 py-3">
-          <div className="flex items-center gap-2.5 sm:gap-3">
-            <h2 className="text-sm font-semibold text-lime-200">Engine JSON</h2>
-            <div className="flex items-center gap-1 rounded-md bg-[#0e1015] p-0.5">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#00ff00]/20 px-3 py-2">
+          <div className="flex items-center gap-2">
+            <h2 className="text-xs font-semibold text-[#00ff00]">Engine JSON</h2>
+            <div className="flex items-center gap-0.5 rounded bg-[#0e1015] p-0.5">
               <button
                 type="button"
                 onClick={() => setTab('export')}
-                className={`min-h-[34px] rounded px-2.5 py-1 text-xs font-medium cursor-pointer ${
+                className={`min-h-[26px] rounded px-2 py-0.5 text-[11px] font-medium cursor-pointer ${
                   tab === 'export'
-                    ? 'bg-lime-400/20 text-lime-200'
-                    : 'text-lime-400/75 hover:text-lime-200'
+                    ? 'bg-[#00ff00]/20 text-[#00ff00]'
+                    : 'text-[#00ff00]/70 hover:text-[#00ff00]'
                 }`}
               >
                 Export ({volumes.length})
@@ -98,10 +98,10 @@ export const JsonModal: React.FC<JsonModalProps> = ({
               <button
                 type="button"
                 onClick={() => setTab('import')}
-                className={`min-h-[34px] rounded px-2.5 py-1 text-xs font-medium cursor-pointer ${
+                className={`min-h-[26px] rounded px-2 py-0.5 text-[11px] font-medium cursor-pointer ${
                   tab === 'import'
-                    ? 'bg-lime-400/20 text-lime-200'
-                    : 'text-lime-400/75 hover:text-lime-200'
+                    ? 'bg-[#00ff00]/20 text-[#00ff00]'
+                    : 'text-[#00ff00]/70 hover:text-[#00ff00]'
                 }`}
               >
                 Import
@@ -113,37 +113,40 @@ export const JsonModal: React.FC<JsonModalProps> = ({
             type="button"
             onClick={onClose}
             aria-label="Close modal"
-            className="flex h-9 w-9 items-center justify-center rounded text-lime-300 hover:bg-lime-400/10 hover:text-lime-200 cursor-pointer"
+            className="flex h-7 w-7 items-center justify-center rounded text-[#00ff00] hover:bg-[#00ff00]/15 cursor-pointer"
           >
-            <X className="h-4 w-4" />
+            <X className="h-3.5 w-3.5" />
           </button>
         </div>
 
         {/* Modal Body */}
         {tab === 'export' ? (
           <>
-            <div className="border-b border-lime-400/15 bg-[#11141c] px-4 sm:px-5 py-2.5 text-xs text-lime-400/80">
-              Natural cube space <span className="font-mono-tabular text-lime-200">[-1, 1]</span>{' '}
-              per axis · World half-extents match <span className="font-mono-tabular text-lime-200">scale</span> · Right-handed Y-up
+            <div className="border-b border-[#00ff00]/20 bg-[#11141c] px-3 py-1.5 text-[11px] text-[#00ff00]/80">
+              Cube space <span className="font-mono-tabular text-[#00ff00]">[-1, 1]</span> ·
+              Includes <span className="font-mono-tabular text-[#00ff00]">ambientColor</span>,{' '}
+              <span className="font-mono-tabular text-[#00ff00]">isBlend / blendAlpha</span>,{' '}
+              <span className="font-mono-tabular text-[#00ff00]">physics</span>, and{' '}
+              <span className="font-mono-tabular text-[#00ff00]">filePath / texPath</span>
             </div>
-            <div className="flex-1 overflow-auto p-3 sm:p-5">
-              <pre className="rounded-md border border-lime-400/15 bg-[#0c0e13] p-3 sm:p-4 text-xs font-mono-tabular text-lime-300 leading-relaxed overflow-x-auto">
+            <div className="flex-1 overflow-auto p-2 sm:p-3">
+              <pre className="rounded border border-[#00ff00]/20 bg-[#0c0e13] p-2.5 text-[11px] font-mono-tabular text-[#00ff00] leading-snug overflow-x-auto">
                 {exportJson}
               </pre>
             </div>
-            <div className="flex items-center justify-end gap-2 border-t border-lime-400/15 px-4 sm:px-5 py-3">
+            <div className="flex items-center justify-end gap-1.5 border-t border-[#00ff00]/20 px-3 py-2">
               <button
                 type="button"
                 onClick={handleCopy}
-                className="inline-flex min-h-[40px] items-center gap-1.5 rounded-md border border-lime-400/20 bg-[#0e1015] px-3.5 py-1.5 text-xs font-medium text-lime-200 hover:bg-lime-400/10 cursor-pointer"
+                className="inline-flex min-h-[30px] items-center gap-1 rounded border border-[#00ff00]/25 bg-[#0e1015] px-2.5 py-1 text-[11px] font-medium text-[#00ff00] hover:bg-[#00ff00]/15 cursor-pointer"
               >
-                {copied ? <Check className="h-3.5 w-3.5 text-lime-300" /> : <Copy className="h-3.5 w-3.5" />}
+                {copied ? <Check className="h-3.5 w-3.5 text-[#00ff00]" /> : <Copy className="h-3.5 w-3.5" />}
                 <span>{copied ? 'Copied' : 'Copy JSON'}</span>
               </button>
               <button
                 type="button"
                 onClick={handleDownload}
-                className="inline-flex min-h-[40px] items-center gap-1.5 rounded-md bg-lime-400 px-4 py-1.5 text-xs font-semibold text-slate-950 hover:bg-lime-300 cursor-pointer"
+                className="inline-flex min-h-[30px] items-center gap-1 rounded bg-[#00ff00] px-3 py-1 text-[11px] font-bold text-black hover:bg-[#00ff00]/85 cursor-pointer"
               >
                 <Download className="h-3.5 w-3.5" />
                 <span>Download .json</span>
@@ -152,13 +155,13 @@ export const JsonModal: React.FC<JsonModalProps> = ({
           </>
         ) : (
           <>
-            <div className="flex-1 space-y-3 overflow-auto p-4 sm:p-5">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-xs text-lime-300">
+            <div className="flex-1 space-y-2 overflow-auto p-2.5 sm:p-3">
+              <div className="flex flex-wrap items-center justify-between gap-1.5">
+                <p className="text-[11px] text-[#00ff00]">
                   Paste exported blocking-volumes JSON or upload a `.json` file.
                 </p>
-                <label className="inline-flex min-h-[38px] items-center gap-1.5 rounded border border-lime-400/20 bg-[#0e1015] px-3 py-1.5 text-xs font-medium text-lime-200 hover:bg-lime-400/10 cursor-pointer">
-                  <Upload className="h-3.5 w-3.5" />
+                <label className="inline-flex min-h-[28px] items-center gap-1 rounded border border-[#00ff00]/25 bg-[#0e1015] px-2.5 py-1 text-[11px] font-medium text-[#00ff00] hover:bg-[#00ff00]/15 cursor-pointer">
+                  <Upload className="h-3 w-3" />
                   <span>Load File</span>
                   <input
                     type="file"
@@ -176,20 +179,20 @@ export const JsonModal: React.FC<JsonModalProps> = ({
                 }}
                 placeholder='{"format": "blocking-volumes-v1", "volumes": [...]}'
                 rows={10}
-                className="w-full rounded-md border border-lime-400/15 bg-[#0c0e13] p-3 text-xs font-mono-tabular text-lime-200 outline-none focus:border-lime-400/75"
+                className="w-full rounded border border-[#00ff00]/20 bg-[#0c0e13] p-2.5 text-[11px] font-mono-tabular text-[#00ff00] outline-none focus:border-[#00ff00]"
               />
               {importError && (
-                <div className="flex items-center gap-2 rounded border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-xs text-rose-200">
-                  <AlertCircle className="h-4 w-4 shrink-0" />
+                <div className="flex items-center gap-1.5 rounded border border-rose-500/40 bg-rose-500/10 px-2.5 py-1.5 text-[11px] text-rose-200">
+                  <AlertCircle className="h-3.5 w-3.5 shrink-0" />
                   <span>{importError}</span>
                 </div>
               )}
             </div>
-            <div className="flex items-center justify-end gap-2 border-t border-lime-400/15 px-4 sm:px-5 py-3">
+            <div className="flex items-center justify-end gap-1.5 border-t border-[#00ff00]/20 px-3 py-2">
               <button
                 type="button"
                 onClick={onClose}
-                className="min-h-[40px] rounded-md border border-lime-400/20 px-3.5 py-1.5 text-xs font-medium text-lime-300 hover:bg-lime-400/10 cursor-pointer"
+                className="min-h-[30px] rounded border border-[#00ff00]/25 px-2.5 py-1 text-[11px] font-medium text-[#00ff00] hover:bg-[#00ff00]/15 cursor-pointer"
               >
                 Cancel
               </button>
@@ -197,7 +200,7 @@ export const JsonModal: React.FC<JsonModalProps> = ({
                 type="button"
                 onClick={handleImportSubmit}
                 disabled={!importText.trim()}
-                className="min-h-[40px] rounded-md bg-lime-400 px-4 py-1.5 text-xs font-semibold text-slate-950 hover:bg-lime-300 disabled:opacity-40 cursor-pointer"
+                className="min-h-[30px] rounded bg-[#00ff00] px-3 py-1 text-[11px] font-bold text-black hover:bg-[#00ff00]/85 disabled:opacity-40 cursor-pointer"
               >
                 Import Map
               </button>

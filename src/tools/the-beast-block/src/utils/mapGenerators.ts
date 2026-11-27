@@ -1,5 +1,11 @@
 import { BlockingVolume, Vec3, VolumeCategory } from '../types/volume';
-import { roundVec3 } from './snap';
+import {
+  DEFAULT_AMBIENT_COLOR,
+  DEFAULT_BLEND_ALPHA,
+  DEFAULT_IS_BLEND,
+  DEFAULT_PHYSICS,
+  roundVec3,
+} from './snap';
 
 export interface ArenaPresetMeta {
   id: string;
@@ -24,6 +30,12 @@ function makeVol(
     position: roundVec3(position, 3),
     rotation: roundVec3(rotation, 2),
     scale: roundVec3(scale, 3),
+    ambientColor: [...DEFAULT_AMBIENT_COLOR],
+    isBlend: DEFAULT_IS_BLEND,
+    blendAlpha: DEFAULT_BLEND_ALPHA,
+    filePath: '',
+    texPath: '',
+    physics: { ...DEFAULT_PHYSICS },
   };
 }
 

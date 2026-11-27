@@ -65,28 +65,28 @@ export const TopBar: React.FC<TopBarProps> = ({
   }, [arenaMenuOpen]);
 
   return (
-    <header className="pointer-events-auto relative z-30 flex h-12 sm:h-13 w-full items-center justify-between gap-2 sm:gap-6 border-b border-lime-400/15 bg-[#13161e]/95 px-2.5 sm:px-5">
+    <header className="pointer-events-auto relative z-30 flex h-9 w-full items-center justify-between gap-1.5 sm:gap-3 border-b border-[#00ff00]/20 bg-[#13161e]/95 px-2 sm:px-3">
       {/* Zone 1: Single-element brand wordmark */}
-      <div className="flex items-center gap-3 shrink-0 min-w-0">
-        <span className="text-xs sm:text-base font-bold tracking-tight text-lime-300 whitespace-nowrap shrink-0">
+      <div className="flex items-center gap-2 shrink-0 min-w-0">
+        <span className="text-xs sm:text-sm font-bold tracking-tight text-[#00ff00] whitespace-nowrap shrink-0">
           The Beast Block
         </span>
-        <span className="hidden md:inline text-xs text-lime-400/75 font-mono-tabular whitespace-nowrap">
-          {volumeCount} {volumeCount === 1 ? 'volume' : 'volumes'} · Unit -1..1
+        <span className="hidden md:inline text-[11px] text-[#00ff00]/75 font-mono-tabular whitespace-nowrap">
+          {volumeCount} {volumeCount === 1 ? 'vol' : 'vols'} · -1..1
         </span>
       </div>
 
       {/* Zone 2: Concise workspace links & history actions */}
-      <nav className="flex items-center gap-0.5 sm:gap-2">
+      <nav className="flex items-center gap-0.5 sm:gap-1">
         <button
           type="button"
           onClick={onUndo}
           disabled={!canUndo}
           aria-label="Undo"
           title={canUndo && lastUndoLabel ? `Undo: ${lastUndoLabel} (Ctrl+Z)` : 'Undo (Ctrl+Z)'}
-          className="inline-flex min-h-[38px] min-w-[36px] items-center justify-center gap-1.5 rounded-md px-2 sm:px-2.5 py-1.5 text-xs font-medium text-lime-300 transition-colors hover:bg-lime-400/10 disabled:opacity-35 disabled:pointer-events-none whitespace-nowrap shrink-0 cursor-pointer"
+          className="inline-flex h-7 min-w-[28px] items-center justify-center gap-1 rounded px-1.5 sm:px-2 text-[11px] font-medium text-[#00ff00] transition-colors hover:bg-[#00ff00]/15 disabled:opacity-35 disabled:pointer-events-none whitespace-nowrap shrink-0 cursor-pointer"
         >
-          <Undo2 className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+          <Undo2 className="h-3.5 w-3.5" />
           <span className="hidden md:inline">Undo</span>
         </button>
 
@@ -96,13 +96,13 @@ export const TopBar: React.FC<TopBarProps> = ({
           disabled={!canRedo}
           aria-label="Redo"
           title={canRedo && lastRedoLabel ? `Redo: ${lastRedoLabel} (Ctrl+Y)` : 'Redo (Ctrl+Y)'}
-          className="inline-flex min-h-[38px] min-w-[36px] items-center justify-center gap-1.5 rounded-md px-2 sm:px-2.5 py-1.5 text-xs font-medium text-lime-300 transition-colors hover:bg-lime-400/10 disabled:opacity-35 disabled:pointer-events-none whitespace-nowrap shrink-0 cursor-pointer"
+          className="inline-flex h-7 min-w-[28px] items-center justify-center gap-1 rounded px-1.5 sm:px-2 text-[11px] font-medium text-[#00ff00] transition-colors hover:bg-[#00ff00]/15 disabled:opacity-35 disabled:pointer-events-none whitespace-nowrap shrink-0 cursor-pointer"
         >
-          <Redo2 className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+          <Redo2 className="h-3.5 w-3.5" />
           <span className="hidden md:inline">Redo</span>
         </button>
 
-        <span className="hidden md:inline-block h-4 w-px bg-lime-400/15" aria-hidden="true" />
+        <span className="hidden md:inline-block h-3.5 w-px bg-[#00ff00]/20 mx-0.5" aria-hidden="true" />
 
         {/* Sample Arenas Dropdown */}
         <div className="relative" ref={menuRef}>
@@ -110,20 +110,20 @@ export const TopBar: React.FC<TopBarProps> = ({
             type="button"
             onClick={() => setArenaMenuOpen((o) => !o)}
             aria-label="Sample Arenas"
-            className={`inline-flex min-h-[38px] items-center gap-1 rounded-md px-2 sm:px-2.5 py-1.5 text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+            className={`inline-flex h-7 items-center gap-1 rounded px-1.5 sm:px-2 text-[11px] font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
               arenaMenuOpen
-                ? 'bg-lime-400/15 text-lime-200'
-                : 'text-lime-300 hover:bg-lime-400/10 hover:text-lime-200'
+                ? 'bg-[#00ff00]/20 text-[#00ff00]'
+                : 'text-[#00ff00] hover:bg-[#00ff00]/15'
             }`}
           >
-            <Sparkles className="h-3.5 w-3.5 text-lime-400" />
+            <Sparkles className="h-3 w-3 text-[#00ff00]" />
             <span className="hidden sm:inline">Sample Arenas</span>
             <span className="sm:hidden">Arenas</span>
-            <ChevronDown className="h-3 w-3 text-lime-400/80" />
+            <ChevronDown className="h-3 w-3 text-[#00ff00]/80" />
           </button>
 
           {arenaMenuOpen && (
-            <div className="absolute right-0 sm:left-0 sm:right-auto top-full mt-1.5 w-[min(18rem,calc(100vw-1rem))] rounded-lg border border-lime-400/20 bg-[#161a24] p-1.5 shadow-2xl z-50">
+            <div className="absolute right-0 sm:left-0 sm:right-auto top-full mt-1 w-[min(16.5rem,calc(100vw-0.75rem))] rounded-md border border-[#00ff00]/25 bg-[#161a24] p-1 shadow-2xl z-50">
               {ARENA_PRESETS.map((preset) => (
                 <button
                   key={preset.id}
@@ -132,15 +132,15 @@ export const TopBar: React.FC<TopBarProps> = ({
                     onLoadPreset(preset);
                     setArenaMenuOpen(false);
                   }}
-                  className="flex w-full flex-col rounded-md px-3 py-2.5 sm:py-2 text-left transition-colors hover:bg-lime-400/10 cursor-pointer"
+                  className="flex w-full flex-col rounded px-2 py-1.5 text-left transition-colors hover:bg-[#00ff00]/15 cursor-pointer"
                 >
-                  <span className="text-xs font-semibold text-lime-200">{preset.name}</span>
-                  <span className="mt-0.5 text-[11px] text-lime-400/75 leading-snug">
+                  <span className="text-[11px] font-semibold text-[#00ff00]">{preset.name}</span>
+                  <span className="text-[10px] text-[#00ff00]/75 leading-tight">
                     {preset.description}
                   </span>
                 </button>
               ))}
-              <div className="sm:hidden mt-1 border-t border-lime-400/15 pt-1">
+              <div className="sm:hidden mt-1 border-t border-[#00ff00]/20 pt-1">
                 <button
                   type="button"
                   disabled={volumeCount === 0}
@@ -148,9 +148,9 @@ export const TopBar: React.FC<TopBarProps> = ({
                     onClearMap();
                     setArenaMenuOpen(false);
                   }}
-                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-medium text-rose-300 hover:bg-rose-500/15 disabled:opacity-35 cursor-pointer"
+                  className="flex w-full items-center gap-1.5 rounded px-2 py-1.5 text-left text-[11px] font-medium text-rose-300 hover:bg-rose-500/15 disabled:opacity-35 cursor-pointer"
                 >
-                  <Trash2 className="h-3.5 w-3.5" />
+                  <Trash2 className="h-3 w-3" />
                   <span>Clear Map</span>
                 </button>
               </div>
@@ -164,7 +164,7 @@ export const TopBar: React.FC<TopBarProps> = ({
           disabled={volumeCount === 0}
           aria-label="Clear map"
           title="Clear map"
-          className="hidden sm:inline-flex min-h-[38px] items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-lime-300 transition-colors hover:bg-rose-500/15 hover:text-rose-200 disabled:opacity-35 disabled:pointer-events-none whitespace-nowrap shrink-0 cursor-pointer"
+          className="hidden sm:inline-flex h-7 items-center gap-1 rounded px-2 text-[11px] font-medium text-[#00ff00] transition-colors hover:bg-rose-500/15 hover:text-rose-200 disabled:opacity-35 disabled:pointer-events-none whitespace-nowrap shrink-0 cursor-pointer"
         >
           <Trash2 className="h-3.5 w-3.5" />
           <span className="hidden md:inline">Clear</span>
@@ -175,13 +175,13 @@ export const TopBar: React.FC<TopBarProps> = ({
           onClick={onToggleInspector}
           aria-label="Toggle Inspector"
           title="Toggle Transform & History Panel"
-          className={`inline-flex min-h-[38px] min-w-[36px] items-center justify-center gap-1.5 rounded-md px-2 sm:px-2.5 py-1.5 text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+          className={`inline-flex h-7 min-w-[28px] items-center justify-center gap-1 rounded px-1.5 sm:px-2 text-[11px] font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
             inspectorOpen
-              ? 'bg-lime-400/15 text-lime-200'
-              : 'text-lime-300 hover:bg-lime-400/10 hover:text-lime-200'
+              ? 'bg-[#00ff00]/20 text-[#00ff00]'
+              : 'text-[#00ff00] hover:bg-[#00ff00]/15'
           }`}
         >
-          <PanelRight className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+          <PanelRight className="h-3.5 w-3.5" />
           <span className="hidden lg:inline">Inspector</span>
         </button>
 
@@ -189,7 +189,7 @@ export const TopBar: React.FC<TopBarProps> = ({
           type="button"
           onClick={onToggleHud}
           title="Toggle Dock (H)"
-          className="hidden xl:inline-flex items-center rounded-md px-2.5 py-1.5 text-xs font-medium text-lime-400/80 transition-colors hover:bg-lime-400/10 hover:text-lime-200 whitespace-nowrap shrink-0 cursor-pointer"
+          className="hidden xl:inline-flex h-7 items-center rounded px-2 text-[11px] font-medium text-[#00ff00]/80 transition-colors hover:bg-[#00ff00]/15 hover:text-[#00ff00] whitespace-nowrap shrink-0 cursor-pointer"
         >
           {hudCollapsed ? 'Show Dock' : 'Hide Dock'}
         </button>
@@ -200,7 +200,7 @@ export const TopBar: React.FC<TopBarProps> = ({
         <button
           type="button"
           onClick={onOpenJsonModal}
-          className="inline-flex min-h-[36px] items-center gap-1.5 rounded-md bg-lime-400 px-2.5 sm:px-3.5 py-1.5 text-xs font-semibold text-slate-950 transition-colors hover:bg-lime-300 whitespace-nowrap shrink-0 cursor-pointer"
+          className="inline-flex h-7 items-center gap-1 rounded bg-[#00ff00] px-2 sm:px-2.5 text-[11px] font-bold text-black transition-colors hover:bg-[#00ff00]/85 whitespace-nowrap shrink-0 cursor-pointer"
         >
           <Code2 className="h-3.5 w-3.5" />
           <span className="hidden sm:inline">Export JSON</span>

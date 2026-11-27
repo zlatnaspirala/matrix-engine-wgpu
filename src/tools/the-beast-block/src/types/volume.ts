@@ -1,8 +1,42 @@
 export type Vec3 = [number, number, number];
 
-export type VolumeCategory = 'solid' | 'trigger' | 'clip' | 'hazard';
+export type VolumeCategory = 'solid' | 'trigger' | 'clip' | 'hazard' | 'obj' | 'glb';
 
-export interface BlockingVolume {
+export type PhysicsMeshType =
+  | 'SoftBody'
+  | 'Cloth'
+  | 'Heightfield'
+  | 'Sphere'
+  | 'Cube'
+  | 'Capsule'
+  | 'Cylinder'
+  | 'Cone'
+  | 'ConvexHull'
+  | 'BvhMesh';
+
+export interface VolumePhysics {
+  enabled: boolean;
+  mass: number;
+  group: number;
+  meshType: PhysicsMeshType;
+}
+
+export interface VolumeMaterialProps {
+  /** Ambient RGB tint [r, g, b] in 0..1 range (default [0.5, 0.5, 0.5]) */
+  ambientColor: Vec3;
+  /** Whether alpha blending is enabled */
+  isBlend: boolean;
+  /** Blend alpha opacity in 0..1 range */
+  blendAlpha: number;
+  /** Asset file path for obj / glb items */
+  filePath?: string;
+  /** Texture path for obj / glb items */
+  texPath?: string;
+  /** Engine physics attributes */
+  physics: VolumePhysics;
+}
+
+export interface BlockingVolume extends VolumeMaterialProps {
   id: string;
   name: string;
   category: VolumeCategory;
@@ -14,14 +48,14 @@ export interface BlockingVolume {
   scale: Vec3;
 }
 
-export interface PlacementConfig {
+export interface PlacementConfig extends VolumeMaterialProps {
   /** Additional position offset [dx, dy, dz] applied when placing a new cube */
   positionOffset: Vec3;
   /** Initial Euler rotation in degrees [rx, ry, rz] */
   rotation: Vec3;
   /** Initial scale [sx, sy, sz] relative to -1..1 cube */
   scale: Vec3;
-  /** Collision category for newly placed cubes */
+  /** Collision / asset category for newly placed cubes */
   category: VolumeCategory;
 }
 
@@ -74,6 +108,15 @@ export type HistoryAction =
     }
   | {
       id: string;
+      type: 'properties';
+      label: string;
+      timestamp: number;
+      volumeId: string;
+      before: Partial<BlockingVolume>;
+      after: Partial<BlockingVolume>;
+    }
+  | {
+      id: string;
       type: 'replaceAll';
       label: string;
       timestamp: number;
@@ -103,5 +146,11 @@ export interface EngineExportPayload {
     halfExtents: Vec3;
     localMin: Vec3;
     localMax: Vec3;
+    ambientColor: { r: number; g: number; b: number };
+    isBlend: boolean;
+    blendAlpha: number;
+    filePath?: string;
+    texPath?: string;
+    physics: VolumePhysics;
   }>;
 }

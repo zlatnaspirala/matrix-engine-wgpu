@@ -15,7 +15,19 @@ import {
   VolumeCategory,
   VolumeTransform,
 } from './types/volume';
-import { roundVec3 } from './utils/snap';
+import {
+  clamp01,
+  DEFAULT_AMBIENT_COLOR,
+  DEFAULT_BLEND_ALPHA,
+  DEFAULT_IS_BLEND,
+  DEFAULT_PHYSICS,
+  isAssetCategory,
+  normalizePhysics,
+  normalizeVolume,
+  resolveAssetPathsOnCategoryChange,
+  roundNum,
+  roundVec3,
+} from './utils/snap';
 import {
   ArenaPresetMeta,
   createQuakeIronCitadel,
@@ -28,7 +40,9 @@ function loadInitialVolumes(): BlockingVolume[] {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) return parsed;
+      if (Array.isArray(parsed)) {
+        return parsed.map((v, i) => normalizeVolume(v, i));
+      }
     }
   } catch {
     // Fallback to Quake Iron Citadel
@@ -50,6 +64,12 @@ export default function App() {
     rotation: [0, 0, 0],
     scale: [1, 1, 1],
     category: 'solid',
+    ambientColor: [...DEFAULT_AMBIENT_COLOR],
+    isBlend: DEFAULT_IS_BLEND,
+    blendAlpha: DEFAULT_BLEND_ALPHA,
+    filePath: '',
+    texPath: '',
+    physics: { ...DEFAULT_PHYSICS },
   });
 
   const [hudCollapsed, setHudCollapsed] = useState(false);
@@ -92,6 +112,12 @@ export default function App() {
       const stamp = Date.now().toString(36);
       const created: BlockingVolume[] = items.map((item, idx) => {
         const num = nextIndexRef.current++;
+        const amb = item.ambientColor ?? DEFAULT_AMBIENT_COLOR;
+        const resolvedPaths = resolveAssetPathsOnCategoryChange(
+          item.category,
+          item.filePath ?? '',
+          item.texPath ?? ''
+        );
         return {
           id: `vol_${stamp}_${num}_${idx}`,
           name: `Block ${String(num).padStart(2, '0')}`,
@@ -99,6 +125,16 @@ export default function App() {
           position: roundVec3(item.position, 3),
           rotation: roundVec3(item.rotation, 2),
           scale: roundVec3(item.scale, 3),
+          ambientColor: [
+            roundNum(clamp01(amb[0]), 3),
+            roundNum(clamp01(amb[1]), 3),
+            roundNum(clamp01(amb[2]), 3),
+          ],
+          isBlend: Boolean(item.isBlend),
+          blendAlpha: roundNum(clamp01(item.blendAlpha ?? DEFAULT_BLEND_ALPHA), 3),
+          filePath: resolvedPaths.filePath,
+          texPath: resolvedPaths.texPath,
+          physics: normalizePhysics(item.physics),
         };
       });
 
@@ -184,13 +220,84 @@ export default function App() {
   const handleUpdateSelectedCategory = useCallback(
     (id: string, before: VolumeCategory, after: VolumeCategory) => {
       const target = volumes.find((v) => v.id === id);
+      if (!target) {
+        setVolumes((prev) =>
+          prev.map((v) => (v.id === id ? { ...v, category: after } : v))
+        );
+        pushAction({
+          id: `act_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+          type: 'category',
+          label: `Type ${id} (${after})`,
+          timestamp: Date.now(),
+          volumeId: id,
+          before,
+          after,
+        });
+        return;
+      }
+
+      if (isAssetCategory(before) || isAssetCategory(after)) {
+        const resolved = resolveAssetPathsOnCategoryChange(
+          after,
+          target.filePath ?? '',
+          target.texPath ?? ''
+        );
+        const beforePatch: Partial<BlockingVolume> = {
+          category: before,
+          filePath: target.filePath ?? '',
+          texPath: target.texPath ?? '',
+        };
+        const afterPatch: Partial<BlockingVolume> = {
+          category: after,
+          filePath: resolved.filePath,
+          texPath: resolved.texPath,
+        };
+        setVolumes((prev) =>
+          prev.map((v) => (v.id === id ? { ...v, ...afterPatch } : v))
+        );
+        pushAction({
+          id: `act_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+          type: 'properties',
+          label: `Type ${target.name} (${after})`,
+          timestamp: Date.now(),
+          volumeId: id,
+          before: beforePatch,
+          after: afterPatch,
+        });
+        return;
+      }
+
       setVolumes((prev) =>
         prev.map((v) => (v.id === id ? { ...v, category: after } : v))
       );
       pushAction({
         id: `act_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
         type: 'category',
-        label: `Type ${target?.name ?? id} (${after})`,
+        label: `Type ${target.name} (${after})`,
+        timestamp: Date.now(),
+        volumeId: id,
+        before,
+        after,
+      });
+    },
+    [volumes, pushAction]
+  );
+
+  const handleUpdateSelectedProperties = useCallback(
+    (
+      id: string,
+      before: Partial<BlockingVolume>,
+      after: Partial<BlockingVolume>,
+      label?: string
+    ) => {
+      const target = volumes.find((v) => v.id === id);
+      setVolumes((prev) =>
+        prev.map((v) => (v.id === id ? { ...v, ...after } : v))
+      );
+      pushAction({
+        id: `act_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+        type: 'properties',
+        label: label ?? `Update ${target?.name ?? id}`,
         timestamp: Date.now(),
         volumeId: id,
         before,
@@ -210,6 +317,12 @@ export default function App() {
             position: [vol.position[0] + offset, vol.position[1], vol.position[2]],
             rotation: [...vol.rotation],
             scale: [...vol.scale],
+            ambientColor: [...vol.ambientColor],
+            isBlend: vol.isBlend,
+            blendAlpha: vol.blendAlpha,
+            filePath: vol.filePath ?? '',
+            texPath: vol.texPath ?? '',
+            physics: { ...vol.physics },
           },
         ],
         `Duplicate ${vol.name}`
@@ -243,6 +356,8 @@ export default function App() {
       position: [...v.position] as [number, number, number],
       rotation: [...v.rotation] as [number, number, number],
       scale: [...v.scale] as [number, number, number],
+      ambientColor: [...v.ambientColor] as [number, number, number],
+      physics: { ...v.physics },
     }));
     setVolumes([]);
     setSelectedId(null);
@@ -263,6 +378,8 @@ export default function App() {
         position: [...v.position] as [number, number, number],
         rotation: [...v.rotation] as [number, number, number],
         scale: [...v.scale] as [number, number, number],
+        ambientColor: [...v.ambientColor] as [number, number, number],
+        physics: { ...v.physics },
       }));
       setVolumes(nextVolumes);
       setSelectedId(null);
@@ -292,6 +409,8 @@ export default function App() {
         position: [...v.position] as [number, number, number],
         rotation: [...v.rotation] as [number, number, number],
         scale: [...v.scale] as [number, number, number],
+        ambientColor: [...v.ambientColor] as [number, number, number],
+        physics: { ...v.physics },
       }));
       setVolumes(imported);
       setSelectedId(null);
@@ -411,7 +530,7 @@ export default function App() {
   const lastRedoLabel = redoStack[redoStack.length - 1]?.label;
 
   return (
-    <div className="relative flex h-dvh w-screen flex-col overflow-hidden bg-[#0e1015] text-lime-300">
+    <div className="relative flex h-dvh w-screen flex-col overflow-hidden bg-[#0e1015] text-[#00ff00]">
       <TopBar
         volumeCount={volumes.length}
         canUndo={canUndo}
@@ -448,7 +567,7 @@ export default function App() {
         />
 
         {/* Subtle 1-line control hint */}
-        <div className="pointer-events-none fixed left-4 top-16 z-10 hidden sm:block rounded border border-lime-400/15 bg-[#13161e]/85 px-2.5 py-1 text-[11px] text-lime-300">
+        <div className="pointer-events-none fixed left-2 top-11 z-10 hidden sm:block rounded border border-[#00ff00]/20 bg-[#13161e]/85 px-2 py-0.5 text-[10px] text-[#00ff00]">
           {interactionHint}
         </div>
 
@@ -463,6 +582,7 @@ export default function App() {
           onChangeConfig={setPlacementConfig}
           onUpdateSelectedTransform={handleCommitTransform}
           onUpdateSelectedCategory={handleUpdateSelectedCategory}
+          onUpdateSelectedProperties={handleUpdateSelectedProperties}
           onDuplicateSelected={handleDuplicateSelected}
           onDeleteSelected={handleDeleteVolume}
           onUndo={handleUndo}

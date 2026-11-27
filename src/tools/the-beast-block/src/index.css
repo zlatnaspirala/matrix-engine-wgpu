@@ -16,7 +16,7 @@
     overflow: hidden;
     font-family: var(--font-sans);
     background-color: #0e1015;
-    color: #bef264;
+    color: #00ff00;
     -webkit-tap-highlight-color: transparent;
   }
 
@@ -35,17 +35,17 @@
 
   /* Clean subtle scrollbars inside panels */
   ::-webkit-scrollbar {
-    width: 5px;
-    height: 5px;
+    width: 4px;
+    height: 4px;
   }
   ::-webkit-scrollbar-track {
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: rgba(163, 230, 53, 0.22);
+    background: rgba(0, 255, 0, 0.25);
     border-radius: 9999px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: rgba(163, 230, 53, 0.4);
+    background: rgba(0, 255, 0, 0.45);
   }
 }

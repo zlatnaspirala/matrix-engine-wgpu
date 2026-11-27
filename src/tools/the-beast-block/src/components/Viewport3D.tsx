@@ -15,9 +15,14 @@ import {
 } from '../types/volume';
 import {
   CATEGORY_META,
+  clamp01,
   computeFacePlacementPosition,
   computeGroundPlacementPosition,
+  DEFAULT_AMBIENT_COLOR,
+  DEFAULT_BLEND_ALPHA,
+  DEFAULT_PHYSICS,
   getPlacementCellKey,
+  resolveAssetPathsOnCategoryChange,
   roundVec3,
 } from '../utils/snap';
 
@@ -43,6 +48,50 @@ const _normal = new THREE.Vector3();
 const _normalMat = new THREE.Matrix3();
 const _targetCamPos = new THREE.Vector3();
 const _targetCtrlPos = new THREE.Vector3();
+const _baseColor = new THREE.Color();
+
+function applyVolumeMaterialColor(
+  target: THREE.Color,
+  baseHex: string,
+  ambientColor?: Vec3
+) {
+  _baseColor.set(baseHex);
+  if (!ambientColor) {
+    target.copy(_baseColor);
+    return;
+  }
+  const mr = THREE.MathUtils.clamp(ambientColor[0] * 2, 0.08, 2);
+  const mg = THREE.MathUtils.clamp(ambientColor[1] * 2, 0.08, 2);
+  const mb = THREE.MathUtils.clamp(ambientColor[2] * 2, 0.08, 2);
+  target.setRGB(
+    Math.min(1, _baseColor.r * mr),
+    Math.min(1, _baseColor.g * mg),
+    Math.min(1, _baseColor.b * mb)
+  );
+}
+
+function buildVolumeItemFromConfig(
+  cfg: PlacementConfig,
+  position: Vec3
+): Omit<BlockingVolume, 'id' | 'name'> {
+  const resolved = resolveAssetPathsOnCategoryChange(
+    cfg.category,
+    cfg.filePath ?? '',
+    cfg.texPath ?? ''
+  );
+  return {
+    category: cfg.category,
+    position,
+    rotation: [...cfg.rotation],
+    scale: [...cfg.scale],
+    ambientColor: [...(cfg.ambientColor ?? DEFAULT_AMBIENT_COLOR)],
+    isBlend: Boolean(cfg.isBlend),
+    blendAlpha: clamp01(cfg.blendAlpha ?? DEFAULT_BLEND_ALPHA),
+    filePath: resolved.filePath,
+    texPath: resolved.texPath,
+    physics: { ...(cfg.physics ?? DEFAULT_PHYSICS) },
+  };
+}
 
 function detectSoftwareGl(): boolean {
   try {
@@ -252,7 +301,7 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
     // Ghost preview mesh for upcoming cube placement
     const ghostGroup = new THREE.Group();
     const ghostMat = new THREE.MeshStandardMaterial({
-      color: '#84cc16',
+      color: '#00ff00',
       roughness: 0.4,
       metalness: 0.1,
       transparent: true,
@@ -261,7 +310,7 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
     });
     const ghostMesh = new THREE.Mesh(unitCubeGeo, ghostMat);
     const ghostEdgeMat = new THREE.LineBasicMaterial({
-      color: '#bef264',
+      color: '#00ff00',
       transparent: true,
       opacity: 0.92,
     });
@@ -443,8 +492,10 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
 
       // Add or update existing meshes
       for (const vol of list) {
-        const meta = CATEGORY_META[vol.category];
+        const meta = CATEGORY_META[vol.category] ?? CATEGORY_META.solid;
         const isSelected = vol.id === activeSelectedId;
+        const opacity = vol.isBlend ? clamp01(vol.blendAlpha ?? DEFAULT_BLEND_ALPHA) : meta.opacity;
+        const isTransparent = Boolean(vol.isBlend) || opacity < 0.999;
 
         let entry = volumeMeshes.get(vol.id);
         if (!entry) {
@@ -452,8 +503,9 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
             color: meta.colorHex,
             roughness: 0.42,
             metalness: 0.14,
-            transparent: meta.opacity < 1,
-            opacity: meta.opacity,
+            transparent: isTransparent,
+            opacity,
+            depthWrite: !isTransparent,
           });
           const mesh = new THREE.Mesh(unitCubeGeo, mat);
           mesh.castShadow = !isSoftwareGl;
@@ -483,13 +535,14 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
         );
         mesh.scale.set(vol.scale[0], vol.scale[1], vol.scale[2]);
 
-        mat.color.set(meta.colorHex);
-        mat.transparent = meta.opacity < 1;
-        mat.opacity = meta.opacity;
-        mat.emissive.set(isSelected ? '#84cc16' : '#000000');
+        applyVolumeMaterialColor(mat.color, meta.colorHex, vol.ambientColor);
+        mat.transparent = isTransparent;
+        mat.opacity = opacity;
+        mat.depthWrite = !isTransparent;
+        mat.emissive.set(isSelected ? '#00ff00' : '#000000');
         mat.emissiveIntensity = isSelected ? 0.3 : 0;
 
-        edgeMat.color.set(isSelected ? '#bef264' : meta.edgeHex);
+        edgeMat.color.set(isSelected ? '#00ff00' : meta.edgeHex);
         edgeMat.opacity = isSelected ? 1 : 0.7;
       }
 
@@ -645,8 +698,11 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
 
     function updateGhostAppearance() {
       const cfg = configRef.current;
-      const meta = CATEGORY_META[cfg.category];
-      ghostMat.color.set(meta.colorHex);
+      const meta = CATEGORY_META[cfg.category] ?? CATEGORY_META.solid;
+      applyVolumeMaterialColor(ghostMat.color, meta.colorHex, cfg.ambientColor);
+      ghostMat.opacity = cfg.isBlend
+        ? Math.max(0.16, Math.min(0.65, clamp01(cfg.blendAlpha) * 0.75))
+        : 0.34;
       ghostEdgeMat.color.set(meta.edgeHex);
       ghostMesh.rotation.set(
         THREE.MathUtils.degToRad(cfg.rotation[0]),
@@ -786,12 +842,7 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
       }
 
       strokeCellKeys.add(key);
-      const item: Omit<BlockingVolume, 'id' | 'name'> = {
-        category: cfg.category,
-        position: pos,
-        rotation: [...cfg.rotation],
-        scale: [...cfg.scale],
-      };
+      const item = buildVolumeItemFromConfig(cfg, pos);
 
       if (drawModeRef.current === 'drag') {
         // Group drag stroke into a single undoable batch on pointerup, while placing live!
@@ -821,14 +872,15 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
     }
 
     function addDragStrokePreviewMesh(item: Omit<BlockingVolume, 'id' | 'name'>) {
-      const meta = CATEGORY_META[item.category];
+      const meta = CATEGORY_META[item.category] ?? CATEGORY_META.solid;
       const mat = new THREE.MeshStandardMaterial({
         color: meta.colorHex,
         roughness: 0.42,
         metalness: 0.14,
         transparent: true,
-        opacity: 0.85,
+        opacity: item.isBlend ? Math.max(0.16, clamp01(item.blendAlpha)) : 0.85,
       });
+      applyVolumeMaterialColor(mat.color, meta.colorHex, item.ambientColor);
       const mesh = new THREE.Mesh(unitCubeGeo, mat);
       mesh.position.set(item.position[0], item.position[1], item.position[2]);
       mesh.rotation.set(
@@ -838,7 +890,7 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
         'XYZ'
       );
       mesh.scale.set(item.scale[0], item.scale[1], item.scale[2]);
-      const edgeMat = new THREE.LineBasicMaterial({ color: '#bef264' });
+      const edgeMat = new THREE.LineBasicMaterial({ color: '#00ff00' });
       const edges = new THREE.LineSegments(unitEdgesGeo, edgeMat);
       mesh.add(edges);
       dragStrokePreviewGroup.add(mesh);
@@ -879,12 +931,7 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
           );
           if (!alreadyExists) {
             strokeCellKeys.add(key);
-            const item: Omit<BlockingVolume, 'id' | 'name'> = {
-              category: cfg.category,
-              position: res.placementPos,
-              rotation: [...cfg.rotation],
-              scale: [...cfg.scale],
-            };
+            const item = buildVolumeItemFromConfig(cfg, res.placementPos);
             strokePendingVolumes.push(item);
             addDragStrokePreviewMesh(item);
           }
@@ -917,12 +964,7 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
           );
           strokeCellKeys.add(key);
           if (!alreadyExists) {
-            const item: Omit<BlockingVolume, 'id' | 'name'> = {
-              category: cfg.category,
-              position: res.placementPos,
-              rotation: [...cfg.rotation],
-              scale: [...cfg.scale],
-            };
+            const item = buildVolumeItemFromConfig(cfg, res.placementPos);
             strokePendingVolumes.push(item);
             addDragStrokePreviewMesh(item);
           }
@@ -990,14 +1032,7 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
         if (res.placementPos) {
           const cfg = configRef.current;
           callbacksRef.current.onPlaceBatch(
-            [
-              {
-                category: cfg.category,
-                position: res.placementPos,
-                rotation: [...cfg.rotation],
-                scale: [...cfg.scale],
-              },
-            ],
+            [buildVolumeItemFromConfig(cfg, res.placementPos)],
             'Place Block'
           );
         }

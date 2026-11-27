@@ -50,6 +50,22 @@ function applyAction(
       );
     }
 
+    case 'properties': {
+      const patch = direction === 'undo' ? action.before : action.after;
+      return volumes.map((v) =>
+        v.id === action.volumeId
+          ? {
+              ...v,
+              ...patch,
+              ambientColor: patch.ambientColor
+                ? ([...patch.ambientColor] as [number, number, number])
+                : v.ambientColor,
+              physics: patch.physics ? { ...patch.physics } : v.physics,
+            }
+          : v
+      );
+    }
+
     case 'replaceAll': {
       const list = direction === 'undo' ? action.before : action.after;
       return list.map((v) => ({
@@ -57,6 +73,8 @@ function applyAction(
         position: [...v.position],
         rotation: [...v.rotation],
         scale: [...v.scale],
+        ambientColor: [...v.ambientColor],
+        physics: { ...v.physics },
       }));
     }
   }

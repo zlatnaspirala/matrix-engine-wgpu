@@ -96,17 +96,17 @@ export const ToolDock: React.FC<ToolDockProps> = ({
 }) => {
   return (
     <div
-      className="pointer-events-none fixed bottom-2 sm:bottom-4 left-1/2 z-20 flex w-[calc(100vw-16px)] sm:w-auto flex-col items-center transition-transform duration-200 ease-out"
+      className="pointer-events-none fixed bottom-1.5 sm:bottom-2 left-1/2 z-20 flex w-[calc(100vw-12px)] sm:w-auto flex-col items-center transition-transform duration-200 ease-out"
       style={{
-        transform: collapsed ? 'translate(-50%, calc(100% - 26px))' : 'translate(-50%, 0)',
-        maxWidth: 'min(980px, calc(100vw - 16px))',
+        transform: collapsed ? 'translate(-50%, calc(100% - 22px))' : 'translate(-50%, 0)',
+        maxWidth: 'min(900px, calc(100vw - 12px))',
       }}
     >
       {/* Collapse Handle */}
       <button
         type="button"
         onClick={onToggleCollapse}
-        className="pointer-events-auto inline-flex items-center gap-1.5 rounded-t-md border border-b-0 border-lime-400/20 bg-[#151922]/95 px-3 py-1 text-[11px] font-medium text-lime-300 hover:text-lime-200 cursor-pointer whitespace-nowrap"
+        className="pointer-events-auto inline-flex items-center gap-1 rounded-t border border-b-0 border-[#00ff00]/25 bg-[#151922]/95 px-2.5 py-0.5 text-[10px] font-medium text-[#00ff00] hover:bg-[#00ff00]/10 cursor-pointer whitespace-nowrap"
       >
         {collapsed ? (
           <>
@@ -122,9 +122,9 @@ export const ToolDock: React.FC<ToolDockProps> = ({
       </button>
 
       {/* Main Unified Dock (horizontally scrollable single row on mobile) */}
-      <div className="pointer-events-auto flex w-full sm:w-auto flex-nowrap sm:flex-wrap items-center justify-start sm:justify-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar rounded-lg border border-lime-400/20 bg-[#151922]/95 p-1.5 sm:p-2 shadow-2xl">
+      <div className="pointer-events-auto flex w-full sm:w-auto flex-nowrap sm:flex-wrap items-center justify-start sm:justify-center gap-1 sm:gap-1.5 overflow-x-auto no-scrollbar rounded-md border border-[#00ff00]/25 bg-[#151922]/95 p-1 shadow-2xl">
         {/* Draw & Tool Mode */}
-        <div className="flex items-center gap-1 rounded-md bg-[#0e1015] p-1 shrink-0">
+        <div className="flex items-center gap-0.5 rounded bg-[#0e1015] p-0.5 shrink-0">
           {DRAW_MODES.map((m) => {
             const active = drawMode === m.id;
             return (
@@ -133,12 +133,12 @@ export const ToolDock: React.FC<ToolDockProps> = ({
                 type="button"
                 title={m.hint}
                 onClick={() => onChangeDrawMode(m.id)}
-                className={`inline-flex min-h-[38px] sm:min-h-[32px] items-center gap-1.5 rounded px-2.5 py-1.5 text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                className={`inline-flex min-h-[30px] sm:min-h-[26px] items-center gap-1 rounded px-2 py-1 text-[11px] font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                   active
                     ? m.id === 'erase'
                       ? 'bg-rose-500/25 text-rose-200'
-                      : 'bg-lime-400 text-slate-950 font-semibold'
-                    : 'text-lime-300 hover:bg-lime-400/10 hover:text-lime-200'
+                      : 'bg-[#00ff00] text-black font-bold'
+                    : 'text-[#00ff00] hover:bg-[#00ff00]/15'
                 }`}
               >
                 {m.icon}
@@ -154,85 +154,85 @@ export const ToolDock: React.FC<ToolDockProps> = ({
             type="button"
             onClick={onToggleHoverPause}
             title="Pause/Resume Move Draw (Space)"
-            className={`inline-flex min-h-[38px] sm:min-h-[32px] items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+            className={`inline-flex min-h-[30px] sm:min-h-[26px] items-center gap-1 rounded border px-2 py-1 text-[11px] font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
               hoverDrawPaused
-                ? 'border-amber-400/40 bg-amber-500/15 text-amber-200'
-                : 'border-lime-400/40 bg-lime-400/15 text-lime-200'
+                ? 'border-amber-400/50 bg-amber-500/15 text-amber-200'
+                : 'border-[#00ff00]/50 bg-[#00ff00]/15 text-[#00ff00]'
             }`}
           >
-            {hoverDrawPaused ? <Play className="h-3.5 w-3.5" /> : <Pause className="h-3.5 w-3.5" />}
+            {hoverDrawPaused ? <Play className="h-3 w-3" /> : <Pause className="h-3 w-3" />}
             <span>{hoverDrawPaused ? 'Paused' : 'Drawing'}</span>
           </button>
         )}
 
         {/* Gizmo mode when Transform/Select is active */}
         {drawMode === 'select' && (
-          <div className="flex items-center gap-1 rounded-md bg-[#0e1015] p-1 shrink-0">
+          <div className="flex items-center gap-0.5 rounded bg-[#0e1015] p-0.5 shrink-0">
             <button
               type="button"
               onClick={() => onChangeGizmoMode('translate')}
               title="Move (G)"
-              className={`inline-flex min-h-[38px] sm:min-h-[32px] items-center gap-1 rounded px-2.5 py-1.5 text-xs font-medium whitespace-nowrap shrink-0 cursor-pointer ${
+              className={`inline-flex min-h-[30px] sm:min-h-[26px] items-center gap-1 rounded px-2 py-1 text-[11px] font-medium whitespace-nowrap shrink-0 cursor-pointer ${
                 gizmoMode === 'translate'
-                  ? 'bg-lime-400/20 text-lime-200'
-                  : 'text-lime-400/75 hover:text-lime-200'
+                  ? 'bg-[#00ff00]/25 text-[#00ff00]'
+                  : 'text-[#00ff00]/75 hover:text-[#00ff00]'
               }`}
             >
-              <Move className="h-3.5 w-3.5" />
+              <Move className="h-3 w-3" />
               <span>Move</span>
             </button>
             <button
               type="button"
               onClick={() => onChangeGizmoMode('rotate')}
               title="Rotate (R)"
-              className={`inline-flex min-h-[38px] sm:min-h-[32px] items-center gap-1 rounded px-2.5 py-1.5 text-xs font-medium whitespace-nowrap shrink-0 cursor-pointer ${
+              className={`inline-flex min-h-[30px] sm:min-h-[26px] items-center gap-1 rounded px-2 py-1 text-[11px] font-medium whitespace-nowrap shrink-0 cursor-pointer ${
                 gizmoMode === 'rotate'
-                  ? 'bg-lime-400/20 text-lime-200'
-                  : 'text-lime-400/75 hover:text-lime-200'
+                  ? 'bg-[#00ff00]/25 text-[#00ff00]'
+                  : 'text-[#00ff00]/75 hover:text-[#00ff00]'
               }`}
             >
-              <RotateCw className="h-3.5 w-3.5" />
+              <RotateCw className="h-3 w-3" />
               <span>Rotate</span>
             </button>
             <button
               type="button"
               onClick={() => onChangeGizmoMode('scale')}
               title="Scale (S)"
-              className={`inline-flex min-h-[38px] sm:min-h-[32px] items-center gap-1 rounded px-2.5 py-1.5 text-xs font-medium whitespace-nowrap shrink-0 cursor-pointer ${
+              className={`inline-flex min-h-[30px] sm:min-h-[26px] items-center gap-1 rounded px-2 py-1 text-[11px] font-medium whitespace-nowrap shrink-0 cursor-pointer ${
                 gizmoMode === 'scale'
-                  ? 'bg-lime-400/20 text-lime-200'
-                  : 'text-lime-400/75 hover:text-lime-200'
+                  ? 'bg-[#00ff00]/25 text-[#00ff00]'
+                  : 'text-[#00ff00]/75 hover:text-[#00ff00]'
               }`}
             >
-              <Maximize2 className="h-3.5 w-3.5" />
+              <Maximize2 className="h-3 w-3" />
               <span>Scale</span>
             </button>
           </div>
         )}
 
         {/* Grid & Snap Step */}
-        <div className="flex items-center gap-1 rounded-md bg-[#0e1015] p-1 shrink-0">
+        <div className="flex items-center gap-0.5 rounded bg-[#0e1015] p-0.5 shrink-0">
           <button
             type="button"
             onClick={onToggleGrid}
             title="Toggle Ground Grid"
-            className={`inline-flex min-h-[38px] sm:min-h-[32px] items-center gap-1 rounded px-2.5 py-1.5 text-xs font-medium whitespace-nowrap shrink-0 cursor-pointer ${
-              showGrid ? 'bg-lime-400/15 text-lime-200' : 'text-lime-400/60 hover:text-lime-200'
+            className={`inline-flex min-h-[30px] sm:min-h-[26px] items-center gap-1 rounded px-2 py-1 text-[11px] font-medium whitespace-nowrap shrink-0 cursor-pointer ${
+              showGrid ? 'bg-[#00ff00]/20 text-[#00ff00]' : 'text-[#00ff00]/55 hover:text-[#00ff00]'
             }`}
           >
-            <Grid3x3 className="h-3.5 w-3.5" />
+            <Grid3x3 className="h-3 w-3" />
             <span>Grid</span>
           </button>
-          <span className="px-1 text-[11px] text-lime-400/70 whitespace-nowrap">Snap</span>
+          <span className="px-1 text-[10px] text-[#00ff00]/70 whitespace-nowrap">Snap</span>
           {SNAP_STEPS.map((s) => (
             <button
               key={s.label}
               type="button"
               onClick={() => onChangeSnapStep(s.value)}
-              className={`min-h-[38px] sm:min-h-[32px] rounded px-2 py-1.5 text-xs font-mono-tabular transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+              className={`min-h-[30px] sm:min-h-[26px] rounded px-1.5 py-1 text-[11px] font-mono-tabular transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                 snapStep === s.value
-                  ? 'bg-lime-400/20 text-lime-200 font-semibold'
-                  : 'text-lime-400/70 hover:text-lime-200'
+                  ? 'bg-[#00ff00]/25 text-[#00ff00] font-semibold'
+                  : 'text-[#00ff00]/70 hover:text-[#00ff00]'
               }`}
             >
               {s.label}
@@ -241,13 +241,13 @@ export const ToolDock: React.FC<ToolDockProps> = ({
         </div>
 
         {/* Camera Presets */}
-        <div className="flex items-center gap-1 rounded-md bg-[#0e1015] p-1 shrink-0">
+        <div className="flex items-center gap-0.5 rounded bg-[#0e1015] p-0.5 shrink-0">
           {CAMERA_PRESETS.map((cam) => (
             <button
               key={cam.id}
               type="button"
               onClick={() => onSelectCameraPreset(cam.id)}
-              className="min-h-[38px] sm:min-h-[32px] rounded px-2.5 py-1.5 text-xs font-medium text-lime-300 transition-colors hover:bg-lime-400/12 hover:text-lime-200 whitespace-nowrap shrink-0 cursor-pointer"
+              className="min-h-[30px] sm:min-h-[26px] rounded px-2 py-1 text-[11px] font-medium text-[#00ff00] transition-colors hover:bg-[#00ff00]/15 whitespace-nowrap shrink-0 cursor-pointer"
             >
               {cam.label}
             </button>
